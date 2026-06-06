@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(ls app/api/capture/[id]/)",
+      "Bash(find /c/Users/michi/Desktop/Projects/MioOS/components -type f -name *.tsx -o -name *.ts)",
+      "Bash(find /c/Users/michi/Desktop/Projects/MioOS -path */node_modules -prune -o -type f -name *toast* -print)",
+      "Bash(find /c/Users/michi/Desktop/Projects/MioOS -path */node_modules -prune -o -path */.next -prune -o -type f \\\\\\(-name *types* \\\\\\) -print)",
+      "Bash(grep -r \"export.*MioNode\\\\|export.*MioEdge\\\\|interface MioNode\\\\|interface MioEdge\" /c/Users/michi/Desktop/Projects/MioOS --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/michi/Desktop/Projects/MioOS/app -name *edge* -o -name *node*)"
+    ]
+  }
+}

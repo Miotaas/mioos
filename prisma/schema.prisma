@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Node {
+  id          String   @id @default(cuid())
+  label       String
+  type        String   // project | idea | task | goal | note | person | workflow | decision | problem | roadmap | system
+  status      String   @default("inbox") // inbox | active | blocked | done | archived
+  description String?
+  content     String?
+  priority    String?  @default("medium") // low | medium | high | urgent
+  color       String?
+  icon        String?
+  posX        Float    @default(0)
+  posY        Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sourceEdges Edge[]          @relation("SourceNode")
+  targetEdges Edge[]          @relation("TargetNode")
+  tasks       Task[]
+  goals       Goal[]
+  notes       Note[]
+  checklists  ChecklistItem[]
+  conversations AIConversation[]
+
+  @@map("nodes")
+}
+
+model Edge {
+  id         String   @id @default(cuid())
+  sourceId   String
+  targetId   String
+  label      String?
+  type       String   @default("default") // default | dependency | reference | related
+  animated   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  source Node @relation("SourceNode", fields: [sourceId], references: [id], onDelete: Cascade)
+  target Node @relation("TargetNode", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("edges")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("todo") // todo | in_progress | blocked | done | cancelled
+  priority    String    @default("medium") // low | medium | high | urgent
+  dueDate     DateTime?
+  completedAt DateTime?
+  nodeId      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  node      Node?          @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  checklist ChecklistItem[]
+
+  @@map("tasks")
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("active") // active | achieved | abandoned | paused
+  progress    Int       @default(0) // 0-100
+  targetDate  DateTime?
+  nodeId      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  node Node? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+
+  @@map("goals")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  tags      String?  // JSON array of strings
+  nodeId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  node Node? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+
+  @@map("notes")
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  text        String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  nodeId      String?
+  taskId      String?
+  createdAt   DateTime  @default(now())
+
+  node Node? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@map("checklist_items")
+}
+
+model AIConversation {
+  id        String      @id @default(cuid())
+  title     String?
+  nodeId    String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  node     Node?       @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  messages AIMessage[]
+
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user | assistant
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_messages")
+}
+
+model Capture {
+  id             String   @id @default(cuid())
+  title          String
+  content        String
+  source         String   @default("manual")  // chatgpt | claude | manual | whatsapp | email | meeting | other
+  type           String   @default("note")     // note | task | idea | decision | bug | roadmap | goal | project_update | sales_note | technical_note | lead | demo_note | support_issue | onboarding_note | product_feedback
+  status         String   @default("inbox")   // inbox | processed | archived
+  priority       String   @default("medium")  // low | medium | high | urgent
+  tags           String?                       // JSON array
+  nodeId         String?
+  convertedToType String?
+  convertedToId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("captures")
+}
+
+// ============================================================
+// BUSINESS OS MODELS
+// ============================================================
+
+model Product {
+  id                     String   @id @default(cuid())
+  name                   String
+  shortDescription       String
+  targetCustomers        String
+  painPoints             String
+  coreFeatures           String   // JSON array of strings
+  demoAngle              String
+  pricingRange           String
+  implementationComplexity String  @default("medium") // low | medium | high
+  status                 String   @default("building") // idea | building | demo-ready | pilot-ready | live
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  leads        Lead[]
+  deployments  Deployment[]
+  upsells      UpsellOpportunity[]
+  supportIssues SupportIssue[]
+
+  @@map("products")
+}
+
+model Lead {
+  id                String    @id @default(cuid())
+  companyName       String
+  contactName       String?
+  email             String?
+  phone             String?
+  website           String?
+  linkedin          String?
+  industry          String?
+  companySize       String?
+  painPoint         String?
+  recommendedProductId String?
+  leadSource        String?   @default("manual") // manual | referral | linkedin | website | event | cold_outreach | partner
+  status            String    @default("new") // new | researched | contacted | replied | discovery_scheduled | demo_scheduled | demo_done | proposal_sent | pilot_offered | pilot_active | won | lost | archived
+  priority          String    @default("medium") // low | medium | high | urgent
+  estimatedValue    Float?
+  notes             String?
+  nextAction        String?
+  nextActionDate    DateTime?
+  // Demo prep
+  demoAngle         String?
+  discoveryQuestions String?
+  likelyObjections  String?
+  pilotStructure    String?
+  pricingSuggestion String?
+  demoNextSteps     String?
+  // Proposal
+  proposalStatus    String?   @default("not_started") // not_started | draft | sent | negotiating | accepted | rejected
+  proposalAmount    Float?
+  monthlyPrice      Float?
+  setupFee          Float?
+  // Pilot
+  pilotStatus       String?   @default("not_started") // not_started | offered | active | completed | converted | failed
+  pilotStartDate    DateTime?
+  pilotEndDate      DateTime?
+  pilotSuccessCriteria String?
+  pilotNotes        String?
+  decisionDeadline  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  recommendedProduct Product? @relation(fields: [recommendedProductId], references: [id], onDelete: SetNull)
+  onboardingItems    OnboardingItem[]
+  deployments        Deployment[]
+  upsells            UpsellOpportunity[]
+  supportIssues      SupportIssue[]
+
+  @@map("leads")
+}
+
+model OnboardingItem {
+  id          String    @id @default(cuid())
+  leadId      String
+  text        String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_items")
+}
+
+model Deployment {
+  id            String    @id @default(cuid())
+  leadId        String?
+  productId     String?
+  status        String    @default("planned") // planned | configuring | testing | live | paused | cancelled
+  environment   String    @default("demo")    // demo | pilot | production
+  monthlyPrice  Float?
+  setupStatus   String?
+  lastCheckIn   DateTime?
+  nextCheckIn   DateTime?
+  issuesCount   Int       @default(0)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("deployments")
+}
+
+model SupportIssue {
+  id          String   @id @default(cuid())
+  leadId      String?
+  productId   String?
+  deploymentId String?
+  title       String
+  description String?
+  severity    String   @default("medium") // low | medium | high | critical
+  status      String   @default("open")  // open | in_progress | waiting_customer | resolved | archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("support_issues")
+}
+
+model UpsellOpportunity {
+  id               String    @id @default(cuid())
+  leadId           String?
+  currentProductId String?
+  suggestedProductId String?
+  reason           String?
+  status           String    @default("identified") // identified | discussed | proposed | accepted | rejected | archived
+  estimatedValue   Float?
+  nextActionDate   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  lead             Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  currentProduct   Product? @relation(fields: [currentProductId], references: [id], onDelete: SetNull)
+
+  @@map("upsell_opportunities")
+}
+
+// ============================================================
+// AGENT OS MODELS
+// ============================================================
+
+model Agent {
+  id                 String   @id @default(cuid())
+  name               String
+  slug               String   @unique
+  description        String?
+  status             String   @default("active")  // active | paused | disabled
+  agentType          String   @default("custom")  // strategy | research | lead_generation | outreach | project_management | custom
+  prompt             String?
+  systemPrompt       String?
+  scheduleEnabled    Boolean  @default(false)
+  scheduleExpression String?
+  requiresApproval   Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  runs            AgentRun[]
+  schedule        AgentSchedule?
+  memories        AgentMemory[]
+  agentTools      AgentTool[]
+  sourceWorkflows AgentWorkflow[] @relation("WorkflowSource")
+  targetWorkflows AgentWorkflow[] @relation("WorkflowTarget")
+  promptVersions  AgentPromptVersion[]
+
+  @@map("agents")
+}
+
+model AgentRun {
+  id           String    @id @default(cuid())
+  agentId      String
+  status       String    @default("pending") // pending | running | completed | failed | cancelled
+  inputContext String?   // JSON blob
+  output       String?   // JSON blob
+  error        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  agent     Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  approvals ApprovalQueue[]
+
+  @@map("agent_runs")
+}
+
+model AgentSchedule {
+  id        String    @id @default(cuid())
+  agentId   String    @unique
+  enabled   Boolean   @default(false)
+  frequency String    @default("manual") // daily | weekly | monthly | manual
+  timeOfDay String?   // HH:MM
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_schedules")
+}
+
+model ApprovalQueue {
+  id             String    @id @default(cuid())
+  agentRunId     String
+  actionType     String
+  proposedAction String    // JSON blob
+  reason         String?
+  status         String    @default("pending") // pending | approved | rejected
+  approvedBy     String?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@map("approval_queue")
+}
+
+// ============================================================
+// AGENT OS — PHASE 1.5: INTELLIGENCE FOUNDATION
+// ============================================================
+
+model AgentMemory {
+  id         String   @id @default(cuid())
+  agentId    String
+  memoryType String   @default("fact") // short_term | long_term | fact | decision | pattern
+  title      String
+  content    String
+  importance Int      @default(5)      // 1–10
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_memories")
+}
+
+model Tool {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  description      String?
+  enabled          Boolean  @default(true)
+  requiresApproval Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  agentTools AgentTool[]
+
+  @@map("tools")
+}
+
+model AgentTool {
+  id      String @id @default(cuid())
+  agentId String
+  toolId  String
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tool  Tool  @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, toolId])
+  @@map("agent_tools")
+}
+
+model AgentWorkflow {
+  id            String   @id @default(cuid())
+  name          String
+  sourceAgentId String
+  targetAgentId String
+  triggerType   String   @default("manual") // manual | approved_action | completed_run
+  enabled       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sourceAgent Agent @relation("WorkflowSource", fields: [sourceAgentId], references: [id], onDelete: Cascade)
+  targetAgent Agent @relation("WorkflowTarget", fields: [targetAgentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_workflows")
+}
+
+model AgentPromptVersion {
+  id                 String   @id @default(cuid())
+  agentId            String
+  version            Int
+  systemPrompt       String?
+  userPromptTemplate String?
+  createdAt          DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, version])
+  @@map("agent_prompt_versions")
+}

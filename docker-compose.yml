@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  mioos:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - mioos_data:/data
+    # DATABASE_URL always points to the persistent volume — overrides env_file
+    environment:
+      - DATABASE_URL=file:/data/mioos.db
+      - NODE_ENV=production
+    # All other secrets (MIOOS_USERNAME, MIOOS_PASSWORD, SESSION_SECRET, etc.)
+    # come from .env — copy .env.example → .env and fill in your values
+    env_file:
+      - .env
+
+volumes:
+  mioos_data:
+    driver: local
