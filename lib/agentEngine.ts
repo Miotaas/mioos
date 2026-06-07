@@ -12,6 +12,9 @@ interface AgentContext {
   supportIssues: unknown[];
   memories: unknown[];
   tools: unknown[];
+  opportunities: unknown[];
+  prospects: unknown[];
+  campaignDrafts: unknown[];
 }
 
 async function assembleContext(agentId?: string): Promise<AgentContext> {
@@ -69,6 +72,24 @@ async function assembleContext(agentId?: string): Promise<AgentContext> {
       }),
     ]);
 
+  const [opportunities, prospects, campaignDrafts] = await Promise.all([
+    prisma.commerceOpportunity.findMany({
+      where: { status: { notIn: ["archived", "rejected"] } },
+      take: 20,
+      select: { id: true, title: true, opportunityType: true, status: true, estimatedRevenue: true, riskLevel: true },
+    }),
+    prisma.prospect.findMany({
+      where: { status: { in: ["discovered", "qualified"] } },
+      take: 20,
+      select: { id: true, companyName: true, fitScore: true, status: true, painPointHypothesis: true },
+    }),
+    prisma.campaignDraft.findMany({
+      where: { status: { in: ["draft", "pending_approval"] } },
+      take: 10,
+      select: { id: true, name: true, channel: true, status: true, goal: true },
+    }),
+  ]);
+
   // Load agent-specific memories (importance >= 4, most important + most recent first)
   let memories: unknown[] = [];
   if (agentId) {
@@ -105,8 +126,24 @@ async function assembleContext(agentId?: string): Promise<AgentContext> {
     supportIssues,
     memories,
     tools,
+    opportunities,
+    prospects,
+    campaignDrafts,
   };
 }
+
+const COMMERCE_SAFETY_RULES = `
+COMMERCE SAFETY RULES (non-negotiable):
+- NEVER send outreach automatically.
+- NEVER launch ads or spend budget.
+- NEVER create live Stripe products.
+- NEVER deliver products to customers.
+- NEVER scrape platforms aggressively.
+- NEVER resell products without verified rights.
+- NEVER issue refunds.
+- ONLY create internal draft records and queue actions for human approval.`;
+
+const COMMERCE_ACTION_SCHEMA = `"create_task" | "update_lead_status" | "flag_issue" | "schedule_followup" | "create_note" | "archive_lead" | "create_opportunity" | "create_prospect" | "create_campaign_draft" | "create_fulfillment_flow" | "convert_prospect_to_lead" | "prepare_outreach" | "prepare_ad_campaign" | "prepare_stripe_offer" | "prepare_delivery_email" | "create_memory" | "create_capture"`;
 
 function buildDefaultSystemPrompt(): string {
   return `You are a strategic AI agent embedded in MioOS, a private Business Operating System.
@@ -117,6 +154,7 @@ CRITICAL RULES:
 - You ONLY generate recommendations, insights, and proposed actions.
 - All proposed actions require human approval before execution.
 - Be concise, specific, and honest about risks.
+${COMMERCE_SAFETY_RULES}
 
 Respond ONLY with valid JSON matching this exact schema:
 {
@@ -125,15 +163,74 @@ Respond ONLY with valid JSON matching this exact schema:
   "insights": ["key observation", ...],
   "proposedActions": [
     {
-      "actionType": "create_task | update_lead_status | flag_issue | schedule_followup | create_note | archive_lead",
+      "actionType": ${COMMERCE_ACTION_SCHEMA},
       "description": "plain-English description of the action",
       "reason": "why this action is recommended",
-      "targetEntity": "lead | task | project | deployment | support_issue",
+      "targetEntity": "lead | task | project | deployment | support_issue | opportunity | prospect | campaign_draft | fulfillment_flow",
       "targetId": "entity id or null",
       "payload": {}
     }
   ]
 }`;
+}
+
+function buildCommerceAgentSystemPrompt(agentType: string): string {
+  const base = `You are an AI agent embedded in MioOS. You produce structured JSON output only. All proposed actions require human approval.
+${COMMERCE_SAFETY_RULES}
+
+Respond ONLY with valid JSON:
+{
+  "summary": "string",
+  "recommendations": ["string"],
+  "insights": ["string"],
+  "proposedActions": [{ "actionType": ${COMMERCE_ACTION_SCHEMA}, "description": "string", "reason": "string", "targetEntity": "string", "targetId": "string|null", "payload": {} }]
+}`;
+
+  const prompts: Record<string, string> = {
+    digital_commerce: `${base}
+
+You are the Digital Commerce Agent. You discover legal digital product opportunities.
+Focus on: PLR products, affiliate programs, licensed bundles, reseller rights, original digital products.
+NEVER suggest unauthorized resale or copyright violation.
+Propose: create_opportunity actions for viable digital products found in context.`,
+
+    outreach: `${base}
+
+You are the Outreach Agent. You prepare prospect lists and outreach message drafts.
+Analyse existing prospects and leads. Identify outreach gaps.
+NEVER send messages. NEVER contact anyone automatically.
+Propose: create_prospect, prepare_outreach actions. Draft outreach text in the payload.`,
+
+    ads: `${base}
+
+You are the Ads Agent. You prepare campaign drafts for LinkedIn, Google, Meta, Instagram, Facebook.
+Analyse leads and opportunities to identify best ad angles.
+NEVER launch ads. NEVER spend budget. NEVER create live campaigns.
+Propose: create_campaign_draft, prepare_ad_campaign actions with channel, hook, copy, and audience in payload.`,
+
+    sales: `${base}
+
+You are the Sales Agent. You identify follow-up opportunities and conversion paths.
+Analyse leads by status, urgency, and pipeline value. Recommend next best actions.
+NEVER contact leads automatically.
+Propose: schedule_followup, update_lead_status, convert_prospect_to_lead actions.`,
+
+    fulfillment: `${base}
+
+You are the Fulfillment Agent. You prepare order confirmation, invoice, and delivery workflows.
+Analyse existing fulfillment flows and identify gaps.
+NEVER send emails automatically. NEVER deliver products without approval.
+Propose: create_fulfillment_flow, prepare_delivery_email, prepare_stripe_offer actions.`,
+
+    ceo: `${base}
+
+You are the CEO Agent. You provide executive-level strategic direction across the full business.
+Prioritise commerce opportunities by estimated ROI, speed to revenue, and risk level.
+Analyse leads, deployments, support issues, and commerce opportunities holistically.
+Propose a prioritised action plan with the highest-leverage actions first.`,
+  };
+
+  return prompts[agentType] ?? buildDefaultSystemPrompt();
 }
 
 async function callAnthropicAPI(
@@ -183,6 +280,8 @@ function generateMockOutput(context: AgentContext, agentName: string): ParsedAge
   const goals = context.goals as Array<{ title: string; progress: number }>;
   const issues = context.supportIssues as Array<{ id: string; title: string; severity: string }>;
   const deployments = context.deployments as Array<{ id: string; status: string; nextCheckIn?: string | null }>;
+  const opportunities = context.opportunities as Array<{ id: string; title: string; status: string; estimatedRevenue?: number | null }>;
+  const prospects = context.prospects as Array<{ id: string; companyName: string; status: string; fitScore?: number | null }>;
 
   const overdueTasks = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < now);
   const overdueLeads = leads.filter((l) => l.nextActionDate && new Date(l.nextActionDate) < now);
@@ -243,6 +342,30 @@ function generateMockOutput(context: AgentContext, agentName: string): ParsedAge
     recommendations.push(
       `Review ${lowProgressGoals.length} goal${lowProgressGoals.length > 1 ? "s" : ""} stuck below 30% progress — adjust scope or timeline now, not at end of quarter.`,
     );
+  }
+
+  // Commerce insights
+  const discoveredOpportunities = opportunities.filter(o => o.status === "discovered");
+  const qualifiedProspects = prospects.filter(p => p.status === "qualified");
+  if (discoveredOpportunities.length > 0) {
+    recommendations.push(
+      `Review ${discoveredOpportunities.length} discovered commerce opportunit${discoveredOpportunities.length > 1 ? "ies" : "y"} — validate or approve the highest-potential ones.`,
+    );
+  }
+  if (qualifiedProspects.length > 0) {
+    recommendations.push(
+      `${qualifiedProspects.length} qualified prospect${qualifiedProspects.length > 1 ? "s" : ""} ready for outreach — prepare a message draft or convert to lead.`,
+    );
+    qualifiedProspects.slice(0, 1).forEach(p => {
+      proposedActions.push({
+        actionType: "prepare_outreach",
+        description: `Prepare outreach draft for ${p.companyName}`,
+        reason: `Prospect is qualified with fit score ${p.fitScore ?? "unknown"}. Ready for outreach.`,
+        targetEntity: "prospect",
+        targetId: p.id,
+        payload: { channel: "email" },
+      });
+    });
   }
 
   if (recommendations.length === 0) {
@@ -307,7 +430,11 @@ export async function executeAgent(agentId: string): Promise<string> {
       data: { inputContext: JSON.stringify(context) },
     });
 
-    const systemPrompt = agent.systemPrompt?.trim() || buildDefaultSystemPrompt();
+    const commerceTypes = ["digital_commerce", "outreach", "ads", "sales", "fulfillment", "ceo"];
+    const defaultPrompt = commerceTypes.includes(agent.agentType)
+      ? buildCommerceAgentSystemPrompt(agent.agentType)
+      : buildDefaultSystemPrompt();
+    const systemPrompt = agent.systemPrompt?.trim() || defaultPrompt;
     const userContent = agent.prompt?.trim()
       ? `${agent.prompt}\n\nCurrent MioOS state:\n${JSON.stringify(context, null, 2)}`
       : `Analyse the current state of MioOS and provide strategic recommendations.\n\nCurrent MioOS state:\n${JSON.stringify(context, null, 2)}`;
@@ -317,9 +444,11 @@ export async function executeAgent(agentId: string): Promise<string> {
       ? await callAnthropicAPI(systemPrompt, userContent, apiKey)
       : generateMockOutput(context, agent.name);
 
-    if (agent.requiresApproval && output.proposedActions.length > 0) {
+    // Queue non-memory proposed actions for approval
+    const nonMemoryActions = output.proposedActions.filter(a => a.actionType !== "create_memory");
+    if (agent.requiresApproval && nonMemoryActions.length > 0) {
       await Promise.all(
-        output.proposedActions.map((action) =>
+        nonMemoryActions.map((action) =>
           prisma.approvalQueue.create({
             data: {
               agentRunId: run.id,
@@ -348,6 +477,34 @@ export async function executeAgent(agentId: string): Promise<string> {
         },
       });
     }
+
+    // Phase 1.9 + 2.0: post-run intelligence hooks — fire and forget
+    Promise.resolve().then(async () => {
+      try {
+        const { extractAndQueueMemorySuggestions } = await import("@/lib/memoryExtractor");
+        await extractAndQueueMemorySuggestions(agentId, run.id, output);
+      } catch { /* never block on memory extraction */ }
+
+      try {
+        const { analyzeAndQueuePatterns } = await import("@/lib/patternAnalyzer");
+        await analyzeAndQueuePatterns(agentId, run.id);
+      } catch { /* never block on pattern analysis */ }
+
+      try {
+        const { generateAndStoreInsights } = await import("@/lib/insightEngine");
+        await generateAndStoreInsights(agentId, run.id);
+      } catch { /* never block on insight generation */ }
+
+      try {
+        const { generateExecutiveBriefing } = await import("@/lib/briefingGenerator");
+        await generateExecutiveBriefing(agentId, run.id);
+      } catch { /* never block on briefing generation */ }
+
+      try {
+        const { triggerWorkflows } = await import("@/lib/workflowRunner");
+        await triggerWorkflows("completed_run", agentId, 0);
+      } catch { /* never block on workflow chaining */ }
+    }).catch(() => {});
 
     return run.id;
   } catch (err) {

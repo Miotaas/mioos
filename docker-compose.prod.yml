@@ -1,0 +1,39 @@
+version: "3.9"
+
+# Production compose — binds only to localhost so Caddy can reverse-proxy.
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  mioos:
+    image: mioos:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    # Only expose to localhost — Caddy terminates TLS and proxies here
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - mioos_data:/data
+    environment:
+      - DATABASE_URL=file:/data/mioos.db
+      - NODE_ENV=production
+      - ENABLE_SCHEDULE_RUNNER=true
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  mioos_data:
+    driver: local

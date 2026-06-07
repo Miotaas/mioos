@@ -319,6 +319,10 @@ model Agent {
   scheduleEnabled    Boolean  @default(false)
   scheduleExpression String?
   requiresApproval   Boolean  @default(true)
+  role               String?
+  mission            String?
+  successMetric      String?
+  authorityLevel     String?  @default("research") // coordinate | delegate | research | review | observe
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -329,6 +333,8 @@ model Agent {
   sourceWorkflows AgentWorkflow[] @relation("WorkflowSource")
   targetWorkflows AgentWorkflow[] @relation("WorkflowTarget")
   promptVersions  AgentPromptVersion[]
+  goals           AgentGoal[]
+  scorecards      AgentScorecard[]
 
   @@map("agents")
 }
@@ -385,14 +391,17 @@ model ApprovalQueue {
 // ============================================================
 
 model AgentMemory {
-  id         String   @id @default(cuid())
-  agentId    String
-  memoryType String   @default("fact") // short_term | long_term | fact | decision | pattern
-  title      String
-  content    String
-  importance Int      @default(5)      // 1–10
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  agentId         String
+  memoryType      String   @default("fact") // fact | decision | preference | pattern | lesson | risk | opportunity
+  title           String
+  content         String
+  importance      Int      @default(5)      // 1–10
+  occurrenceCount Int      @default(1)
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
@@ -406,10 +415,13 @@ model Tool {
   description      String?
   enabled          Boolean  @default(true)
   requiresApproval Boolean  @default(true)
+  inputSchema      String?  // JSON schema for tool inputs
+  outputSchema     String?  // JSON schema for tool outputs
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  agentTools AgentTool[]
+  agentTools     AgentTool[]
+  toolExecutions ToolExecution[]
 
   @@map("tools")
 }
@@ -454,4 +466,500 @@ model AgentPromptVersion {
 
   @@unique([agentId, version])
   @@map("agent_prompt_versions")
+}
+
+// ============================================================
+// PHASE 2.1 — COMMERCE AUTOPILOT
+// ============================================================
+
+model CommerceOpportunity {
+  id                    String   @id @default(cuid())
+  title                 String
+  opportunityType       String   @default("digital_product") // ai_product | digital_product | affiliate | reseller | plr | dropshipping | productized_service | ads_campaign | lead_generation
+  targetCustomer        String?
+  painPoint             String?
+  offer                 String?
+  estimatedRevenue      Float?
+  estimatedMargin       Float?
+  buildEffort           String   @default("medium") // low | medium | high
+  salesDifficulty       String   @default("medium") // low | medium | high
+  fulfillmentDifficulty String   @default("medium") // low | medium | high
+  riskLevel             String   @default("medium") // low | medium | high
+  status                String   @default("discovered") // discovered | validating | approved | rejected | testing | live | archived
+  source                String?
+  notes                 String?
+  createdByAgentId      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("commerce_opportunities")
+}
+
+model Prospect {
+  id                  String   @id @default(cuid())
+  companyName         String
+  contactName         String?
+  role                String?
+  email               String?
+  phone               String?
+  linkedinUrl         String?
+  website             String?
+  industry            String?
+  country             String?
+  companySize         String?
+  fitScore            Int?
+  painPointHypothesis String?
+  suggestedOffer      String?
+  source              String?
+  status              String   @default("discovered") // discovered | qualified | rejected | converted_to_lead | archived
+  createdByAgentId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("prospects")
+}
+
+model CampaignDraft {
+  id                String   @id @default(cuid())
+  name              String
+  channel           String   @default("email") // linkedin | email | google_ads | meta_ads | instagram | facebook | retargeting | landing_page
+  goal              String?
+  targetAudience    String?
+  offer             String?
+  hook              String?
+  adCopy            String?
+  outreachMessage   String?
+  landingPageAngle  String?
+  cta               String?
+  suggestedBudget   Float?
+  expectedObjection String?
+  successMetric     String?
+  status            String   @default("draft") // draft | pending_approval | approved | rejected | ready_to_launch | launched_manually | archived
+  createdByAgentId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("campaign_drafts")
+}
+
+model FulfillmentFlow {
+  id                        String   @id @default(cuid())
+  name                      String
+  productName               String
+  paymentProvider           String   @default("manual") // stripe | gumroad | shopify | manual
+  deliveryType              String   @default("email_delivery") // email_delivery | download_link | license_key | affiliate_redirect | manual_delivery | onboarding_call
+  confirmationEmailTemplate String?
+  invoiceRequired           Boolean  @default(false)
+  deliveryEmailTemplate     String?
+  followUpEmailTemplate     String?
+  supportInstructions       String?
+  status                    String   @default("draft") // draft | approved | active | archived
+  createdByAgentId          String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("fulfillment_flows")
+}
+
+model ConnectorRegistry {
+  id               String   @id @default(cuid())
+  name             String
+  provider         String   @unique // linkedin | gmail | outlook | stripe | meta_ads | google_ads | shopify | gumroad | web_search | browser
+  status           String   @default("planned") // planned | configured | disabled
+  requiresApproval Boolean  @default(true)
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("connector_registry")
+}
+
+// ============================================================
+// PHASE 1.9 — EXECUTION LAYER
+// ============================================================
+
+model ExecutionHistory {
+  id            String    @id @default(cuid())
+  approvalId    String
+  agentId       String
+  actionType    String
+  actionPayload String    // JSON blob of the parsed proposed action
+  status        String    @default("pending") // pending | executed | failed
+  error         String?
+  executedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@map("execution_history")
+}
+
+model WorkflowExecution {
+  id            String    @id @default(cuid())
+  workflowId    String
+  sourceAgentId String
+  targetAgentId String
+  triggerType   String    // completed_run | approved_action | manual
+  status        String    @default("pending") // pending | executed | failed | blocked
+  reason        String?
+  createdAt     DateTime  @default(now())
+  executedAt    DateTime?
+
+  @@map("workflow_executions")
+}
+
+model ScheduleExecution {
+  id          String    @id @default(cuid())
+  scheduleId  String
+  agentId     String
+  status      String    @default("success") // success | failed | skipped
+  reason      String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("schedule_executions")
+}
+
+model ToolExecution {
+  id          String    @id @default(cuid())
+  toolId      String
+  agentId     String
+  input       String?   // JSON blob
+  output      String?   // JSON blob
+  status      String    @default("pending") // pending | success | failed
+  error       String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@map("tool_executions")
+}
+
+model MemorySuggestion {
+  id               String   @id @default(cuid())
+  agentId          String
+  runId            String
+  memoryType       String   @default("fact") // fact | decision | preference | pattern | lesson | risk | opportunity
+  classification   String   @default("fact") // fact | decision | preference | pattern | lesson | risk | opportunity | observation
+  title            String
+  content          String
+  importance       Int      @default(5)
+  importanceReason String?
+  status           String   @default("pending") // pending | approved | rejected
+  createdAt        DateTime @default(now())
+
+  @@map("memory_suggestions")
+}
+
+model SystemExecutionLog {
+  id         String   @id @default(cuid())
+  sourceType String   // agent | workflow | schedule | tool | approval
+  sourceId   String
+  event      String
+  details    String?  // JSON blob
+  createdAt  DateTime @default(now())
+
+  @@map("system_execution_logs")
+}
+
+// ============================================================
+// PHASE 2.0 — INTELLIGENCE QUALITY LAYER
+// ============================================================
+
+model Insight {
+  id         String   @id @default(cuid())
+  type       String   @default("risk")   // risk | opportunity | efficiency | revenue | execution
+  title      String
+  summary    String
+  confidence Int      @default(5)        // 1–10
+  importance Int      @default(5)        // 1–10
+  agentId    String?
+  runId      String?
+  status     String   @default("active") // active | dismissed
+  createdAt  DateTime @default(now())
+
+  @@map("insights")
+}
+
+model PatternRecord {
+  id          String   @id @default(cuid())
+  patternType String   @default("blocker") // blocker | overdue | approval_delay | revenue_risk | operational_risk
+  title       String
+  description String
+  occurrences Int      @default(1)
+  agentId     String?
+  runId       String?
+  status      String   @default("pending") // pending | approved | rejected | dismissed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("pattern_records")
+}
+
+model ExecutiveBriefing {
+  id            String   @id @default(cuid())
+  summary       String
+  risks         String   // JSON array of strings
+  opportunities String   // JSON array of strings
+  actions       String   // JSON array of strings
+  patterns      String?  // JSON array of strings
+  insights      String?  // JSON array of strings
+  agentId       String?
+  runId         String?
+  createdAt     DateTime @default(now())
+
+  @@map("executive_briefings")
+}
+
+// ============================================================
+// PHASE 2.1A — MULTI-AGENT COMMUNICATION FOUNDATION
+// ============================================================
+
+model AgentMessage {
+  id          String    @id @default(cuid())
+  fromAgentId String
+  toAgentId   String
+  subject     String
+  content     String
+  context     String?   // JSON blob
+  priority    String    @default("medium") // low | medium | high | critical
+  status      String    @default("unread") // unread | read | archived
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
+
+  @@map("agent_messages")
+}
+
+model AgentDelegation {
+  id                String    @id @default(cuid())
+  assignedByAgentId String
+  assignedToAgentId String
+  objective         String
+  inputContext      String?   // JSON blob
+  expectedOutput    String?
+  status            String    @default("pending") // pending | accepted | running | completed | failed | cancelled
+  result            String?
+  error             String?
+  createdAt         DateTime  @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  @@map("agent_delegations")
+}
+
+model AgentWorkspace {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  workspaceType String   @default("strategy") // strategy | revenue | opportunity | research | operations | project | custom
+  status        String   @default("active")   // active | paused | completed | archived
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members    AgentWorkspaceMember[]
+  activities WorkspaceActivity[]
+
+  @@map("agent_workspaces")
+}
+
+model AgentWorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  agentId     String
+  role        String   @default("observer") // executive | researcher | validator | planner | reviewer | observer
+  createdAt   DateTime @default(now())
+
+  workspace AgentWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, agentId])
+  @@map("agent_workspace_members")
+}
+
+model WorkspaceActivity {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  activityType String   @default("message") // message | delegation | memory | execution | approval
+  sourceId     String?
+  summary      String
+  createdAt    DateTime @default(now())
+
+  workspace AgentWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_activities")
+}
+
+// ============================================================
+// PHASE 2.2 — PRODUCTION AUTONOMY READINESS
+// ============================================================
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// ============================================================
+// PHASE 2.3 — EXECUTIVE LOOP, AGENT GOALS & SCORECARDS
+// ============================================================
+
+model AgentGoal {
+  id            String    @id @default(cuid())
+  agentId       String
+  title         String
+  description   String?
+  goalType      String    @default("custom")   // revenue | opportunity | execution | research | operations | knowledge | support | custom
+  targetMetric  String?
+  targetValue   Float?
+  currentValue  Float     @default(0)
+  period        String    @default("weekly")   // daily | weekly | monthly | quarterly | ongoing
+  status        String    @default("active")   // active | paused | completed | failed | archived
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  completedAt   DateTime?
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_goals")
+}
+
+model ExecutiveLoopRun {
+  id                 String    @id @default(cuid())
+  triggerType        String    @default("manual")    // manual | scheduled | goal_review | briefing | system
+  status             String    @default("running")   // running | completed | failed
+  summary            String?
+  decisions          String?   // JSON array of decision strings
+  createdDelegations Int       @default(0)
+  createdMessages    Int       @default(0)
+  createdWorkspaces  Int       @default(0)
+  error              String?
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  @@map("executive_loop_runs")
+}
+
+model AgentReviewRequest {
+  id                 String    @id @default(cuid())
+  requestedByAgentId String
+  reviewerAgentId    String
+  workspaceId        String?
+  delegationId       String?
+  subject            String
+  content            String
+  context            String?   // JSON blob
+  status             String    @default("pending")   // pending | in_review | approved | rejected | needs_changes
+  reviewResult       String?
+  reviewNotes        String?
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  @@map("agent_review_requests")
+}
+
+model AgentScorecard {
+  id                   String   @id @default(cuid())
+  agentId              String
+  periodStart          DateTime
+  periodEnd            DateTime
+  runsCompleted        Int      @default(0)
+  runsFailed           Int      @default(0)
+  delegationsAssigned  Int      @default(0)
+  delegationsCompleted Int      @default(0)
+  delegationsFailed    Int      @default(0)
+  messagesSent         Int      @default(0)
+  reviewsCompleted     Int      @default(0)
+  approvalsCreated     Int      @default(0)
+  approvalsApproved    Int      @default(0)
+  approvalsRejected    Int      @default(0)
+  memoriesCreated      Int      @default(0)
+  insightsGenerated    Int      @default(0)
+  usefulnessScore      Float    @default(5)
+  reliabilityScore     Float    @default(5)
+  executionScore       Float    @default(5)
+  qualityScore         Float    @default(5)
+  overallScore         Float    @default(5)
+  summary              String?
+  createdAt            DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_scorecards")
+}
+
+// ============================================================
+// PHASE 2.4A — INTELLIGENCE CONNECTORS & EXTERNAL AWARENESS
+// ============================================================
+
+model SearchResearch {
+  id                 String    @id @default(cuid())
+  query              String
+  requestedByAgentId String?
+  workspaceId        String?
+  status             String    @default("pending")  // pending | completed | failed
+  summary            String?
+  sources            String?   // JSON array of {url, title, snippet}
+  resultsCount       Int       @default(0)
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  @@map("search_research")
+}
+
+model EmailInsight {
+  id             String   @id @default(cuid())
+  agentId        String?
+  emailCount     Int      @default(0)
+  unreadCount    Int      @default(0)
+  importantCount Int      @default(0)
+  summary        String?
+  createdAt      DateTime @default(now())
+
+  @@map("email_insights")
+}
+
+model CalendarInsight {
+  id             String   @id @default(cuid())
+  agentId        String?
+  todayEvents    Int      @default(0)
+  upcomingEvents Int      @default(0)
+  nextDeadline   String?
+  summary        String?
+  createdAt      DateTime @default(now())
+
+  @@map("calendar_insights")
+}
+
+model ResearchRequest {
+  id                 String    @id @default(cuid())
+  requestedByAgentId String?
+  workspaceId        String?
+  title              String
+  objective          String
+  priority           String    @default("medium")  // low | medium | high | critical
+  status             String    @default("pending")  // pending | running | completed | failed
+  resultSummary      String?
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  results ResearchResult[]
+
+  @@map("research_requests")
+}
+
+model ResearchResult {
+  id              String   @id @default(cuid())
+  requestId       String
+  summary         String
+  findings        String   // JSON array of finding strings
+  risks           String?  // JSON array of risk strings
+  opportunities   String?  // JSON array of opportunity strings
+  recommendations String?  // JSON array of recommendation strings
+  confidenceScore Int      @default(5) // 1-10
+  createdAt       DateTime @default(now())
+
+  request ResearchRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("research_results")
 }

@@ -28,6 +28,14 @@ import { WorkflowsView } from "@/components/agents/WorkflowsView";
 import { PromptEditorView } from "@/components/agents/PromptEditorView";
 import { StrategicBriefingView } from "@/components/agents/StrategicBriefingView";
 import { AgentFleetView } from "@/components/agents/AgentFleetView";
+import { AgentTeamView } from "@/components/agents/AgentTeamView";
+import { ExecutiveLoopView } from "@/components/agents/ExecutiveLoopView";
+import { SettingsView } from "@/components/settings/SettingsView";
+import { OpportunitiesView } from "@/components/commerce/OpportunitiesView";
+import { ProspectsView } from "@/components/commerce/ProspectsView";
+import { CampaignDraftsView } from "@/components/commerce/CampaignDraftsView";
+import { FulfillmentView } from "@/components/commerce/FulfillmentView";
+import { ConnectorsView } from "@/components/commerce/ConnectorsView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
@@ -79,6 +87,14 @@ export default function Home() {
           {activeView === "agent-workflows" && <ErrorBoundary label="Workflows"><WorkflowsView /></ErrorBoundary>}
           {activeView === "prompt-editor" && <ErrorBoundary label="Prompt Editor"><PromptEditorView /></ErrorBoundary>}
           {activeView === "strategic-briefing" && <ErrorBoundary label="Strategic Briefing"><StrategicBriefingView /></ErrorBoundary>}
+          {activeView === "agent-team" && <ErrorBoundary label="Agent Team"><AgentTeamView /></ErrorBoundary>}
+          {activeView === "executive-loop" && <ErrorBoundary label="Executive Loop"><ExecutiveLoopView /></ErrorBoundary>}
+          {activeView === "settings" && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
+          {activeView === "commerce-opportunities" && <ErrorBoundary label="Opportunities"><OpportunitiesView /></ErrorBoundary>}
+          {activeView === "commerce-prospects" && <ErrorBoundary label="Prospects"><ProspectsView /></ErrorBoundary>}
+          {activeView === "commerce-campaigns" && <ErrorBoundary label="Campaign Drafts"><CampaignDraftsView /></ErrorBoundary>}
+          {activeView === "commerce-fulfillment" && <ErrorBoundary label="Fulfillment"><FulfillmentView /></ErrorBoundary>}
+          {activeView === "commerce-connectors" && <ErrorBoundary label="Connectors"><ConnectorsView /></ErrorBoundary>}
         </div>
       </main>
 

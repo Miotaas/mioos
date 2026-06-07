@@ -33,6 +33,11 @@ import {
   FileBarChart,
   HeartPulse,
   LogOut,
+  TrendingUp,
+  Users2,
+  Megaphone,
+  Truck,
+  Plug,
 } from "lucide-react";
 
 async function logout() {
@@ -59,10 +64,20 @@ const businessNavItems = [
   { id: "support", label: "Support", icon: LifeBuoy },
 ] as const;
 
+const commerceNavItems = [
+  { id: "commerce-opportunities", label: "Opportunities",    icon: TrendingUp },
+  { id: "commerce-prospects",     label: "Prospects",        icon: Users2 },
+  { id: "commerce-campaigns",     label: "Campaign Drafts",  icon: Megaphone },
+  { id: "commerce-fulfillment",   label: "Fulfillment",      icon: Truck },
+  { id: "commerce-connectors",    label: "Connectors",       icon: Plug },
+] as const;
+
 const agentNavItems = [
   { id: "agent-dashboard",      label: "Dashboard",     icon: Cpu },
   { id: "agent-fleet",          label: "Fleet Health",  icon: HeartPulse },
   { id: "agent-registry",       label: "Agents",        icon: Bot },
+  { id: "agent-team",           label: "Agent Team",    icon: Users2 },
+  { id: "executive-loop",       label: "Exec Loop",     icon: Zap },
   { id: "strategic-briefing",   label: "Briefing",      icon: FileBarChart },
   { id: "agent-runs",           label: "Run History",   icon: Activity },
   { id: "approvals",        label: "Approvals",      icon: ShieldCheck },
@@ -170,6 +185,39 @@ export function Sidebar() {
         {/* Divider */}
         <div className="h-px bg-white/[0.06] mx-2 mb-3" />
 
+        {/* Commerce Autopilot group */}
+        {!sidebarCollapsed && (
+          <p className="text-[9px] text-text-ghost uppercase tracking-widest font-medium px-3 mb-1.5">Commerce Autopilot</p>
+        )}
+        <div className="space-y-0.5 mb-3">
+          {commerceNavItems.map(({ id, label, icon: Icon }) => {
+            const active = activeView === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveView(id as typeof activeView)}
+                title={sidebarCollapsed ? label : undefined}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group",
+                  sidebarCollapsed && "justify-center px-0",
+                  active
+                    ? "bg-accent-green/15 text-accent-green border border-accent-green/20"
+                    : "text-text-secondary hover:text-text-primary hover:bg-white/[0.04]"
+                )}
+              >
+                <Icon className={cn("w-4 h-4 flex-shrink-0 transition-colors", active ? "text-accent-green" : "group-hover:text-text-primary")} />
+                {!sidebarCollapsed && <span className="font-medium">{label}</span>}
+                {active && !sidebarCollapsed && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-green" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/[0.06] mx-2 mb-3" />
+
         {/* Agent OS group */}
         {!sidebarCollapsed && (
           <p className="text-[9px] text-text-ghost uppercase tracking-widest font-medium px-3 mb-1.5">Agent OS</p>
@@ -227,10 +275,14 @@ export function Sidebar() {
       {/* Settings + Logout */}
       <div className="px-2 pb-3 border-t border-white/[0.06] pt-2 space-y-0.5">
         <button
+          onClick={() => setActiveView("settings")}
           title={sidebarCollapsed ? "Settings" : undefined}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-all",
-            sidebarCollapsed && "justify-center px-0"
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
+            sidebarCollapsed && "justify-center px-0",
+            activeView === "settings"
+              ? "bg-white/[0.06] text-text-primary"
+              : "text-text-secondary hover:text-text-primary hover:bg-white/[0.04]"
           )}
         >
           <Settings className="w-4 h-4 flex-shrink-0" />

@@ -139,10 +139,12 @@ export interface ExtractedActionItem {
 // ============================================================
 
 export type AgentStatus = "active" | "paused" | "disabled";
-export type AgentType = "strategy" | "research" | "lead_generation" | "outreach" | "project_management" | "custom";
+export type AgentType = "strategy" | "research" | "lead_generation" | "outreach" | "project_management" | "custom" | "digital_commerce" | "ads" | "sales" | "fulfillment" | "ceo";
 export type AgentRunStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export type ScheduleFrequency = "daily" | "weekly" | "monthly" | "manual";
+
+export type AuthorityLevel = "coordinate" | "delegate" | "research" | "review" | "observe";
 
 export interface Agent {
   id: string;
@@ -156,6 +158,10 @@ export interface Agent {
   scheduleEnabled: boolean;
   scheduleExpression: string | null;
   requiresApproval: boolean;
+  role: string | null;
+  mission: string | null;
+  successMetric: string | null;
+  authorityLevel: AuthorityLevel | null;
   createdAt: string;
   updatedAt: string;
   runs?: AgentRun[];
@@ -217,7 +223,7 @@ export interface ParsedProposedAction {
 
 // ── Phase 1.5: Intelligence Foundation ─────────────────────
 
-export type MemoryType = "short_term" | "long_term" | "fact" | "decision" | "pattern";
+export type MemoryType = "short_term" | "long_term" | "fact" | "decision" | "pattern" | "preference" | "lesson" | "risk" | "opportunity";
 
 export interface AgentMemory {
   id: string;
@@ -316,4 +322,538 @@ export interface FleetHealthSummary {
   offline: number;
   total: number;
   fleetHealthScore: number;
+}
+
+// ── Phase 2.1: Commerce Autopilot ───────────────────────────────
+
+export type OpportunityType =
+  | "ai_product" | "digital_product" | "affiliate" | "reseller" | "plr"
+  | "dropshipping" | "productized_service" | "ads_campaign" | "lead_generation";
+
+export type OpportunityStatus =
+  | "discovered" | "validating" | "approved" | "rejected" | "testing" | "live" | "archived";
+
+export interface CommerceOpportunity {
+  id: string;
+  title: string;
+  opportunityType: OpportunityType;
+  targetCustomer: string | null;
+  painPoint: string | null;
+  offer: string | null;
+  estimatedRevenue: number | null;
+  estimatedMargin: number | null;
+  buildEffort: string;
+  salesDifficulty: string;
+  fulfillmentDifficulty: string;
+  riskLevel: string;
+  status: OpportunityStatus;
+  source: string | null;
+  notes: string | null;
+  createdByAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProspectStatus = "discovered" | "qualified" | "rejected" | "converted_to_lead" | "archived";
+
+export interface Prospect {
+  id: string;
+  companyName: string;
+  contactName: string | null;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedinUrl: string | null;
+  website: string | null;
+  industry: string | null;
+  country: string | null;
+  companySize: string | null;
+  fitScore: number | null;
+  painPointHypothesis: string | null;
+  suggestedOffer: string | null;
+  source: string | null;
+  status: ProspectStatus;
+  createdByAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CampaignChannel =
+  | "linkedin" | "email" | "google_ads" | "meta_ads"
+  | "instagram" | "facebook" | "retargeting" | "landing_page";
+
+export type CampaignStatus =
+  | "draft" | "pending_approval" | "approved" | "rejected"
+  | "ready_to_launch" | "launched_manually" | "archived";
+
+export interface CampaignDraft {
+  id: string;
+  name: string;
+  channel: CampaignChannel;
+  goal: string | null;
+  targetAudience: string | null;
+  offer: string | null;
+  hook: string | null;
+  adCopy: string | null;
+  outreachMessage: string | null;
+  landingPageAngle: string | null;
+  cta: string | null;
+  suggestedBudget: number | null;
+  expectedObjection: string | null;
+  successMetric: string | null;
+  status: CampaignStatus;
+  createdByAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentProvider = "stripe" | "gumroad" | "shopify" | "manual";
+export type DeliveryType =
+  | "email_delivery" | "download_link" | "license_key"
+  | "affiliate_redirect" | "manual_delivery" | "onboarding_call";
+export type FulfillmentStatus = "draft" | "approved" | "active" | "archived";
+
+export interface FulfillmentFlow {
+  id: string;
+  name: string;
+  productName: string;
+  paymentProvider: PaymentProvider;
+  deliveryType: DeliveryType;
+  confirmationEmailTemplate: string | null;
+  invoiceRequired: boolean;
+  deliveryEmailTemplate: string | null;
+  followUpEmailTemplate: string | null;
+  supportInstructions: string | null;
+  status: FulfillmentStatus;
+  createdByAgentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ConnectorProvider =
+  | "linkedin" | "gmail" | "outlook" | "stripe" | "meta_ads"
+  | "google_ads" | "shopify" | "gumroad" | "web_search" | "browser";
+
+export type ConnectorStatus = "planned" | "configured" | "connected" | "disconnected" | "error" | "disabled";
+
+export interface Connector {
+  id: string;
+  name: string;
+  provider: ConnectorProvider;
+  status: ConnectorStatus;
+  requiresApproval: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Phase 2.0: Intelligence Quality Layer ──────────────────────────
+
+export type MemoryClass =
+  | "fact" | "decision" | "preference" | "pattern"
+  | "lesson" | "risk" | "opportunity" | "observation";
+
+export type InsightType = "risk" | "opportunity" | "efficiency" | "revenue" | "execution";
+export type InsightStatus = "active" | "dismissed";
+export type PatternType = "blocker" | "overdue" | "approval_delay" | "revenue_risk" | "operational_risk";
+export type PatternStatus = "pending" | "approved" | "rejected" | "dismissed";
+
+export interface Insight {
+  id: string;
+  type: InsightType;
+  title: string;
+  summary: string;
+  confidence: number;
+  importance: number;
+  agentId: string | null;
+  runId: string | null;
+  status: InsightStatus;
+  createdAt: string;
+}
+
+export interface PatternRecord {
+  id: string;
+  patternType: PatternType;
+  title: string;
+  description: string;
+  occurrences: number;
+  agentId: string | null;
+  runId: string | null;
+  status: PatternStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutiveBriefing {
+  id: string;
+  summary: string;
+  risks: string;
+  opportunities: string;
+  actions: string;
+  patterns: string | null;
+  insights: string | null;
+  agentId: string | null;
+  runId: string | null;
+  createdAt: string;
+}
+
+export interface IntelligenceOverview {
+  latestBriefing: ExecutiveBriefing | null;
+  topRisks: Insight[];
+  topOpportunities: Insight[];
+  recentPatterns: PatternRecord[];
+  recentInsights: Insight[];
+  insightCount: number;
+  pendingPatternCount: number;
+  activeResearch: number;
+  completedResearch: number;
+  latestEmailInsight: EmailInsight | null;
+  latestCalendarInsight: CalendarInsight | null;
+}
+
+// ── Phase 1.9: Execution Layer ───────────────────────────────────
+
+export type ExecutionStatus = "pending" | "executed" | "failed";
+export type WorkflowExecutionStatus = "pending" | "executed" | "failed" | "blocked";
+export type ScheduleExecutionStatus = "success" | "failed" | "skipped";
+export type ToolExecutionStatus = "pending" | "success" | "failed";
+export type MemorySuggestionStatus = "pending" | "approved" | "rejected";
+export type SystemLogSourceType = "agent" | "workflow" | "schedule" | "tool" | "approval" | "system";
+
+export interface SystemConfig {
+  key: string;
+  value: string;
+  updatedAt: string;
+}
+export type SuggestionMemoryType = "fact" | "decision" | "pattern" | "warning" | "lesson" | "preference" | "risk" | "opportunity";
+
+export interface ExecutionHistoryRecord {
+  id: string;
+  approvalId: string;
+  agentId: string;
+  actionType: string;
+  actionPayload: string;
+  status: ExecutionStatus;
+  error: string | null;
+  executedAt: string | null;
+  createdAt: string;
+}
+
+export interface WorkflowExecutionRecord {
+  id: string;
+  workflowId: string;
+  sourceAgentId: string;
+  targetAgentId: string;
+  triggerType: string;
+  status: WorkflowExecutionStatus;
+  reason: string | null;
+  createdAt: string;
+  executedAt: string | null;
+}
+
+export interface ScheduleExecutionRecord {
+  id: string;
+  scheduleId: string;
+  agentId: string;
+  status: ScheduleExecutionStatus;
+  reason: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface ToolExecutionRecord {
+  id: string;
+  toolId: string;
+  agentId: string;
+  input: string | null;
+  output: string | null;
+  status: ToolExecutionStatus;
+  error: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface MemorySuggestion {
+  id: string;
+  agentId: string;
+  runId: string;
+  memoryType: SuggestionMemoryType;
+  title: string;
+  content: string;
+  importance: number;
+  status: MemorySuggestionStatus;
+  createdAt: string;
+}
+
+export interface SystemExecutionLog {
+  id: string;
+  sourceType: SystemLogSourceType;
+  sourceId: string;
+  event: string;
+  details: string | null;
+  createdAt: string;
+}
+
+export interface ExecutionOverview {
+  pendingExecutions: number;
+  executedToday: number;
+  failedToday: number;
+  workflowTriggersToday: number;
+  scheduleRunsToday: number;
+  memorySuggestionsPending: number;
+}
+
+// ── Phase 2.1A: Multi-Agent Communication Foundation ─────────────
+
+export type MessagePriority = "low" | "medium" | "high" | "critical";
+export type MessageStatus = "unread" | "read" | "archived";
+export type DelegationStatus = "pending" | "accepted" | "running" | "completed" | "failed" | "cancelled";
+export type WorkspaceType = "strategy" | "revenue" | "opportunity" | "research" | "operations" | "project" | "custom";
+export type WorkspaceStatus = "active" | "paused" | "completed" | "archived";
+export type WorkspaceMemberRole = "executive" | "researcher" | "validator" | "planner" | "reviewer" | "observer";
+export type WorkspaceActivityType = "message" | "delegation" | "memory" | "execution" | "approval";
+
+export interface AgentMessage {
+  id: string;
+  fromAgentId: string;
+  toAgentId: string;
+  subject: string;
+  content: string;
+  context: string | null;
+  priority: MessagePriority;
+  status: MessageStatus;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface AgentDelegation {
+  id: string;
+  assignedByAgentId: string;
+  assignedToAgentId: string;
+  objective: string;
+  inputContext: string | null;
+  expectedOutput: string | null;
+  status: DelegationStatus;
+  result: string | null;
+  error: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface AgentWorkspaceMember {
+  id: string;
+  workspaceId: string;
+  agentId: string;
+  role: WorkspaceMemberRole;
+  createdAt: string;
+  agent?: Pick<Agent, "id" | "name" | "slug" | "role" | "authorityLevel">;
+}
+
+export interface WorkspaceActivity {
+  id: string;
+  workspaceId: string;
+  activityType: WorkspaceActivityType;
+  sourceId: string | null;
+  summary: string;
+  createdAt: string;
+}
+
+export interface AgentWorkspace {
+  id: string;
+  name: string;
+  description: string | null;
+  workspaceType: WorkspaceType;
+  status: WorkspaceStatus;
+  createdAt: string;
+  updatedAt: string;
+  members?: AgentWorkspaceMember[];
+  activities?: WorkspaceActivity[];
+}
+
+// ── Phase 2.3 — Executive Loop, Agent Goals & Scorecards ─────────
+
+export type GoalType = "revenue" | "opportunity" | "execution" | "research" | "operations" | "knowledge" | "support" | "custom";
+export type GoalPeriod = "daily" | "weekly" | "monthly" | "quarterly" | "ongoing";
+export type AgentGoalStatus = "active" | "paused" | "completed" | "failed" | "archived";
+
+export interface AgentGoal {
+  id: string;
+  agentId: string;
+  title: string;
+  description: string | null;
+  goalType: GoalType;
+  targetMetric: string | null;
+  targetValue: number | null;
+  currentValue: number;
+  period: GoalPeriod;
+  status: AgentGoalStatus;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  agent?: Pick<Agent, "id" | "name" | "slug">;
+}
+
+export type LoopTriggerType = "manual" | "scheduled" | "goal_review" | "briefing" | "system";
+export type LoopRunStatus = "running" | "completed" | "failed";
+
+export interface ExecutiveLoopRun {
+  id: string;
+  triggerType: LoopTriggerType;
+  status: LoopRunStatus;
+  summary: string | null;
+  decisions: string | null;
+  createdDelegations: number;
+  createdMessages: number;
+  createdWorkspaces: number;
+  error: string | null;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export type ReviewRequestStatus = "pending" | "in_review" | "approved" | "rejected" | "needs_changes";
+
+export interface AgentReviewRequest {
+  id: string;
+  requestedByAgentId: string;
+  reviewerAgentId: string;
+  workspaceId: string | null;
+  delegationId: string | null;
+  subject: string;
+  content: string;
+  context: string | null;
+  status: ReviewRequestStatus;
+  reviewResult: string | null;
+  reviewNotes: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  requestedByAgent?: Pick<Agent, "id" | "name">;
+  reviewerAgent?: Pick<Agent, "id" | "name">;
+}
+
+export interface AgentScorecard {
+  id: string;
+  agentId: string;
+  periodStart: string;
+  periodEnd: string;
+  runsCompleted: number;
+  runsFailed: number;
+  delegationsAssigned: number;
+  delegationsCompleted: number;
+  delegationsFailed: number;
+  messagesSent: number;
+  reviewsCompleted: number;
+  approvalsCreated: number;
+  approvalsApproved: number;
+  approvalsRejected: number;
+  memoriesCreated: number;
+  insightsGenerated: number;
+  usefulnessScore: number;
+  reliabilityScore: number;
+  executionScore: number;
+  qualityScore: number;
+  overallScore: number;
+  summary: string | null;
+  createdAt: string;
+  agent?: Pick<Agent, "id" | "name" | "slug" | "role">;
+}
+
+export interface ExecutiveLoopOverview {
+  activeGoals: AgentGoal[];
+  latestRun: ExecutiveLoopRun | null;
+  recentRuns: ExecutiveLoopRun[];
+  openDelegations: number;
+  pendingReviews: number;
+  topAgent: AgentScorecard | null;
+  weakestAgent: AgentScorecard | null;
+}
+
+export interface AgentTeamOverview {
+  activeWorkspaces: number;
+  activeDelegations: number;
+  unreadMessages: number;
+  pendingResearch: number;
+  completedDelegationsToday: number;
+}
+
+// ── Phase 2.4A — Intelligence Connectors & External Awareness ────
+
+export type SearchResearchStatus = "pending" | "completed" | "failed";
+export type ResearchPriority = "low" | "medium" | "high" | "critical";
+export type ResearchStatus = "pending" | "running" | "completed" | "failed";
+export interface SearchResearch {
+  id: string;
+  query: string;
+  requestedByAgentId: string | null;
+  workspaceId: string | null;
+  status: SearchResearchStatus;
+  summary: string | null;
+  sources: string | null;
+  resultsCount: number;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface EmailInsight {
+  id: string;
+  agentId: string | null;
+  emailCount: number;
+  unreadCount: number;
+  importantCount: number;
+  summary: string | null;
+  createdAt: string;
+}
+
+export interface CalendarInsight {
+  id: string;
+  agentId: string | null;
+  todayEvents: number;
+  upcomingEvents: number;
+  nextDeadline: string | null;
+  summary: string | null;
+  createdAt: string;
+}
+
+export interface ResearchRequest {
+  id: string;
+  requestedByAgentId: string | null;
+  workspaceId: string | null;
+  title: string;
+  objective: string;
+  priority: ResearchPriority;
+  status: ResearchStatus;
+  resultSummary: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  results?: ResearchResult[];
+  requestedByAgent?: Pick<Agent, "id" | "name"> | null;
+}
+
+export interface ResearchResult {
+  id: string;
+  requestId: string;
+  summary: string;
+  findings: string;
+  risks: string | null;
+  opportunities: string | null;
+  recommendations: string | null;
+  confidenceScore: number;
+  createdAt: string;
+}
+
+export interface ConnectorRegistryItem {
+  id: string;
+  name: string;
+  provider: string;
+  status: ConnectorStatus;
+  requiresApproval: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectorStatusInfo {
+  connected: boolean;
+  message: string;
 }

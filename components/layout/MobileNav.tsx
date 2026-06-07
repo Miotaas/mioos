@@ -4,11 +4,12 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  Menu, X, Brain, Sparkles, LogOut,
+  Menu, X, Brain, Sparkles, LogOut, Settings,
   LayoutDashboard, GitBranch, FolderOpen, CheckSquare, Target,
   FileText, Users, Inbox, Package, GitMerge, Server, LifeBuoy,
   Cpu, HeartPulse, Bot, FileBarChart, Activity, ShieldCheck,
   Calendar, Database, Wrench, Network, FileEdit,
+  TrendingUp, Users2, Megaphone, Truck, Plug, Zap,
 } from "lucide-react";
 
 async function logout() {
@@ -35,10 +36,20 @@ const businessNavItems = [
   { id: "support",     label: "Support",     icon: LifeBuoy },
 ] as const;
 
+const commerceNavItems = [
+  { id: "commerce-opportunities", label: "Opportunities",   icon: TrendingUp },
+  { id: "commerce-prospects",     label: "Prospects",       icon: Users2 },
+  { id: "commerce-campaigns",     label: "Campaign Drafts", icon: Megaphone },
+  { id: "commerce-fulfillment",   label: "Fulfillment",     icon: Truck },
+  { id: "commerce-connectors",    label: "Connectors",      icon: Plug },
+] as const;
+
 const agentNavItems = [
   { id: "agent-dashboard",    label: "Dashboard",     icon: Cpu },
   { id: "agent-fleet",        label: "Fleet Health",  icon: HeartPulse },
   { id: "agent-registry",     label: "Agents",        icon: Bot },
+  { id: "agent-team",         label: "Agent Team",    icon: Users2 },
+  { id: "executive-loop",     label: "Exec Loop",     icon: Zap },
   { id: "strategic-briefing", label: "Briefing",      icon: FileBarChart },
   { id: "agent-runs",         label: "Run History",   icon: Activity },
   { id: "approvals",          label: "Approvals",     icon: ShieldCheck },
@@ -65,6 +76,11 @@ const navGroups: {
     label: "Business OS",
     items: businessNavItems,
     activeClass: "bg-accent-violet/15 text-accent-violet border-accent-violet/20",
+  },
+  {
+    label: "Commerce Autopilot",
+    items: commerceNavItems,
+    activeClass: "bg-accent-green/15 text-accent-green border-accent-green/20",
   },
   {
     label: "Agent OS",
@@ -175,6 +191,18 @@ export function MobileNav() {
 
           <div className="h-px bg-white/[0.06] mx-2 mt-4 mb-4" />
           <div className="space-y-0.5">
+            <button
+              onClick={() => navigate("settings")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all border",
+                activeView === "settings"
+                  ? "bg-white/[0.06] text-text-primary border-white/[0.08]"
+                  : "text-text-secondary hover:text-text-primary hover:bg-white/[0.04] border-transparent"
+              )}
+            >
+              <Settings className="w-4 h-4 flex-shrink-0" />
+              <span className="font-medium">Settings</span>
+            </button>
             <button
               onClick={() => { setAiPanelOpen(!aiPanelOpen); setOpen(false); }}
               className={cn(

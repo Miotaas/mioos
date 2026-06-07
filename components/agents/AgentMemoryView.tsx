@@ -8,14 +8,18 @@ import { Modal } from "@/components/ui/Modal";
 import type { Agent, AgentMemory, MemoryType } from "@/types";
 import { Database, Plus, Pencil, Trash2, Search, ChevronDown } from "lucide-react";
 
-const MEMORY_TYPES: MemoryType[] = ["fact", "decision", "pattern", "long_term", "short_term"];
+const MEMORY_TYPES: MemoryType[] = ["fact", "decision", "pattern", "preference", "lesson", "risk", "opportunity", "long_term", "short_term"];
 
 const TYPE_CONFIG: Record<MemoryType, { label: string; color: string }> = {
-  fact:       { label: "Fact",       color: "#06b6d4" },
-  decision:   { label: "Decision",   color: "#8b5cf6" },
-  pattern:    { label: "Pattern",    color: "#f59e0b" },
-  long_term:  { label: "Long-term",  color: "#10b981" },
-  short_term: { label: "Short-term", color: "#6366f1" },
+  fact:        { label: "Fact",        color: "#06b6d4" },
+  decision:    { label: "Decision",    color: "#8b5cf6" },
+  pattern:     { label: "Pattern",     color: "#f59e0b" },
+  preference:  { label: "Preference",  color: "#10b981" },
+  lesson:      { label: "Lesson",      color: "#22d3ee" },
+  risk:        { label: "Risk",        color: "#ef4444" },
+  opportunity: { label: "Opportunity", color: "#4ade80" },
+  long_term:   { label: "Long-term",   color: "#10b981" },
+  short_term:  { label: "Short-term",  color: "#6366f1" },
 };
 
 function importanceColor(n: number): string {

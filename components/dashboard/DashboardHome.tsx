@@ -4,7 +4,8 @@ import { useEffect, useState, ReactNode } from "react";
 import {
   MioNode, MioTask, MioGoal, MioCapture, MioNote,
   Agent, AgentRun, ApprovalQueueItem, AgentMemory,
-  FleetHealthSummary,
+  FleetHealthSummary, CommerceOpportunity, Prospect, CampaignDraft,
+  ExecutionOverview, IntelligenceOverview, AgentTeamOverview, ExecutiveLoopOverview,
 } from "@/types";
 import { cn, formatRelativeDate } from "@/lib/utils";
 import { normalizeTask, normalizeGoal, isOverdue, formatRelativeDeadline } from "@/lib/normalize";
@@ -13,7 +14,7 @@ import {
   AlertCircle, ArrowRight, CheckCircle2, Activity,
   TrendingUp, Brain, Clock, Shield, BookOpen, Inbox,
   Bot, Circle, ChevronRight, DollarSign, BarChart2,
-  Layers, Star, FileBarChart, HeartPulse,
+  Layers, Star, FileBarChart, HeartPulse, ShoppingCart, Zap, Users,
 } from "lucide-react";
 
 // ── local API shapes ─────────────────────────────────────────────
@@ -89,6 +90,13 @@ export function DashboardHome() {
   const [approvals, setApprovals] = useState<ApprovalQueueItem[]>([]);
   const [memories, setMemories] = useState<AgentMemory[]>([]);
   const [fleetSummary, setFleetSummary] = useState<FleetHealthSummary | null>(null);
+  const [opportunities, setOpportunities] = useState<CommerceOpportunity[]>([]);
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [campaignDrafts, setCampaignDrafts] = useState<CampaignDraft[]>([]);
+  const [executionOverview, setExecutionOverview] = useState<ExecutionOverview | null>(null);
+  const [intelligence, setIntelligence] = useState<IntelligenceOverview | null>(null);
+  const [agentTeamOverview, setAgentTeamOverview] = useState<AgentTeamOverview | null>(null);
+  const [execLoopOverview, setExecLoopOverview] = useState<ExecutiveLoopOverview | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -115,7 +123,10 @@ export function DashboardHome() {
       fetch("/api/approvals").then(r => r.json()).catch(() => []),
       fetch("/api/agent-memory").then(r => r.json()).catch(() => []),
       fetch("/api/agents/fleet").then(r => r.json()).catch(() => null),
-    ]).then(([l, d, i, ag, ap, mem, fleet]) => {
+      fetch("/api/commerce/opportunities").then(r => r.json()).catch(() => []),
+      fetch("/api/commerce/prospects").then(r => r.json()).catch(() => []),
+      fetch("/api/commerce/campaigns").then(r => r.json()).catch(() => []),
+    ]).then(([l, d, i, ag, ap, mem, fleet, opp, pros, camps]) => {
       setLeads(Array.isArray(l) ? l : []);
       setDeployments(Array.isArray(d) ? d : []);
       setIssues(Array.isArray(i) ? i : []);
@@ -123,6 +134,33 @@ export function DashboardHome() {
       setApprovals(Array.isArray(ap) ? ap : []);
       setMemories(Array.isArray(mem) ? mem : []);
       setFleetSummary(fleet?.summary ?? null);
+      setOpportunities(Array.isArray(opp) ? opp : []);
+      setProspects(Array.isArray(pros) ? pros : []);
+      setCampaignDrafts(Array.isArray(camps) ? camps : []);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/execution-overview").then(r => r.json()).then(data => {
+      if (data && typeof data.pendingExecutions === "number") setExecutionOverview(data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/intelligence-overview").then(r => r.json()).then(data => {
+      if (data && typeof data.insightCount === "number") setIntelligence(data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/agent-team-overview").then(r => r.json()).then(data => {
+      if (data && typeof data.activeWorkspaces === "number") setAgentTeamOverview(data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/executive-loop/overview").then(r => r.json()).then(data => {
+      if (data && Array.isArray(data.activeGoals)) setExecLoopOverview(data);
     }).catch(() => {});
   }, []);
 
@@ -174,6 +212,16 @@ export function DashboardHome() {
     .slice(0, 8);
 
   const newMemoriesToday = memories.filter(m => isToday(m.createdAt));
+
+  // ── commerce autopilot ─────────────────────────────────────────
+  const COMMERCE_ACTION_TYPES = ["create_opportunity","create_prospect","create_campaign_draft","create_fulfillment_flow","convert_prospect_to_lead","prepare_outreach","prepare_ad_campaign","prepare_stripe_offer","prepare_delivery_email"];
+  const activeOpportunities = opportunities.filter(o => !["archived","rejected"].includes(o.status));
+  const activeProspects = prospects.filter(p => ["discovered","qualified"].includes(p.status));
+  const activeCampaigns = campaignDrafts.filter(c => ["draft","pending_approval"].includes(c.status));
+  const commerceApprovals = pendingApprovals.filter(a => COMMERCE_ACTION_TYPES.includes(a.actionType));
+  const estimatedCommercePipeline = opportunities
+    .filter(o => ["approved","testing","live"].includes(o.status))
+    .reduce((s, o) => s + (o.estimatedRevenue ?? 0), 0);
 
   // ── strategic briefing (latest strategy agent run) ────────────
   const strategyAgentRun = agents
@@ -483,6 +531,298 @@ export function DashboardHome() {
                 Fleet <ArrowRight className="w-3 h-3" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── COMMERCE AUTOPILOT WIDGET ─────────────────────────── */}
+        <div className="rounded-xl border border-white/[0.06] bg-surface-1 px-5 py-3.5 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ShoppingCart className="w-4 h-4 text-accent-green" />
+            <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Commerce Autopilot</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <CommerceStat label="Opportunities" value={activeOpportunities.length} />
+            <CommerceStat label="Prospects" value={activeProspects.length} />
+            <CommerceStat label="Campaigns" value={activeCampaigns.length} />
+            {commerceApprovals.length > 0 && (
+              <CommerceStat label="Pending" value={commerceApprovals.length} alert />
+            )}
+          </div>
+          {estimatedCommercePipeline > 0 && (
+            <>
+              <div className="h-4 w-px bg-white/[0.06] flex-shrink-0" />
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-accent-green">{fmtEuro(estimatedCommercePipeline)}</span>
+                <span className="text-[10px] text-text-ghost">est. pipeline</span>
+              </div>
+            </>
+          )}
+          <div className="ml-auto flex-shrink-0">
+            <button
+              onClick={() => setActiveView("commerce-opportunities")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-green/10 border border-accent-green/20 text-accent-green text-xs font-medium hover:bg-accent-green/15 transition-all"
+            >
+              Autopilot <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── EXECUTION LAYER WIDGET ────────────────────────────── */}
+        {executionOverview && (
+          <div className="rounded-xl border border-white/[0.06] bg-surface-1 px-5 py-3.5 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Zap className="w-4 h-4 text-accent-cyan" />
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Execution Layer</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <CommerceStat label="Running" value={executionOverview.pendingExecutions} alert={executionOverview.pendingExecutions > 0} />
+              <CommerceStat label="Done Today" value={executionOverview.executedToday} />
+              <CommerceStat label="Failed" value={executionOverview.failedToday} alert={executionOverview.failedToday > 0} />
+              <CommerceStat label="Workflows" value={executionOverview.workflowTriggersToday} />
+              <CommerceStat label="Schedules" value={executionOverview.scheduleRunsToday} />
+              {executionOverview.memorySuggestionsPending > 0 && (
+                <CommerceStat label="Memory Q" value={executionOverview.memorySuggestionsPending} alert />
+              )}
+            </div>
+            <div className="ml-auto flex-shrink-0">
+              <button
+                onClick={() => setActiveView("approvals")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan text-xs font-medium hover:bg-accent-cyan/15 transition-all"
+              >
+                Approvals <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── INTELLIGENCE PANEL ────────────────────────────────── */}
+        {intelligence && (intelligence.insightCount > 0 || intelligence.pendingPatternCount > 0 || intelligence.latestBriefing || intelligence.activeResearch > 0 || intelligence.latestEmailInsight || intelligence.latestCalendarInsight) && (
+          <div className="rounded-xl border border-white/[0.06] bg-surface-1 overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-3 flex items-center justify-between border-b border-white/[0.04]">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-accent-purple" />
+                <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Intelligence</p>
+                {intelligence.insightCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-accent-purple/10 text-accent-purple">
+                    {intelligence.insightCount} insight{intelligence.insightCount > 1 ? "s" : ""}
+                  </span>
+                )}
+                {intelligence.activeResearch > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-accent-amber/10 text-accent-amber">
+                    {intelligence.activeResearch} research
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setActiveView("approvals")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-purple/10 border border-accent-purple/20 text-accent-purple text-xs font-medium hover:bg-accent-purple/15 transition-all"
+              >
+                Review <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.04]">
+              {/* Latest Briefing */}
+              <div className="p-4">
+                <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-2">Latest Briefing</p>
+                {intelligence.latestBriefing ? (
+                  <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">
+                    {intelligence.latestBriefing.summary}
+                  </p>
+                ) : (
+                  <p className="text-xs text-text-ghost italic">No briefing yet — run an agent to generate one.</p>
+                )}
+              </div>
+
+              {/* Top Risks + Opportunities */}
+              <div className="p-4">
+                <div className="mb-3">
+                  <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-1.5">
+                    <span className="text-accent-red">▲</span> Risks
+                  </p>
+                  {intelligence.topRisks.length > 0 ? (
+                    <div className="space-y-1">
+                      {intelligence.topRisks.slice(0, 2).map(r => (
+                        <p key={r.id} className="text-[10px] text-text-secondary leading-snug line-clamp-2">
+                          {r.title}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-text-ghost">No risks detected</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-1.5">
+                    <span className="text-accent-green">▲</span> Opportunities
+                  </p>
+                  {intelligence.topOpportunities.length > 0 ? (
+                    <div className="space-y-1">
+                      {intelligence.topOpportunities.slice(0, 2).map(o => (
+                        <p key={o.id} className="text-[10px] text-text-secondary leading-snug line-clamp-2">
+                          {o.title}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-text-ghost">No opportunities detected</p>
+                  )}
+                </div>
+              </div>
+
+              {/* External Intelligence */}
+              <div className="p-4">
+                {(intelligence.latestEmailInsight || intelligence.latestCalendarInsight || intelligence.activeResearch > 0 || intelligence.completedResearch > 0) && (
+                  <div className="mb-3">
+                    <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-1.5">
+                      External Awareness
+                    </p>
+                    <div className="space-y-1">
+                      {intelligence.latestEmailInsight && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-accent-violet/10 text-accent-violet">EMAIL</span>
+                          <p className="text-[10px] text-text-secondary leading-snug">
+                            {intelligence.latestEmailInsight.unreadCount > 0
+                              ? `${intelligence.latestEmailInsight.unreadCount} unread`
+                              : "Inbox connected"}
+                          </p>
+                        </div>
+                      )}
+                      {intelligence.latestCalendarInsight && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-accent-cyan/10 text-accent-cyan">CAL</span>
+                          <p className="text-[10px] text-text-secondary leading-snug line-clamp-1">
+                            {intelligence.latestCalendarInsight.nextDeadline ?? `${intelligence.latestCalendarInsight.upcomingEvents} upcoming`}
+                          </p>
+                        </div>
+                      )}
+                      {(intelligence.activeResearch > 0 || intelligence.completedResearch > 0) && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-accent-amber/10 text-accent-amber">RSCH</span>
+                          <p className="text-[10px] text-text-secondary">
+                            {intelligence.activeResearch} active · {intelligence.completedResearch} done
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {intelligence.recentPatterns.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-1.5">
+                      Patterns
+                      {intelligence.pendingPatternCount > 0 && (
+                        <span className="ml-1.5 text-accent-amber">({intelligence.pendingPatternCount} pending)</span>
+                      )}
+                    </p>
+                    <div className="space-y-1">
+                      {intelligence.recentPatterns.slice(0, 2).map(p => (
+                        <p key={p.id} className="text-[10px] text-text-secondary leading-snug line-clamp-2">
+                          {p.title}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {intelligence.recentInsights.length > 0 && (
+                  <div>
+                    <p className="text-[9px] font-semibold text-text-ghost uppercase tracking-widest mb-1.5">Recent Signals</p>
+                    <div className="space-y-1">
+                      {intelligence.recentInsights.slice(0, 3).map(i => (
+                        <div key={i.id} className="flex items-start gap-1.5">
+                          <span className={cn(
+                            "text-[8px] font-bold px-1 py-0.5 rounded flex-shrink-0 mt-0.5",
+                            i.type === "risk" && "bg-accent-red/10 text-accent-red",
+                            i.type === "opportunity" && "bg-accent-green/10 text-accent-green",
+                            i.type === "efficiency" && "bg-accent-amber/10 text-accent-amber",
+                            i.type === "revenue" && "bg-accent-cyan/10 text-accent-cyan",
+                            i.type === "execution" && "bg-accent-violet/10 text-accent-violet",
+                          )}>
+                            {i.type.slice(0, 3).toUpperCase()}
+                          </span>
+                          <p className="text-[10px] text-text-secondary leading-snug line-clamp-1">{i.title}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── AUTONOMOUS TEAM STATUS ───────────────────────────────── */}
+        {agentTeamOverview && (
+          <div className="rounded-xl border border-white/[0.06] bg-surface-1 px-5 py-3.5 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Users className="w-3.5 h-3.5 text-accent-cyan" />
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Agent Team</p>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <CommerceStat label="Workspaces" value={agentTeamOverview.activeWorkspaces} />
+              <CommerceStat label="Delegations" value={agentTeamOverview.activeDelegations} alert={agentTeamOverview.activeDelegations > 0} />
+              <CommerceStat label="Unread" value={agentTeamOverview.unreadMessages} alert={agentTeamOverview.unreadMessages > 0} />
+              <CommerceStat label="Pending Research" value={agentTeamOverview.pendingResearch} alert={agentTeamOverview.pendingResearch > 0} />
+              <CommerceStat label="Done Today" value={agentTeamOverview.completedDelegationsToday} />
+            </div>
+            <button
+              onClick={() => setActiveView("agent-team")}
+              className="ml-auto text-[10px] text-text-ghost hover:text-accent-cyan transition-colors flex items-center gap-1 flex-shrink-0"
+            >
+              View Team <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
+        {/* ── EXECUTIVE LOOP WIDGET ────────────────────────────── */}
+        {execLoopOverview && (execLoopOverview.activeGoals.length > 0 || execLoopOverview.latestRun) && (
+          <div className="rounded-xl border border-white/[0.06] bg-surface-1 px-5 py-3.5 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Zap className="w-4 h-4 text-accent-cyan" />
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Executive Loop</p>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <CommerceStat label="Active Goals" value={execLoopOverview.activeGoals.length} alert={execLoopOverview.activeGoals.length === 0} />
+              <CommerceStat label="Open Delegations" value={execLoopOverview.openDelegations} alert={execLoopOverview.openDelegations > 0} />
+              <CommerceStat label="Pending Reviews" value={execLoopOverview.pendingReviews} alert={execLoopOverview.pendingReviews > 0} />
+            </div>
+            {(execLoopOverview.topAgent || execLoopOverview.weakestAgent) && (
+              <>
+                <div className="h-4 w-px bg-white/[0.06] flex-shrink-0" />
+                <div className="flex items-center gap-3 text-[10px]">
+                  {execLoopOverview.topAgent && (
+                    <span className="text-accent-green">
+                      ↑ {agents.find(a => a.id === execLoopOverview.topAgent!.agentId)?.name ?? "Top Agent"} {execLoopOverview.topAgent.overallScore}/10
+                    </span>
+                  )}
+                  {execLoopOverview.weakestAgent && execLoopOverview.weakestAgent.agentId !== execLoopOverview.topAgent?.agentId && (
+                    <span className="text-accent-amber">
+                      ↓ {agents.find(a => a.id === execLoopOverview.weakestAgent!.agentId)?.name ?? "Weakest"} {execLoopOverview.weakestAgent.overallScore}/10
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+            {execLoopOverview.latestRun && (
+              <>
+                <div className="h-4 w-px bg-white/[0.06] flex-shrink-0" />
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                  execLoopOverview.latestRun.status === "completed" ? "bg-accent-green/10 text-accent-green" :
+                  execLoopOverview.latestRun.status === "failed" ? "bg-accent-red/10 text-accent-red" :
+                  "bg-accent-amber/10 text-accent-amber"
+                )}>
+                  {execLoopOverview.latestRun.status}
+                </span>
+              </>
+            )}
+            <button
+              onClick={() => setActiveView("executive-loop")}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan text-xs font-medium hover:bg-accent-cyan/15 transition-all flex-shrink-0"
+            >
+              Exec Loop <ArrowRight className="w-3 h-3" />
+            </button>
           </div>
         )}
 
@@ -889,6 +1229,15 @@ function FleetStat({ value, label, color }: { value: number; label: string; colo
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-base font-bold font-mono leading-none" style={{ color }}>{value}</span>
+      <span className="text-[10px] text-text-ghost">{label}</span>
+    </div>
+  );
+}
+
+function CommerceStat({ label, value, alert }: { label: string; value: number; alert?: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={cn("text-base font-bold font-mono leading-none", alert ? "text-accent-amber" : "text-text-secondary")}>{value}</span>
       <span className="text-[10px] text-text-ghost">{label}</span>
     </div>
   );

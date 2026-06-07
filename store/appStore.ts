@@ -35,7 +35,7 @@ interface AppState {
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (v: boolean) => void;
 
-  activeView: "dashboard" | "graph" | "projects" | "tasks" | "goals" | "notes" | "people" | "capture" | "products" | "leads" | "pipeline" | "deployments" | "support" | "agent-dashboard" | "agent-fleet" | "agent-registry" | "agent-runs" | "approvals" | "agent-schedules" | "agent-memory" | "agent-tools" | "agent-workflows" | "prompt-editor" | "strategic-briefing";
+  activeView: "dashboard" | "graph" | "projects" | "tasks" | "goals" | "notes" | "people" | "capture" | "products" | "leads" | "pipeline" | "deployments" | "support" | "agent-dashboard" | "agent-fleet" | "agent-registry" | "agent-runs" | "approvals" | "agent-schedules" | "agent-memory" | "agent-tools" | "agent-workflows" | "prompt-editor" | "strategic-briefing" | "agent-team" | "executive-loop" | "settings" | "commerce-opportunities" | "commerce-prospects" | "commerce-campaigns" | "commerce-fulfillment" | "commerce-connectors";
   setActiveView: (view: AppState["activeView"]) => void;
 
   captures: MioCapture[];
