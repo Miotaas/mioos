@@ -311,7 +311,7 @@ export function AgentFleetView() {
           <div className="text-center py-16">
             <Bot className="w-8 h-8 mx-auto mb-3 text-text-ghost" />
             <p className="text-sm text-text-muted">No agents configured yet.</p>
-            <button onClick={() => setActiveView("agent-registry")} className="text-xs text-accent-cyan mt-2 hover:underline">
+            <button onClick={() => setActiveView("agents")} className="text-xs text-accent-cyan mt-2 hover:underline">
               Create your first agent
             </button>
           </div>
@@ -331,7 +331,7 @@ export function AgentFleetView() {
               <AgentCard
                 key={record.id}
                 record={record}
-                onDetail={() => setActiveView("agent-registry")}
+                onDetail={() => setActiveView("agents")}
               />
             ))}
           </div>

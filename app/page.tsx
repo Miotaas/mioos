@@ -2,40 +2,20 @@
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
-import { QuickCapture } from "@/components/ui/QuickCapture";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { AIPanel } from "@/components/layout/AIPanel";
-import { GraphCanvas } from "@/components/graph/GraphCanvas";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { TasksView } from "@/components/tasks/TasksView";
 import { GoalsView } from "@/components/goals/GoalsView";
-import { NotesView } from "@/components/notes/NotesView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
-import { CaptureView } from "@/components/capture/CaptureView";
-import { ProductsView } from "@/components/business/ProductsView";
-import { LeadsView } from "@/components/business/LeadsView";
-import { PipelineView } from "@/components/business/PipelineView";
-import { DeploymentsView } from "@/components/business/DeploymentsView";
-import { SupportView } from "@/components/business/SupportView";
-import { AgentDashboard } from "@/components/agents/AgentDashboard";
-import { AgentRegistry } from "@/components/agents/AgentRegistry";
-import { AgentRunsView } from "@/components/agents/AgentRunsView";
-import { ApprovalQueueView } from "@/components/agents/ApprovalQueueView";
-import { SchedulesView } from "@/components/agents/SchedulesView";
-import { AgentMemoryView } from "@/components/agents/AgentMemoryView";
-import { AgentToolsView } from "@/components/agents/AgentToolsView";
-import { WorkflowsView } from "@/components/agents/WorkflowsView";
-import { PromptEditorView } from "@/components/agents/PromptEditorView";
-import { StrategicBriefingView } from "@/components/agents/StrategicBriefingView";
-import { AgentFleetView } from "@/components/agents/AgentFleetView";
-import { AgentTeamView } from "@/components/agents/AgentTeamView";
-import { ExecutiveLoopView } from "@/components/agents/ExecutiveLoopView";
-import { SettingsView } from "@/components/settings/SettingsView";
 import { OpportunitiesView } from "@/components/commerce/OpportunitiesView";
 import { ProspectsView } from "@/components/commerce/ProspectsView";
 import { CampaignDraftsView } from "@/components/commerce/CampaignDraftsView";
-import { FulfillmentView } from "@/components/commerce/FulfillmentView";
-import { ConnectorsView } from "@/components/commerce/ConnectorsView";
+import { AgentOverviewView } from "@/components/agents/AgentOverviewView";
+import { AgentRegistry } from "@/components/agents/AgentRegistry";
+import { ActivityView } from "@/components/agents/ActivityView";
+import { AutomationView as OperationsView } from "@/components/agents/AutomationView";
+import { SettingsView } from "@/components/settings/SettingsView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
@@ -45,8 +25,8 @@ export default function Home() {
   const { activeView, selectedNode, aiPanelOpen, toast } = useAppStore();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-void">
-      {/* Desktop sidebar — hidden on mobile */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#070B14]">
+      {/* Desktop sidebar */}
       <div className="hidden md:flex flex-col h-full flex-shrink-0">
         <Sidebar />
       </div>
@@ -54,47 +34,28 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-hidden relative min-w-0">
         <MobileNav />
         <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
+          className="absolute inset-0 opacity-[0.15] pointer-events-none"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
+              "linear-gradient(rgba(0,212,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
           }}
         />
 
-        <div className="relative z-10 flex-1 overflow-hidden">
-          {activeView === "dashboard" && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
-          {activeView === "graph" && <ErrorBoundary label="Graph"><GraphCanvas /></ErrorBoundary>}
-          {activeView === "projects" && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
-          {activeView === "tasks" && <ErrorBoundary label="Tasks"><TasksView /></ErrorBoundary>}
-          {activeView === "goals" && <ErrorBoundary label="Goals"><GoalsView /></ErrorBoundary>}
-          {activeView === "notes" && <ErrorBoundary label="Notes"><NotesView /></ErrorBoundary>}
-          {activeView === "capture" && <ErrorBoundary label="Capture"><CaptureView /></ErrorBoundary>}
-          {activeView === "people" && <PeopleView />}
-          {activeView === "products" && <ErrorBoundary label="Products"><ProductsView /></ErrorBoundary>}
-          {activeView === "leads" && <ErrorBoundary label="Leads"><LeadsView /></ErrorBoundary>}
-          {activeView === "pipeline" && <ErrorBoundary label="Pipeline"><PipelineView /></ErrorBoundary>}
-          {activeView === "deployments" && <ErrorBoundary label="Deployments"><DeploymentsView /></ErrorBoundary>}
-          {activeView === "support" && <ErrorBoundary label="Support"><SupportView /></ErrorBoundary>}
-          {activeView === "agent-dashboard" && <ErrorBoundary label="Agent Dashboard"><AgentDashboard /></ErrorBoundary>}
-          {activeView === "agent-fleet" && <ErrorBoundary label="Fleet Health"><AgentFleetView /></ErrorBoundary>}
-          {activeView === "agent-registry" && <ErrorBoundary label="Agents"><AgentRegistry /></ErrorBoundary>}
-          {activeView === "agent-runs" && <ErrorBoundary label="Agent Runs"><AgentRunsView /></ErrorBoundary>}
-          {activeView === "approvals" && <ErrorBoundary label="Approvals"><ApprovalQueueView /></ErrorBoundary>}
-          {activeView === "agent-schedules" && <ErrorBoundary label="Schedules"><SchedulesView /></ErrorBoundary>}
-          {activeView === "agent-memory" && <ErrorBoundary label="Memory"><AgentMemoryView /></ErrorBoundary>}
-          {activeView === "agent-tools" && <ErrorBoundary label="Tools"><AgentToolsView /></ErrorBoundary>}
-          {activeView === "agent-workflows" && <ErrorBoundary label="Workflows"><WorkflowsView /></ErrorBoundary>}
-          {activeView === "prompt-editor" && <ErrorBoundary label="Prompt Editor"><PromptEditorView /></ErrorBoundary>}
-          {activeView === "strategic-briefing" && <ErrorBoundary label="Strategic Briefing"><StrategicBriefingView /></ErrorBoundary>}
-          {activeView === "agent-team" && <ErrorBoundary label="Agent Team"><AgentTeamView /></ErrorBoundary>}
-          {activeView === "executive-loop" && <ErrorBoundary label="Executive Loop"><ExecutiveLoopView /></ErrorBoundary>}
-          {activeView === "settings" && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
-          {activeView === "commerce-opportunities" && <ErrorBoundary label="Opportunities"><OpportunitiesView /></ErrorBoundary>}
-          {activeView === "commerce-prospects" && <ErrorBoundary label="Prospects"><ProspectsView /></ErrorBoundary>}
-          {activeView === "commerce-campaigns" && <ErrorBoundary label="Campaign Drafts"><CampaignDraftsView /></ErrorBoundary>}
-          {activeView === "commerce-fulfillment" && <ErrorBoundary label="Fulfillment"><FulfillmentView /></ErrorBoundary>}
-          {activeView === "commerce-connectors" && <ErrorBoundary label="Connectors"><ConnectorsView /></ErrorBoundary>}
+        {/* extra bottom padding on mobile for the tab bar */}
+        <div className="relative z-10 flex-1 overflow-hidden pb-[60px] md:pb-0">
+          {activeView === "dashboard"      && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
+          {activeView === "tasks"          && <ErrorBoundary label="Tasks"><TasksView /></ErrorBoundary>}
+          {activeView === "projects"       && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
+          {activeView === "goals"          && <ErrorBoundary label="Goals"><GoalsView /></ErrorBoundary>}
+          {activeView === "opportunities"  && <ErrorBoundary label="Opportunities"><OpportunitiesView /></ErrorBoundary>}
+          {activeView === "prospects"      && <ErrorBoundary label="Prospects"><ProspectsView /></ErrorBoundary>}
+          {activeView === "campaigns"      && <ErrorBoundary label="Campaigns"><CampaignDraftsView /></ErrorBoundary>}
+          {activeView === "agent-overview" && <ErrorBoundary label="Agent Overview"><AgentOverviewView /></ErrorBoundary>}
+          {activeView === "agents"         && <ErrorBoundary label="Agents"><AgentRegistry /></ErrorBoundary>}
+          {activeView === "activity"       && <ErrorBoundary label="Activity"><ActivityView /></ErrorBoundary>}
+          {activeView === "operations"     && <ErrorBoundary label="Operations"><OperationsView /></ErrorBoundary>}
+          {activeView === "settings"       && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
         </div>
       </main>
 
@@ -103,13 +64,10 @@ export default function Home() {
         {aiPanelOpen && <AIPanel />}
       </div>
 
-      <QuickCapture />
-
-      {/* Toast */}
       {toast && (
         <div
           className={cn(
-            "fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-sm font-medium animate-fade-in",
+            "fixed bottom-20 md:bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-sm font-medium animate-fade-in",
             toast.type === "success"
               ? "bg-surface-2 border-accent-green/30 text-text-primary"
               : "bg-surface-2 border-accent-red/30 text-text-primary"
@@ -123,18 +81,6 @@ export default function Home() {
           {toast.message}
         </div>
       )}
-    </div>
-  );
-}
-
-function PeopleView() {
-  return (
-    <div className="h-full flex items-center justify-center text-text-muted">
-      <div className="text-center">
-        <div className="text-4xl mb-4">👥</div>
-        <p className="text-sm font-medium text-text-secondary">People & CRM</p>
-        <p className="text-xs mt-1">Use the Leads view for business contacts</p>
-      </div>
     </div>
   );
 }

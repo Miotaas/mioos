@@ -32,9 +32,12 @@ function statusIcon(status: ConnectorStatus) {
 
 function statusBadge(status: ConnectorStatus) {
   const cfg: Record<ConnectorStatus, string> = {
-    planned: "bg-white/[0.06] text-text-ghost border-white/[0.08]",
-    configured: "bg-accent-green/10 text-accent-green border-accent-green/20",
-    disabled: "bg-accent-red/10 text-accent-red border-accent-red/20",
+    planned:      "bg-white/[0.06] text-text-ghost border-white/[0.08]",
+    configured:   "bg-accent-green/10 text-accent-green border-accent-green/20",
+    connected:    "bg-accent-green/10 text-accent-green border-accent-green/20",
+    disconnected: "bg-accent-amber/10 text-accent-amber border-accent-amber/20",
+    error:        "bg-accent-red/10 text-accent-red border-accent-red/20",
+    disabled:     "bg-accent-red/10 text-accent-red border-accent-red/20",
   };
   return cfg[status];
 }

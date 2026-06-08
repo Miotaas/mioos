@@ -220,7 +220,7 @@ export function AgentRunsView() {
           <div className="text-center py-12">
             <Activity className="w-8 h-8 mx-auto mb-3 text-text-ghost" />
             <p className="text-sm text-text-muted">No runs found.</p>
-            <button onClick={() => setActiveView("agent-registry")} className="text-xs text-accent-cyan mt-2 hover:underline">
+            <button onClick={() => setActiveView("agents")} className="text-xs text-accent-cyan mt-2 hover:underline">
               Go to Agent Registry to run an agent
             </button>
           </div>

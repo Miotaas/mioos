@@ -129,7 +129,7 @@ export function AgentDashboard() {
           </div>
           {pendingApprovals > 0 && (
             <button
-              onClick={() => setActiveView("approvals")}
+              onClick={() => setActiveView("activity")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-amber/10 border border-accent-amber/20 text-accent-amber text-xs font-medium hover:bg-accent-amber/15 transition-all flex-shrink-0"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -141,12 +141,12 @@ export function AgentDashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-6 gap-3">
           {[
-            { label: "Total Agents", value: totalAgents, color: "#06b6d4", view: "agent-registry" as const },
-            { label: "Active", value: activeAgents, color: "#10b981", view: "agent-registry" as const },
-            { label: "Running", value: runningRuns, color: "#3b82f6", view: "agent-runs" as const },
-            { label: "Completed", value: completedRuns, color: "#10b981", view: "agent-runs" as const },
-            { label: "Failed", value: failedRuns, color: failedRuns > 0 ? "#ef4444" : "#475569", view: "agent-runs" as const },
-            { label: "Pending Approvals", value: pendingApprovals, color: pendingApprovals > 0 ? "#f59e0b" : "#475569", view: "approvals" as const },
+            { label: "Total Agents", value: totalAgents, color: "#06b6d4", view: "agents" as const },
+            { label: "Active", value: activeAgents, color: "#10b981", view: "agents" as const },
+            { label: "Running", value: runningRuns, color: "#3b82f6", view: "activity" as const },
+            { label: "Completed", value: completedRuns, color: "#10b981", view: "activity" as const },
+            { label: "Failed", value: failedRuns, color: failedRuns > 0 ? "#ef4444" : "#475569", view: "activity" as const },
+            { label: "Pending Approvals", value: pendingApprovals, color: pendingApprovals > 0 ? "#f59e0b" : "#475569", view: "activity" as const },
           ].map(({ label, value, color, view }) => (
             <button
               key={label}
@@ -170,7 +170,7 @@ export function AgentDashboard() {
                 <Bot className="w-3.5 h-3.5 text-accent-cyan" />
                 <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Agents</span>
               </div>
-              <button onClick={() => setActiveView("agent-registry")} className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
+              <button onClick={() => setActiveView("agents")} className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
                 Registry <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -180,7 +180,7 @@ export function AgentDashboard() {
                 <div className="py-6 text-center">
                   <Bot className="w-6 h-6 mx-auto mb-2 text-text-ghost" />
                   <p className="text-xs text-text-muted">No agents configured yet.</p>
-                  <button onClick={() => setActiveView("agent-registry")} className="text-xs text-accent-cyan mt-1 hover:underline">Create your first agent</button>
+                  <button onClick={() => setActiveView("agents")} className="text-xs text-accent-cyan mt-1 hover:underline">Create your first agent</button>
                 </div>
               )}
               {agents.map((agent) => {
@@ -218,7 +218,7 @@ export function AgentDashboard() {
                 <Activity className="w-3.5 h-3.5 text-accent-cyan" />
                 <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">Recent Runs</span>
               </div>
-              <button onClick={() => setActiveView("agent-runs")} className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
+              <button onClick={() => setActiveView("activity")} className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
                 All runs <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -293,7 +293,7 @@ export function AgentDashboard() {
               )}
               {(latestCompleted.approvals?.length ?? 0) > 0 && (
                 <button
-                  onClick={() => setActiveView("approvals")}
+                  onClick={() => setActiveView("activity")}
                   className="flex items-center gap-2 text-xs text-accent-amber bg-accent-amber/10 border border-accent-amber/20 rounded-lg px-3 py-2 hover:bg-accent-amber/15 transition-all"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Info, Shield, Activity, Bot, Server, CheckCircle2, XCircle,
   Loader2, LogOut, AlertTriangle, Power, Database, Clock, Plug,
+  Calendar, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -359,6 +360,66 @@ export function SettingsView() {
                 ))}
               </div>
             )}
+          </Card>
+
+          {/* ── Calendar Integration ─────────────────────────────── */}
+          <Card>
+            <SectionHeader icon={Calendar} title="Calendar Integration" />
+            <p className="text-xs text-text-muted mb-4 leading-relaxed">
+              Connect your calendar to see meetings, deadlines and tasks in one place on the dashboard.
+            </p>
+
+            {/* Google Calendar */}
+            <div className="py-3 border-b border-white/[0.04]">
+              <div className="flex items-center justify-between mb-1">
+                <div>
+                  <span className="text-xs text-text-muted font-medium">Google Calendar</span>
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/[0.06] text-text-ghost">OAuth</span>
+                </div>
+                <a
+                  href="/api/auth/google/calendar"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-[11px] text-text-secondary hover:border-[#00D4FF]/30 hover:text-[#00D4FF] transition-all"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Connect
+                </a>
+              </div>
+              <p className="text-[10px] text-text-ghost">
+                Requires Google OAuth credentials in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+              </p>
+            </div>
+
+            {/* iCal feed */}
+            <div className="py-3 border-b border-white/[0.04]">
+              <div className="flex items-center justify-between mb-1">
+                <div>
+                  <span className="text-xs text-text-muted font-medium">iCal / .ics Feed</span>
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/[0.06] text-text-ghost">URL</span>
+                </div>
+                <span className="text-[10px] text-text-ghost">Works with Samsung, Outlook, Apple</span>
+              </div>
+              <p className="text-[10px] text-text-ghost">
+                Set <code className="text-text-secondary font-mono">CALENDAR_ICAL_URL</code> in your environment to any public iCal feed URL
+              </p>
+            </div>
+
+            {/* CalDAV */}
+            <div className="py-3 border-b border-white/[0.04]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-text-muted font-medium">CalDAV</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] bg-white/[0.06] text-text-ghost">Planned</span>
+              </div>
+              <p className="text-[10px] text-text-ghost">Full two-way sync via CalDAV protocol — coming in a future release</p>
+            </div>
+
+            {/* Apple Calendar */}
+            <div className="py-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-text-muted font-medium">Apple Calendar</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] bg-white/[0.06] text-text-ghost">Planned</span>
+              </div>
+              <p className="text-[10px] text-text-ghost">Export an iCal feed from Apple Calendar to connect now, or use native sync when available</p>
+            </div>
           </Card>
 
           {/* ── Deployment ────────────────────────────────────────── */}

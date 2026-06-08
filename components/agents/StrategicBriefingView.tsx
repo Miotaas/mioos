@@ -201,7 +201,7 @@ export function StrategicBriefingView() {
             )}
             {strategyAgents.length === 0 && (
               <button
-                onClick={() => setActiveView("agent-registry")}
+                onClick={() => setActiveView("agents")}
                 className="text-xs text-accent-cyan hover:underline"
               >
                 Open Agent Registry →
