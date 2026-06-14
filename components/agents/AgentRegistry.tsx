@@ -218,9 +218,12 @@ export function AgentRegistry() {
       )}>
         <div className="px-4 py-4 border-b border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Bot className="w-4 h-4 text-accent-cyan" /> Agents
-            </h1>
+            <div>
+              <h1 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <Bot className="w-4 h-4 text-accent-cyan" /> Agent Configuration
+              </h1>
+              <p className="text-[10px] text-text-ghost mt-0.5">Technical runtime agents · separate from Workforce Teams</p>
+            </div>
             <Button variant="primary" size="sm" onClick={openCreate}>
               <Plus className="w-3.5 h-3.5" />
             </Button>

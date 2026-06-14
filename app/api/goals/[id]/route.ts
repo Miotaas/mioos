@@ -12,10 +12,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if ("nodeId" in data) {
       data.nodeId = (data.nodeId as string | null) || null;
     }
+    if ("projectId" in data) {
+      data.projectId = (data.projectId as string | null) || null;
+    }
     if ("progress" in data) {
       data.progress = Number(data.progress ?? 0);
     }
-    const goal = await prisma.goal.update({ where: { id }, data });
+    const goal = await prisma.goal.update({ where: { id }, data, include: { milestones: { orderBy: { order: "asc" } } } });
     return NextResponse.json(goal);
   } catch (e) {
     console.error("[PATCH /api/goals/:id]", e);

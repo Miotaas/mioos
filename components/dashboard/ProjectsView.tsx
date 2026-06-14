@@ -1,170 +1,411 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MioNode, MioTask } from "@/types";
-import { cn, NODE_COLORS, STATUS_COLORS } from "@/lib/utils";
-import { useAppStore } from "@/store/appStore";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import { MioProject, ProjectStatus, WorkforceOutput, Assignment, WorkforceApproval, RevenueEntry, MioGoal } from "@/types";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { NodeModal } from "@/components/nodes/NodeModal";
 import {
-  FolderOpen, Plus, Folder, Target, GitBranch, User, Lightbulb, Server,
-  FileText, CheckSquare, AlertTriangle, GitPullRequest, Map,
+  FolderOpen, Plus, AlertTriangle, TrendingUp, ArrowRight, Zap, FileOutput,
+  ChevronRight, ClipboardList, MessageSquare,
 } from "lucide-react";
-import type { LucideProps } from "lucide-react";
 
-const NODE_TYPE_ICON: Record<string, React.ComponentType<LucideProps>> = {
-  project: Folder,
-  goal: Target,
-  workflow: GitBranch,
-  person: User,
-  idea: Lightbulb,
-  system: Server,
-  note: FileText,
-  task: CheckSquare,
-  problem: AlertTriangle,
-  decision: GitPullRequest,
-  roadmap: Map,
-};
-
-function hexToRgb(hex: string): string {
-  const clean = hex.replace("#", "");
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return `${r},${g},${b}`;
+function fmtTime(date: string): string {
+  const d = new Date(date), now = new Date();
+  const diffMins = Math.floor((now.getTime() - d.getTime()) / 60000);
+  if (diffMins < 1)    return "just now";
+  if (diffMins < 60)   return `${diffMins}m ago`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+const STATUS_DOT: Record<ProjectStatus, string> = {
+  active: "#22c55e",
+  paused: "#f59e0b",
+  blocked: "#ef4444",
+  completed: "#6366f1",
+  archived: "#64748b",
+};
+
+const PRIORITY_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  urgent: { bg: "bg-accent-red/10", text: "text-accent-red", label: "Urgent" },
+  high:   { bg: "bg-accent-amber/10", text: "text-accent-amber", label: "High" },
+  medium: { bg: "bg-accent-violet/10", text: "text-accent-violet", label: "Medium" },
+  low:    { bg: "bg-white/[0.04]", text: "text-text-muted", label: "Low" },
+};
+
 export function ProjectsView() {
-  const { setSelectedNode, showToast } = useAppStore();
-  const [nodes, setNodes] = useState<MioNode[]>([]);
-  const [tasks, setTasks] = useState<MioTask[]>([]);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [newNodeOpen, setNewNodeOpen] = useState(false);
+  const [projects, setProjects]       = useState<MioProject[]>([]);
+  const [outputs, setOutputs]         = useState<WorkforceOutput[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [approvals, setApprovals]     = useState<WorkforceApproval[]>([]);
+  const [revenue, setRevenue]         = useState<RevenueEntry[]>([]);
+  const [goals, setGoals]             = useState<MioGoal[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [healthMap, setHealthMap]     = useState<Map<string, { status: string; score: number; reasons: string[] }>>(new Map());
+  const [statusFilter, setStatusFilter]   = useState<string>("all");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [detailTab, setDetailTab]     = useState<"assignments" | "outputs" | "revenue" | "goals">("assignments");
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/nodes").then((r) => r.json()),
-      fetch("/api/tasks").then((r) => r.json()),
-    ]).then(([n, t]) => {
-      setNodes(Array.isArray(n) ? n : []);
-      setTasks(Array.isArray(t) ? t : []);
-    });
+      fetch("/api/projects").then(r => r.json()).catch(() => []),
+      fetch("/api/workforce/outputs").then(r => r.json()).catch(() => []),
+      fetch("/api/assignments").then(r => r.json()).catch(() => []),
+      fetch("/api/workforce-approvals").then(r => r.json()).catch(() => []),
+      fetch("/api/revenue-entries").then(r => r.json()).catch(() => []),
+      fetch("/api/goals").then(r => r.json()).catch(() => []),
+    ]).then(([projs, outs, ass, app, rev, gl]) => {
+      setProjects(Array.isArray(projs) ? projs : []);
+      setOutputs(Array.isArray(outs) ? outs : []);
+      setAssignments(Array.isArray(ass) ? ass : []);
+      setApprovals(Array.isArray(app) ? app : []);
+      setRevenue(Array.isArray(rev) ? rev : []);
+      setGoals(Array.isArray(gl) ? gl : []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
-  const types = ["all", ...Array.from(new Set(nodes.map((n) => n.type)))];
-  const filtered = typeFilter === "all" ? nodes : nodes.filter((n) => n.type === typeFilter);
+  useEffect(() => {
+    fetch("/api/executive/health")
+      .then(r => r.json())
+      .then((data: { id: string; health: { status: string; score: number; reasons: string[] } }[]) => {
+        if (Array.isArray(data)) {
+          setHealthMap(new Map(data.map(p => [p.id, p.health])));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const statuses = ["all", ...Array.from(new Set(projects.map((p) => p.status)))];
+  const filtered = statusFilter === "all" ? projects : projects.filter((p) => p.status === statusFilter);
+
+  const activeCount = projects.filter((p) => p.status === "active").length;
+  const blockedCount = projects.filter((p) => p.blocker).length;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
         <div>
           <h1 className="text-lg font-bold text-text-primary flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-accent-purple" />
-            Projects & Nodes
+            <FolderOpen className="w-5 h-5 text-accent-violet" />
+            Projects
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">{nodes.length} total nodes</p>
+          <p className="text-xs text-text-muted mt-0.5">
+            {activeCount} active
+            {blockedCount > 0 && (
+              <span className="text-accent-red ml-1">· {blockedCount} blocked</span>
+            )}
+          </p>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setNewNodeOpen(true)}>
+        <Button variant="ghost" size="sm" disabled className="opacity-40 cursor-not-allowed">
           <Plus className="w-3.5 h-3.5" />
-          New Node
+          New Project
         </Button>
       </div>
 
-      {/* Type filter */}
+      {/* Status filter */}
       <div className="flex items-center gap-2 px-6 py-2.5 border-b border-white/[0.06] overflow-x-auto">
-        {types.map((t) => (
+        {statuses.map((s) => (
           <button
-            key={t}
-            onClick={() => setTypeFilter(t)}
+            key={s}
+            onClick={() => setStatusFilter(s)}
             className={cn(
               "text-xs px-3 py-1.5 rounded-lg capitalize whitespace-nowrap transition-all",
-              typeFilter === t
-                ? "bg-accent-purple/15 text-accent-purple border border-accent-purple/25"
+              statusFilter === s
+                ? "bg-accent-violet/15 text-accent-violet border border-accent-violet/25"
                 : "text-text-muted hover:text-text-secondary hover:bg-white/[0.04]"
             )}
           >
-            {t}
+            {s}
           </button>
         ))}
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        {filtered.length === 0 && (
+        {loading && <div className="text-center py-12 text-text-muted">Loading projects...</div>}
+
+        {!loading && projects.length === 0 && (
           <div className="text-center py-16">
             <FolderOpen className="w-10 h-10 text-text-ghost mx-auto mb-4" />
-            <p className="text-sm text-text-secondary">No nodes yet</p>
-            <p className="text-xs text-text-muted mt-1 mb-4">Create your first node to get started</p>
-            <Button variant="primary" size="sm" onClick={() => setNewNodeOpen(true)}>
-              <Plus className="w-3.5 h-3.5" />
-              Create first node
-            </Button>
+            <p className="text-sm text-text-secondary">No projects yet</p>
+            <p className="text-xs text-text-muted mt-1">Strategic projects will appear here once created.</p>
           </div>
         )}
-        <div className="grid grid-cols-3 gap-3">
-          {filtered.map((node) => {
-            const color = node.color || NODE_COLORS[node.type] || "#6366f1";
-            const TypeIcon = NODE_TYPE_ICON[node.type] || Folder;
-            const nodeTaskList = tasks.filter((t) => t.nodeId === node.id);
-            const doneTasks = nodeTaskList.filter((t) => t.status === "done").length;
-            const progress = nodeTaskList.length > 0 ? Math.round((doneTasks / nodeTaskList.length) * 100) : 0;
+
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.map((project) => {
+            const dotColor = STATUS_DOT[project.status] ?? "#64748b";
+            const pb = PRIORITY_BADGE[project.priority ?? "medium"] ?? PRIORITY_BADGE.medium;
+            const projectOutputs = outputs
+              .filter(o => o.projectId === project.id)
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            const latestOutput = projectOutputs[0] ?? null;
+            const projectAssignments = assignments.filter(a => a.projectId === project.id && a.status !== "archived");
 
             return (
-              <button
-                key={node.id}
-                onClick={() => setSelectedNode(node)}
-                className="p-4 rounded-xl border text-left transition-all hover:scale-[1.01] group"
-                style={{
-                  borderColor: `${color}25`,
-                  background: `linear-gradient(135deg, rgba(18,18,28,0.95) 0%, rgba(${hexToRgb(color)},0.06) 100%)`,
-                }}
+              <div
+                key={project.id}
+                onClick={() => { setSelectedProjectId(prev => prev === project.id ? null : project.id); setDetailTab("assignments"); }}
+                className={cn(
+                  "p-5 rounded-xl border bg-surface-2 cursor-pointer transition-all",
+                  selectedProjectId === project.id
+                    ? "border-accent-violet/30"
+                    : "border-white/[0.06] hover:border-accent-violet/20"
+                )}
               >
+                {/* Header */}
                 <div className="flex items-start justify-between mb-3">
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center"
-                    style={{ background: `${color}20`, border: `1px solid ${color}30` }}
-                  >
-                    <TypeIcon className="w-4 h-4" style={{ color }} />
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-sm font-semibold text-text-primary leading-tight">{project.name}</p>
+                    {project.description && (
+                      <p className="text-xs text-text-muted mt-1 line-clamp-2 leading-relaxed">{project.description}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <div
                       className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: STATUS_COLORS[node.status], boxShadow: `0 0 4px ${STATUS_COLORS[node.status]}80` }}
+                      style={{ background: dotColor, boxShadow: `0 0 4px ${dotColor}80` }}
                     />
-                    <span className="text-[9px] text-text-muted capitalize">{node.status}</span>
+                    <span className="text-[10px] text-text-muted capitalize">{project.status}</span>
                   </div>
                 </div>
 
-                <p className="text-sm font-semibold text-text-primary mb-1">{node.label}</p>
-                <p className="text-[11px] text-text-muted uppercase tracking-wide mb-2">{node.type}</p>
+                {/* Badges */}
+                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", pb.bg, pb.text, "border-current/20")}>
+                    {pb.label}
+                  </span>
+                  {healthMap.get(project.id) && (() => {
+                    const h = healthMap.get(project.id)!;
+                    const hCls =
+                      h.status === "excellent" ? "text-accent-green border-accent-green/20 bg-accent-green/10" :
+                      h.status === "good"      ? "text-[#00D4FF] border-[#00D4FF]/20 bg-[#00D4FF]/10" :
+                      h.status === "warning"   ? "text-accent-amber border-accent-amber/20 bg-accent-amber/10" :
+                      "text-accent-red border-accent-red/20 bg-accent-red/10";
+                    return (
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium capitalize", hCls)}>
+                        {h.status}
+                      </span>
+                    );
+                  })()}
+                  {(project.revenueCount ?? 0) > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green border border-accent-green/20 flex items-center gap-1">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      {project.revenueCount} revenue
+                    </span>
+                  )}
+                  {(project.outputsCount ?? 0) > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20 flex items-center gap-1">
+                      <Zap className="w-2.5 h-2.5" />
+                      {project.outputsCount} outputs
+                    </span>
+                  )}
+                  {projectAssignments.length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-cyan/5 text-accent-cyan/70 border border-accent-cyan/10 flex items-center gap-1">
+                      <ClipboardList className="w-2.5 h-2.5" />
+                      {projectAssignments.length} assignment{projectAssignments.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
 
-                {node.description && (
-                  <p className="text-xs text-text-secondary line-clamp-2 mb-3">{node.description}</p>
-                )}
-
-                {nodeTaskList.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] text-text-muted mb-1.5">
-                      <span>Tasks</span>
-                      <span>{doneTasks}/{nodeTaskList.length}</span>
-                    </div>
-                    <ProgressBar value={progress} color={color} />
+                {/* Blocker */}
+                {project.blocker && (
+                  <div className="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 rounded-lg bg-accent-red/5 border border-accent-red/15">
+                    <AlertTriangle className="w-3 h-3 text-accent-red mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-accent-red/90 leading-snug">{project.blocker}</p>
                   </div>
                 )}
-              </button>
+
+                {/* Next action */}
+                {project.nextAction && (
+                  <div className="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <ArrowRight className="w-3 h-3 text-accent-violet mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-text-secondary leading-snug">{project.nextAction}</p>
+                  </div>
+                )}
+
+                {/* Recent workforce activity (5F) */}
+                {latestOutput && (
+                  <div className="mt-1 pt-3 border-t border-white/[0.04]">
+                    <p className="text-[9px] text-text-ghost uppercase tracking-[0.1em] mb-1.5">Recent activity</p>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                        latestOutput.status === "completed" || latestOutput.status === "approved" ? "bg-accent-green" :
+                        latestOutput.status === "in_progress" || latestOutput.status === "handed_off" ? "bg-[#00D4FF]" :
+                        latestOutput.status === "in_review" ? "bg-accent-amber" : "bg-text-ghost"
+                      )} />
+                      <FileOutput className="w-3 h-3 text-text-ghost flex-shrink-0" />
+                      <p className="text-[11px] text-text-secondary flex-1 truncate">{latestOutput.title}</p>
+                      <span className={cn(
+                        "text-[9px] px-1 py-0.5 rounded capitalize flex-shrink-0",
+                        latestOutput.status === "completed" || latestOutput.status === "approved" ? "bg-accent-green/10 text-accent-green" :
+                        latestOutput.status === "in_review" ? "bg-accent-amber/10 text-accent-amber" :
+                        "bg-white/[0.04] text-text-ghost"
+                      )}>
+                        {latestOutput.status.replace(/_/g, " ")}
+                      </span>
+                    </div>
+                    {projectOutputs.length > 1 && (
+                      <p className="text-[10px] text-text-ghost mt-1">
+                        +{projectOutputs.length - 1} more output{projectOutputs.length - 1 !== 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
-      </div>
 
-      <NodeModal
-        open={newNodeOpen}
-        onClose={() => setNewNodeOpen(false)}
-        onSaved={(node) => {
-          setNodes((prev) => [node, ...prev]);
-          showToast("Node created");
-        }}
-      />
+        {/* 6F: Project Command Center panel */}
+        {selectedProjectId && (() => {
+          const project = projects.find(p => p.id === selectedProjectId);
+          if (!project) return null;
+          const pb = PRIORITY_BADGE[project.priority ?? "medium"] ?? PRIORITY_BADGE.medium;
+          const projOutputs = outputs.filter(o => o.projectId === project.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          const projAssignments = assignments.filter(a => a.projectId === project.id && a.status !== "archived");
+          const projRevenue = revenue.filter(r => r.projectId === project.id);
+          const projGoals = goals.filter(g => g.projectId === project.id);
+          const projApprovals = approvals.filter(a => a.projectId === project.id && a.status === "pending");
+          const STATUS_DOT_A: Record<string, string> = { pending: "#64748b", active: "#10b981", review: "#f59e0b", completed: "#6366f1", archived: "#64748b" };
+          const TABS = [
+            { id: "assignments" as const, label: `Assignments (${projAssignments.length})` },
+            { id: "outputs" as const,     label: `Outputs (${projOutputs.length})` },
+            { id: "revenue" as const,     label: `Revenue (${projRevenue.length})` },
+            { id: "goals" as const,       label: `Goals (${projGoals.length})` },
+          ];
+          return (
+            <div className="mt-4 p-5 rounded-xl border border-accent-violet/20 bg-surface-2">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0 pr-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_DOT[project.status] ?? "#64748b" }} />
+                    <h2 className="text-sm font-semibold text-text-primary">{project.name}</h2>
+                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", pb.bg, pb.text, "border-current/20")}>{pb.label}</span>
+                    {projApprovals.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
+                        {projApprovals.length} approval{projApprovals.length !== 1 ? "s" : ""} pending
+                      </span>
+                    )}
+                  </div>
+                  {project.description && <p className="text-xs text-text-muted leading-relaxed">{project.description}</p>}
+                </div>
+                <button onClick={() => setSelectedProjectId(null)} className="text-text-ghost hover:text-text-muted transition-colors p-1 flex-shrink-0">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </button>
+              </div>
+
+              {/* Tab bar */}
+              <div className="flex items-center gap-1 mb-3 overflow-x-auto">
+                {TABS.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setDetailTab(t.id)}
+                    className={cn(
+                      "text-[11px] px-3 py-1.5 rounded-lg whitespace-nowrap transition-all",
+                      detailTab === t.id
+                        ? "bg-accent-violet/15 text-accent-violet border border-accent-violet/25"
+                        : "text-text-muted hover:text-text-secondary hover:bg-white/[0.04]"
+                    )}
+                  >{t.label}</button>
+                ))}
+              </div>
+
+              {/* Tab content */}
+              {detailTab === "assignments" && (
+                <div className="space-y-1.5">
+                  {projAssignments.length === 0 && <p className="text-xs text-text-ghost py-2">No assignments linked to this project.</p>}
+                  {projAssignments.map(a => (
+                    <div key={a.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: STATUS_DOT_A[a.status] ?? "#64748b" }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] text-text-secondary truncate">{a.title}</p>
+                        {a.team && <p className="text-[10px] text-text-ghost">{a.team.name}</p>}
+                      </div>
+                      <span className="text-[10px] text-text-ghost capitalize flex-shrink-0">{a.status}</span>
+                      {(a.messages?.length ?? 0) > 0 && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-text-ghost flex-shrink-0">
+                          <MessageSquare className="w-2.5 h-2.5" />{a.messages!.length}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {detailTab === "outputs" && (
+                <div className="space-y-1.5">
+                  {projOutputs.length === 0 && <p className="text-xs text-text-ghost py-2">No workforce outputs linked to this project.</p>}
+                  {projOutputs.map(o => (
+                    <div key={o.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                        o.status === "completed" || o.status === "approved" ? "bg-accent-green" :
+                        o.status === "in_progress" || o.status === "handed_off" ? "bg-[#00D4FF]" :
+                        o.status === "in_review" ? "bg-accent-amber" : "bg-text-ghost"
+                      )} />
+                      <FileOutput className="w-3 h-3 text-text-ghost flex-shrink-0" />
+                      <p className="text-[12px] text-text-secondary flex-1 truncate">{o.title}</p>
+                      <span className="text-[10px] text-text-ghost flex-shrink-0">{fmtTime(o.createdAt)}</span>
+                      <span className={cn(
+                        "text-[10px] px-1 py-0.5 rounded capitalize flex-shrink-0",
+                        o.status === "completed" || o.status === "approved" ? "bg-accent-green/10 text-accent-green" :
+                        o.status === "in_review" ? "bg-accent-amber/10 text-accent-amber" : "bg-white/[0.04] text-text-ghost"
+                      )}>{o.status.replace(/_/g, " ")}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {detailTab === "revenue" && (
+                <div className="space-y-1.5">
+                  {projRevenue.length === 0 && <p className="text-xs text-text-ghost py-2">No revenue entries linked to this project.</p>}
+                  {projRevenue.map(r => (
+                    <div key={r.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <TrendingUp className="w-3 h-3 text-accent-green flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] text-text-secondary truncate">{r.title}</p>
+                        <p className="text-[10px] text-text-ghost capitalize">{r.revenueType} · {r.status.replace(/_/g, " ")}</p>
+                      </div>
+                      <span className="text-[12px] font-medium text-accent-green flex-shrink-0">€{r.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                  {projRevenue.length > 0 && (
+                    <div className="mt-2 px-2.5 py-2 rounded-lg bg-accent-green/5 border border-accent-green/10 flex items-center justify-between">
+                      <span className="text-[11px] text-text-muted">Total</span>
+                      <span className="text-[13px] font-semibold text-accent-green">
+                        €{projRevenue.reduce((s, r) => s + r.amount, 0).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {detailTab === "goals" && (
+                <div className="space-y-1.5">
+                  {projGoals.length === 0 && <p className="text-xs text-text-ghost py-2">No goals linked to this project.</p>}
+                  {projGoals.map(g => (
+                    <div key={g.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] text-text-secondary truncate">{g.title}</p>
+                        <p className="text-[10px] text-text-ghost capitalize">{g.status}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="w-16 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full bg-accent-purple" style={{ width: `${g.progress ?? 0}%` }} />
+                        </div>
+                        <span className="text-[10px] text-text-ghost">{g.progress ?? 0}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }

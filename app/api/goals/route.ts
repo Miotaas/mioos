@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const goals = await prisma.goal.findMany({
       where: nodeId ? { nodeId } : undefined,
       orderBy: { updatedAt: "desc" },
+      include: { milestones: { orderBy: { order: "asc" } } },
     });
     return NextResponse.json(goals);
   } catch (e) {
@@ -26,8 +27,9 @@ export async function POST(req: NextRequest) {
       progress: Number(body.progress ?? 0),
       targetDate: body.targetDate ? new Date(body.targetDate as string) : null,
       nodeId: (body.nodeId as string | null) || null,
+      projectId: (body.projectId as string | null) || null,
     };
-    const goal = await prisma.goal.create({ data });
+    const goal = await prisma.goal.create({ data, include: { milestones: { orderBy: { order: "asc" } } } });
     return NextResponse.json(goal, { status: 201 });
   } catch (e) {
     console.error("[POST /api/goals]", e);

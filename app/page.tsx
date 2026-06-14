@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { AIPanel } from "@/components/layout/AIPanel";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { BriefingView } from "@/components/dashboard/BriefingView";
 import { TasksView } from "@/components/tasks/TasksView";
 import { GoalsView } from "@/components/goals/GoalsView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
@@ -15,6 +16,10 @@ import { AgentOverviewView } from "@/components/agents/AgentOverviewView";
 import { AgentRegistry } from "@/components/agents/AgentRegistry";
 import { ActivityView } from "@/components/agents/ActivityView";
 import { AutomationView as OperationsView } from "@/components/agents/AutomationView";
+import { WorkforceView } from "@/components/agents/WorkforceView";
+import { FounderRequestsView } from "@/components/agents/FounderRequestsView";
+import { RevenueView } from "@/components/commerce/RevenueView";
+import { CalendarView } from "@/components/dashboard/CalendarView";
 import { SettingsView } from "@/components/settings/SettingsView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAppStore } from "@/store/appStore";
@@ -44,18 +49,26 @@ export default function Home() {
 
         {/* extra bottom padding on mobile for the tab bar */}
         <div className="relative z-10 flex-1 overflow-hidden pb-[60px] md:pb-0">
-          {activeView === "dashboard"      && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
-          {activeView === "tasks"          && <ErrorBoundary label="Tasks"><TasksView /></ErrorBoundary>}
-          {activeView === "projects"       && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
-          {activeView === "goals"          && <ErrorBoundary label="Goals"><GoalsView /></ErrorBoundary>}
+          {/* Primary navigation */}
+          {activeView === "dashboard"  && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
+          {activeView === "briefing"   && <ErrorBoundary label="Briefing"><BriefingView /></ErrorBoundary>}
+          {activeView === "inbox"      && <ErrorBoundary label="Inbox"><ActivityView /></ErrorBoundary>}
+          {activeView === "tasks"      && <ErrorBoundary label="Tasks"><TasksView /></ErrorBoundary>}
+          {activeView === "projects"   && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
+          {activeView === "goals"      && <ErrorBoundary label="Goals"><GoalsView /></ErrorBoundary>}
+          {activeView === "calendar"   && <ErrorBoundary label="Calendar"><CalendarView /></ErrorBoundary>}
+          {activeView === "revenue"    && <ErrorBoundary label="Revenue"><RevenueView /></ErrorBoundary>}
+          {activeView === "workforce"  && <ErrorBoundary label="Workforce"><WorkforceView /></ErrorBoundary>}
+          {activeView === "requests"   && <ErrorBoundary label="Requests"><FounderRequestsView /></ErrorBoundary>}
+          {activeView === "settings"   && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
+          {/* Legacy views — still routable from within primary views */}
+          {activeView === "activity"       && <ErrorBoundary label="Activity"><ActivityView /></ErrorBoundary>}
+          {activeView === "agent-overview" && <ErrorBoundary label="Agent Overview"><AgentOverviewView /></ErrorBoundary>}
+          {activeView === "agents"         && <ErrorBoundary label="Agents"><AgentRegistry /></ErrorBoundary>}
+          {activeView === "operations"     && <ErrorBoundary label="Operations"><OperationsView /></ErrorBoundary>}
           {activeView === "opportunities"  && <ErrorBoundary label="Opportunities"><OpportunitiesView /></ErrorBoundary>}
           {activeView === "prospects"      && <ErrorBoundary label="Prospects"><ProspectsView /></ErrorBoundary>}
           {activeView === "campaigns"      && <ErrorBoundary label="Campaigns"><CampaignDraftsView /></ErrorBoundary>}
-          {activeView === "agent-overview" && <ErrorBoundary label="Agent Overview"><AgentOverviewView /></ErrorBoundary>}
-          {activeView === "agents"         && <ErrorBoundary label="Agents"><AgentRegistry /></ErrorBoundary>}
-          {activeView === "activity"       && <ErrorBoundary label="Activity"><ActivityView /></ErrorBoundary>}
-          {activeView === "operations"     && <ErrorBoundary label="Operations"><OperationsView /></ErrorBoundary>}
-          {activeView === "settings"       && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
         </div>
       </main>
 

@@ -5,9 +5,8 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
   Menu, X, Brain, Sparkles, LogOut, Settings,
-  LayoutDashboard, CheckSquare, FolderOpen, Target,
-  TrendingUp, Users2, Megaphone,
-  Bot, Activity, Zap, MoreHorizontal,
+  LayoutDashboard, Inbox, CheckSquare, FolderOpen, Target, Calendar,
+  TrendingUp, Users2, MoreHorizontal, Newspaper, Zap,
 } from "lucide-react";
 
 async function logout() {
@@ -22,38 +21,42 @@ const navGroups: {
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
-    label: "Workspace",
+    label: "Cockpit",
     items: [
-      { id: "dashboard",  label: "Dashboard",   icon: LayoutDashboard },
-      { id: "tasks",      label: "Tasks",        icon: CheckSquare },
-      { id: "projects",   label: "Projects",     icon: FolderOpen },
-      { id: "goals",      label: "Goals",        icon: Target },
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { id: "briefing",  label: "Briefing",  icon: Newspaper },
+      { id: "inbox",     label: "Inbox",     icon: Inbox },
     ],
   },
   {
-    label: "Commerce",
+    label: "Work",
     items: [
-      { id: "opportunities", label: "Opportunities", icon: TrendingUp },
-      { id: "prospects",     label: "Prospects",     icon: Users2 },
-      { id: "campaigns",     label: "Campaigns",     icon: Megaphone },
+      { id: "tasks",    label: "Tasks",    icon: CheckSquare },
+      { id: "projects", label: "Projects", icon: FolderOpen },
+      { id: "goals",    label: "Goals",    icon: Target },
+      { id: "calendar", label: "Calendar", icon: Calendar },
     ],
   },
   {
-    label: "Agents",
+    label: "Business",
     items: [
-      { id: "agent-overview", label: "Overview",   icon: Bot },
-      { id: "agents",         label: "Agents",     icon: Zap },
-      { id: "activity",       label: "Activity",   icon: Activity },
-      { id: "operations",     label: "Operations", icon: Sparkles },
+      { id: "revenue",   label: "Revenue",   icon: TrendingUp },
+      { id: "workforce", label: "Workforce", icon: Users2 },
+    ],
+  },
+  {
+    label: "AI",
+    items: [
+      { id: "requests", label: "Requests", icon: Zap },
     ],
   },
 ];
 
 const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "dashboard",      label: "Home",     icon: LayoutDashboard },
-  { id: "tasks",          label: "Tasks",    icon: CheckSquare },
-  { id: "agent-overview", label: "Agents",   icon: Bot },
-  { id: "activity",       label: "Activity", icon: Activity },
+  { id: "dashboard", label: "Home",      icon: LayoutDashboard },
+  { id: "inbox",     label: "Inbox",     icon: Inbox },
+  { id: "revenue",   label: "Revenue",   icon: TrendingUp },
+  { id: "workforce", label: "Workforce", icon: Users2 },
 ];
 
 export function MobileNav() {
@@ -75,7 +78,7 @@ export function MobileNav() {
           </div>
           <div>
             <p className="text-[13px] font-semibold text-text-primary leading-none">MioOS</p>
-            <p className="text-[9px] text-text-ghost leading-none mt-0.5">Business OS</p>
+            <p className="text-[9px] text-text-ghost leading-none mt-0.5">Command Center</p>
           </div>
         </div>
         <button
@@ -110,7 +113,7 @@ export function MobileNav() {
             </div>
             <div>
               <p className="text-[13px] font-semibold text-text-primary">MioOS</p>
-              <p className="text-[10px] text-text-ghost">Business OS</p>
+              <p className="text-[10px] text-text-ghost">Command Center</p>
             </div>
           </div>
           <button

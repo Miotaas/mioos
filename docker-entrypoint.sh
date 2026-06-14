@@ -13,5 +13,8 @@ else
   ./node_modules/.bin/prisma db push --skip-generate
 fi
 
-echo "[MioOS] Database ready. Starting server..."
-exec npm start
+echo "[MioOS] Database ready. Starting: ${*:-npm start}"
+
+# Use args passed by Docker CMD (or docker-compose command:) so that
+# the same image can run either the web server or the runtime worker.
+exec "${@:-npm start}"

@@ -10,7 +10,10 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset-seed": "tsx prisma/seed.ts --reset",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "runtime": "tsx runtime/runtime-worker.ts",
+    "runtime:once": "tsx runtime/runtime-worker.ts --once",
+    "runtime:dev": "tsx watch runtime/runtime-worker.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.6",
@@ -19,7 +22,9 @@
     "ai": "^4.1.46",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.6.1",
     "framer-motion": "^11.18.0",
+    "imapflow": "^1.4.0",
     "lucide-react": "^0.469.0",
     "next": "^16.2.6",
     "react": "^19.0.0",
@@ -34,6 +39,7 @@
     "autoprefixer": "^10.5.0",
     "eslint": "^8",
     "eslint-config-next": "15.3.2",
+    "playwright": "^1.60.0",
     "postcss": "^8",
     "prisma": "^6.3.0",
     "tailwindcss": "^3.4.1",

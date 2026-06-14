@@ -34,12 +34,18 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Persistent data directory for SQLite
 RUN mkdir -p /data && chown nextjs:nodejs /data
 
-# Copy build artifacts
+# Copy Next.js build artifacts
 COPY --from=builder /app/public         ./public
 COPY --from=builder /app/.next          ./.next
 COPY --from=builder /app/node_modules   ./node_modules
 COPY --from=builder /app/package.json   ./package.json
 COPY --from=builder /app/prisma         ./prisma
+
+# Copy runtime worker source (required for `npm run runtime` in a second container)
+COPY --from=builder /app/runtime        ./runtime
+COPY --from=builder /app/lib            ./lib
+COPY --from=builder /app/types          ./types
+COPY --from=builder /app/tsconfig.json  ./tsconfig.json
 
 # Entrypoint
 COPY docker-entrypoint.sh ./
@@ -48,4 +54,6 @@ RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
 USER nextjs
 EXPOSE 3000
 
+# CMD can be overridden by docker-compose `command:` to run the runtime worker instead
 ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["npm", "start"]

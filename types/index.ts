@@ -67,8 +67,13 @@ export interface MioGoal {
   progress: number;
   targetDate?: string | null;
   nodeId?: string | null;
+  projectId?: string | null;
+  goalType?: "business" | "personal";
+  target?: number | null;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
+  milestones?: GoalMilestone[];
 }
 
 export interface MioNote {
@@ -518,7 +523,7 @@ export type WorkflowExecutionStatus = "pending" | "executed" | "failed" | "block
 export type ScheduleExecutionStatus = "success" | "failed" | "skipped";
 export type ToolExecutionStatus = "pending" | "success" | "failed";
 export type MemorySuggestionStatus = "pending" | "approved" | "rejected";
-export type SystemLogSourceType = "agent" | "workflow" | "schedule" | "tool" | "approval" | "system";
+export type SystemLogSourceType = "agent" | "workflow" | "schedule" | "tool" | "approval" | "system" | "assignment" | "workforce_output";
 
 export interface SystemConfig {
   key: string;
@@ -856,4 +861,237 @@ export interface ConnectorRegistryItem {
 export interface ConnectorStatusInfo {
   connected: boolean;
   message: string;
+}
+
+// ============================================================
+// PHASE 2 — WORKFORCE BACKBONE
+// ============================================================
+
+export type DepartmentType =
+  | "executive" | "research" | "commerce" | "sales"
+  | "marketing" | "content" | "operations" | "support" | "development";
+
+export type WorkforceTeamStatus = "active" | "paused" | "inactive";
+
+export interface WorkforceTeam {
+  id: string;
+  name: string;
+  slug: string;
+  departmentType: DepartmentType;
+  objective: string | null;
+  status: WorkforceTeamStatus;
+  currentFocus: string | null;
+  createdAt: string;
+  updatedAt: string;
+  outputs?: WorkforceOutput[];
+  latestOutput?: WorkforceOutput | null;
+}
+
+export type WorkforceOutputType =
+  | "research" | "product_candidate" | "prospect" | "campaign"
+  | "content" | "automation" | "tool" | "mvp" | "support_insight"
+  | "process_improvement" | "revenue_opportunity" | "approval_request" | "briefing_note";
+
+export type WorkforceOutputStatus = "draft" | "in_review" | "approved" | "handed_off" | "in_progress" | "completed" | "archived";
+
+export interface WorkforceOutput {
+  id: string;
+  teamId: string;
+  ownerTeamId: string | null;
+  title: string;
+  description: string | null;
+  content: string | null;
+  outputType: WorkforceOutputType;
+  status: WorkforceOutputStatus;
+  projectId: string | null;
+  goalId: string | null;
+  revenueEntryId: string | null;
+  reviewedAt: string | null;
+  approvedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  team?: Pick<WorkforceTeam, "id" | "name" | "slug" | "departmentType">;
+  feedback?: OutputFeedback[];
+}
+
+export type OutputFeedbackDecision = "approved" | "rejected" | "revised" | "acknowledged";
+
+export interface OutputFeedback {
+  id: string;
+  outputId: string;
+  assignmentId: string | null;
+  teamId: string | null;
+  departmentType: string | null;
+  decision: OutputFeedbackDecision;
+  comment: string | null;
+  helpful: boolean;
+  createdAt: string;
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  steps: string; // JSON: Array<{ department: string; title: string; dependsOn?: string[] }>
+  category: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TeamHandoffStatus = "pending" | "accepted" | "in_progress" | "completed" | "rejected";
+
+export interface TeamHandoff {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  title: string;
+  description: string | null;
+  status: TeamHandoffStatus;
+  relatedOutputId: string | null;
+  projectId: string | null;
+  priority: Priority;
+  notes: string | null;
+  acceptedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  fromTeam?: Pick<WorkforceTeam, "id" | "name" | "slug">;
+  toTeam?: Pick<WorkforceTeam, "id" | "name" | "slug">;
+}
+
+export type ApprovalDecisionType =
+  | "approve_outreach" | "approve_campaign" | "approve_content" | "approve_product"
+  | "approve_deployment" | "approve_budget" | "approve_proposal"
+  | "review_research" | "founder_decision";
+
+export interface WorkforceApproval {
+  id: string;
+  title: string;
+  description: string | null;
+  reason: string | null;
+  status: ApprovalStatus;
+  sourceTeamId: string | null;
+  relatedOutputId: string | null;
+  projectId: string | null;
+  priority: Priority;
+  decisionType: ApprovalDecisionType;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  sourceTeam?: Pick<WorkforceTeam, "id" | "name" | "slug" | "departmentType"> | null;
+}
+
+export type RevenueType = "pipeline" | "potential" | "live" | "closed";
+export type RevenueServiceType = "service" | "product";
+export type RevenueEntryStatus = "active" | "closed_won" | "closed_lost";
+
+export interface RevenueEntry {
+  id: string;
+  title: string;
+  amount: number;
+  currency: string;
+  revenueType: RevenueType;
+  serviceType: RevenueServiceType;
+  status: RevenueEntryStatus;
+  projectId: string | null;
+  sourceTeamId: string | null;
+  probability: number | null;
+  expectedCloseDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectStatus = "active" | "paused" | "blocked" | "completed" | "archived";
+
+export interface MioProject {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: ProjectStatus;
+  priority: Priority;
+  nextAction: string | null;
+  blocker: string | null;
+  revenueImpact: number | null;
+  createdAt: string;
+  updatedAt: string;
+  revenueCount?: number;
+  revenueTotal?: number;
+  outputsCount?: number;
+}
+
+export interface GoalMilestone {
+  id: string;
+  goalId: string;
+  title: string;
+  completed: boolean;
+  completedAt: string | null;
+  targetDate: string | null;
+  order: number;
+  createdAt: string;
+}
+
+// ── Phase 6: Operator Layer ────────────────────────────────────────
+
+export type AssignmentStatus = "pending" | "active" | "review" | "completed" | "archived";
+export type AssignmentSenderType = "operator" | "team" | "system";
+
+export interface Assignment {
+  id: string;
+  title: string;
+  description: string | null;
+  status: AssignmentStatus;
+  teamId: string;
+  projectId: string | null;
+  goalId: string | null;
+  revenueEntryId: string | null;
+  priority: Priority;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  updatedAt: string;
+  team?: Pick<WorkforceTeam, "id" | "name" | "slug" | "departmentType">;
+  messages?: AssignmentMessage[];
+}
+
+export interface AssignmentMessage {
+  id: string;
+  assignmentId: string;
+  senderType: AssignmentSenderType;
+  content: string;
+  createdAt: string;
+}
+
+// ── Phase 4: Execution Engine ───────────────────────────────────────
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger: "assignment_completed" | "output_approved" | "handoff_completed";
+  condition: string | null; // JSON
+  action: "create_handoff" | "create_approval" | "create_assignment";
+  actionConfig: string; // JSON
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutionLogEntry {
+  id: string;
+  sourceType: SystemLogSourceType;
+  sourceId: string;
+  event: string;
+  details: string | null;
+  createdAt: string;
+}
+
+export interface AssignmentExecutionResult {
+  assignment: Assignment;
+  output: WorkforceOutput | null;
+  handoffsCreated: number;
+  approvalsCreated: number;
+  logs: string[];
 }

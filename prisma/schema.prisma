@@ -75,12 +75,32 @@ model Goal {
   progress    Int       @default(0) // 0-100
   targetDate  DateTime?
   nodeId      String?
+  projectId   String?
+  goalType    String    @default("personal") // business | personal
+  target      Float?
+  notes       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  node Node? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  node       Node?           @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  milestones GoalMilestone[]
 
   @@map("goals")
+}
+
+model GoalMilestone {
+  id          String    @id @default(cuid())
+  goalId      String
+  title       String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  targetDate  DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@map("goal_milestones")
 }
 
 model Note {
@@ -962,4 +982,314 @@ model ResearchResult {
   request ResearchRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@map("research_results")
+}
+
+// ============================================================
+// PHASE 2 — WORKFORCE BACKBONE
+// ============================================================
+
+model WorkforceTeam {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  departmentType String   // executive | research | commerce | sales | marketing | content | operations | support | development
+  objective      String?
+  status         String   @default("active") // active | paused | inactive
+  currentFocus   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  outputs        WorkforceOutput[]
+  handoffsFrom   TeamHandoff[]     @relation("HandoffFrom")
+  handoffsTo     TeamHandoff[]     @relation("HandoffTo")
+  approvals      Approval[]
+  assignments    Assignment[]
+  // Phase 8 — Runtime
+  runtimeQueue   RuntimeQueue[]
+  objectives     TeamObjective[]
+  autonomyConfig AutonomyConfig?
+
+  @@map("workforce_teams")
+}
+
+model WorkforceOutput {
+  id             String    @id @default(cuid())
+  teamId         String
+  ownerTeamId    String?
+  title          String
+  description    String?
+  content        String?   // full markdown content
+  outputType     String    @default("research") // research | product_candidate | prospect | campaign | content | automation | tool | mvp | support_insight | process_improvement | revenue_opportunity | approval_request | briefing_note
+  status         String    @default("draft")    // draft | in_review | approved | handed_off | in_progress | completed | archived
+  projectId      String?
+  goalId         String?
+  revenueEntryId String?
+  reviewedAt     DateTime?
+  approvedAt     DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  team     WorkforceTeam    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  feedback OutputFeedback[]
+
+  @@map("workforce_outputs")
+}
+
+model OutputFeedback {
+  id             String   @id @default(cuid())
+  outputId       String
+  assignmentId   String?
+  teamId         String?
+  departmentType String?
+  decision       String   // approved | rejected | revised | acknowledged
+  comment        String?
+  helpful        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  output WorkforceOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
+
+  @@map("output_feedback")
+}
+
+model WorkflowTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  steps       String   // JSON: Array<{ department: string; title: string; dependsOn?: string[] }>
+  category    String   @default("general") // general | validation | launch | research | sales
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("workflow_templates")
+}
+
+model TeamHandoff {
+  id              String    @id @default(cuid())
+  fromTeamId      String
+  toTeamId        String
+  title           String
+  description     String?
+  status          String    @default("pending") // pending | accepted | in_progress | completed | rejected
+  relatedOutputId String?
+  projectId       String?
+  priority        String    @default("medium")  // low | medium | high | urgent
+  notes           String?
+  acceptedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  fromTeam WorkforceTeam @relation("HandoffFrom", fields: [fromTeamId], references: [id], onDelete: Cascade)
+  toTeam   WorkforceTeam @relation("HandoffTo", fields: [toTeamId], references: [id], onDelete: Cascade)
+
+  @@map("team_handoffs")
+}
+
+model Approval {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  reason          String?
+  status          String    @default("pending") // pending | approved | rejected | auto_approved
+  sourceTeamId    String?
+  relatedOutputId String?
+  projectId       String?
+  priority        String    @default("medium")  // low | medium | high | urgent
+  decisionType    String    @default("founder_decision") // approve_outreach | approve_campaign | approve_content | approve_product | approve_deployment | approve_budget | approve_proposal | review_research | founder_decision
+  riskLevel       String    @default("medium")  // low | medium | high | critical
+  approvedAt      DateTime?
+  autoApprovedAt  DateTime? // set when auto-approved by triage
+  escalatedAt     DateTime? // set when escalation alert was sent
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sourceTeam WorkforceTeam? @relation(fields: [sourceTeamId], references: [id], onDelete: SetNull)
+
+  @@map("approvals")
+}
+
+model AlertLog {
+  id        String   @id @default(cuid())
+  alertType String   // runtime_offline | queue_stuck | assignment_failure | critical_approval | project_blocked | api_failure | connector_failure
+  severity  String   // info | warning | error | critical
+  message   String
+  channel   String   // discord | ntfy | none
+  dedupKey  String   // used for cooldown — alertType + date or context hash
+  metadata  String   @default("{}") // JSON
+  sentAt    DateTime @default(now())
+
+  @@map("alert_logs")
+}
+
+model RevenueEntry {
+  id                String    @id @default(cuid())
+  title             String
+  amount            Float
+  currency          String    @default("EUR")
+  revenueType       String    @default("pipeline") // pipeline | potential | live | closed
+  serviceType       String    @default("service")  // service | product
+  status            String    @default("active")   // active | closed_won | closed_lost
+  projectId         String?
+  sourceTeamId      String?
+  probability       Float?
+  expectedCloseDate DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("revenue_entries")
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  status        String   @default("active")  // active | paused | blocked | completed | archived
+  priority      String   @default("medium")  // low | medium | high | urgent
+  nextAction    String?
+  blocker       String?
+  revenueImpact Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("projects")
+}
+
+model Assignment {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  status         String    @default("pending") // pending | active | review | completed | archived
+  teamId         String
+  projectId      String?
+  goalId         String?
+  revenueEntryId String?
+  priority       String    @default("medium")  // low | medium | high | urgent
+  createdAt      DateTime  @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+
+  team     WorkforceTeam      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  messages AssignmentMessage[]
+
+  @@map("assignments")
+}
+
+model AssignmentMessage {
+  id           String   @id @default(cuid())
+  assignmentId String
+  senderType   String   @default("operator") // operator | team | system
+  content      String
+  createdAt    DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@map("assignment_messages")
+}
+
+// ============================================================
+// PHASE 4 — WORKFORCE EXECUTION ENGINE
+// ============================================================
+
+model AutomationRule {
+  id           String   @id @default(cuid())
+  name         String
+  trigger      String   // assignment_completed | output_approved | handoff_completed
+  condition    String?  // JSON: { departmentType?, outputType?, priority? }
+  action       String   // create_handoff | create_approval | create_assignment
+  actionConfig String   // JSON: { toTeamType?, title?, priority?, decisionType? }
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("automation_rules")
+}
+
+// ============================================================
+// PHASE 8 — RUNTIME ENGINE
+// ============================================================
+
+model RuntimeQueue {
+  id           String    @id @default(cuid())
+  teamId       String
+  assignmentId String?
+  title        String
+  description  String?
+  priority     String    @default("medium") // low | medium | high | urgent
+  status       String    @default("queued") // queued | running | completed | failed
+  source       String    @default("runtime") // runtime | founder | handoff | objective | schedule | executive
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(3)
+  error        String?
+  lockedAt     DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  team WorkforceTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("runtime_queue")
+}
+
+model TeamObjective {
+  id          String    @id @default(cuid())
+  teamId      String
+  title       String
+  description String
+  frequency   String    @default("daily") // hourly | daily | weekly
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  team WorkforceTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_objectives")
+}
+
+model AutonomyConfig {
+  id               String   @id @default(cuid())
+  teamId           String   @unique
+  canSelfInitiate  Boolean  @default(false)
+  requiresApproval Boolean  @default(true)
+  approvalTriggers String   @default("[]") // JSON: ["outreach","campaign","content","deployment","budget"]
+  maxDailyRuns     Int      @default(3)
+  operateSilently  Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  team WorkforceTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("autonomy_configs")
+}
+
+model IntelligenceSignal {
+  id          String    @id @default(cuid())
+  signalType  String    // email | calendar | web | manual | internal
+  source      String    // provider name or "internal"
+  title       String
+  content     String
+  metadata    String    @default("{}") // JSON blob
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  teamId      String?
+  agentId     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("intelligence_signals")
+}
+
+model RuntimeState {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("runtime_state")
 }

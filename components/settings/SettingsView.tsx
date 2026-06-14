@@ -78,6 +78,9 @@ export function SettingsView() {
   const [healthLoading, setHealthLoading] = useState(true);
   const [autonomyLoading, setAutonomyLoading] = useState(false);
   const [connectors, setConnectors] = useState<ConnectorInfo[]>([]);
+  const [aiConfig, setAiConfig]     = useState<{ provider: string; model: string; enabled: boolean; hasApiKey: boolean } | null>(null);
+  const [aiTesting, setAiTesting]   = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<{ ok: boolean; latency?: number; message?: string; response?: string } | null>(null);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const nodeEnv = process.env.NODE_ENV ?? "development";
@@ -112,6 +115,7 @@ export function SettingsView() {
   }
 
   useEffect(() => {
+    fetch("/api/ai/config").then(r => r.json()).then(setAiConfig).catch(() => {});
     loadHealth();
     Promise.all([
       fetch("/api/connectors/web-search").then(r => r.json()).catch(() => null),
@@ -313,18 +317,58 @@ export function SettingsView() {
 
           {/* ── AI Settings ───────────────────────────────────────── */}
           <Card>
-            <SectionHeader icon={Bot} title="AI Settings" />
-            <Row
-              label="Provider"
-              value={process.env.NEXT_PUBLIC_AI_ENABLED === "true" ? "Anthropic (live)" : "Mock (rule-based)"}
-            />
-            <Row
-              label="API key"
-              value={process.env.NEXT_PUBLIC_AI_ENABLED === "true" ? "Configured" : "Not set"}
-              valueClass={process.env.NEXT_PUBLIC_AI_ENABLED === "true" ? "text-accent-green" : "text-text-ghost"}
-            />
+            <SectionHeader icon={Bot} title="AI Provider" />
+            {aiConfig ? (
+              <>
+                <Row
+                  label="Provider"
+                  value={aiConfig.provider.charAt(0).toUpperCase() + aiConfig.provider.slice(1)}
+                />
+                <Row label="Model" value={aiConfig.model} />
+                <Row
+                  label="Status"
+                  value={<StatusBadge ok={aiConfig.enabled} labelOk="Live" labelFail="Template mode" />}
+                />
+                <Row
+                  label="API key"
+                  value={aiConfig.hasApiKey ? "Configured" : "Not set"}
+                  valueClass={aiConfig.hasApiKey ? "text-accent-green" : "text-text-ghost"}
+                />
+              </>
+            ) : (
+              <div className="py-2 text-xs text-text-ghost">Loading config…</div>
+            )}
+
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                disabled={aiTesting}
+                onClick={async () => {
+                  setAiTesting(true);
+                  setAiTestResult(null);
+                  try {
+                    const r = await fetch("/api/ai/test", { method: "POST" }).then(d => d.json()) as { ok: boolean; latency?: number; message?: string; response?: string };
+                    setAiTestResult(r);
+                  } catch {
+                    setAiTestResult({ ok: false, message: "Request failed" });
+                  } finally {
+                    setAiTesting(false);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.06] text-text-secondary hover:bg-white/[0.07] disabled:opacity-40 transition-all"
+              >
+                {aiTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
+                Test connection
+              </button>
+              {aiTestResult && (
+                <span className={cn("text-xs", aiTestResult.ok ? "text-accent-green" : "text-accent-red")}>
+                  {aiTestResult.ok ? `OK · ${aiTestResult.latency}ms` : aiTestResult.message ?? "Failed"}
+                </span>
+              )}
+            </div>
+
             <p className="text-xs text-text-ghost mt-3 leading-relaxed">
-              Set ANTHROPIC_API_KEY and NEXT_PUBLIC_AI_ENABLED=true to enable live AI in agents.
+              Set <code className="text-text-secondary">AI_PROVIDER=claude|openai|openrouter|ollama</code> and the
+              corresponding API key in <code className="text-text-secondary">.env.local</code>.
             </p>
           </Card>
 

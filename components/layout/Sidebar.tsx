@@ -3,10 +3,9 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  LayoutDashboard, CheckSquare, FolderOpen, Target,
-  TrendingUp, Users2, Megaphone,
-  Bot, Activity, Zap, Settings,
-  ChevronLeft, ChevronRight,
+  LayoutDashboard, Inbox, CheckSquare, FolderOpen, Target, Calendar,
+  TrendingUp, Users2, Newspaper, Zap,
+  Settings, ChevronLeft, ChevronRight,
   Brain, LogOut, Sparkles,
 } from "lucide-react";
 
@@ -22,29 +21,33 @@ const navGroups: {
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
-    label: "Workspace",
+    label: "Cockpit",
     items: [
-      { id: "dashboard",  label: "Dashboard",   icon: LayoutDashboard },
-      { id: "tasks",      label: "Tasks",        icon: CheckSquare },
-      { id: "projects",   label: "Projects",     icon: FolderOpen },
-      { id: "goals",      label: "Goals",        icon: Target },
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { id: "briefing",  label: "Briefing",  icon: Newspaper },
+      { id: "inbox",     label: "Inbox",     icon: Inbox },
     ],
   },
   {
-    label: "Commerce",
+    label: "Work",
     items: [
-      { id: "opportunities", label: "Opportunities", icon: TrendingUp },
-      { id: "prospects",     label: "Prospects",     icon: Users2 },
-      { id: "campaigns",     label: "Campaigns",     icon: Megaphone },
+      { id: "tasks",    label: "Tasks",    icon: CheckSquare },
+      { id: "projects", label: "Projects", icon: FolderOpen },
+      { id: "goals",    label: "Goals",    icon: Target },
+      { id: "calendar", label: "Calendar", icon: Calendar },
     ],
   },
   {
-    label: "Agents",
+    label: "Business",
     items: [
-      { id: "agent-overview", label: "Overview",   icon: Bot },
-      { id: "agents",         label: "Agents",     icon: Zap },
-      { id: "activity",       label: "Activity",   icon: Activity },
-      { id: "operations",     label: "Operations", icon: Sparkles },
+      { id: "revenue",   label: "Revenue",   icon: TrendingUp },
+      { id: "workforce", label: "Workforce", icon: Users2 },
+    ],
+  },
+  {
+    label: "AI",
+    items: [
+      { id: "requests", label: "Requests", icon: Zap },
     ],
   },
 ];
@@ -72,7 +75,7 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <div>
             <h1 className="text-[13px] font-semibold text-text-primary tracking-wide leading-none">MioOS</h1>
-            <p className="text-[10px] text-text-ghost mt-0.5">Business OS</p>
+            <p className="text-[10px] text-text-ghost mt-0.5">Command Center</p>
           </div>
         )}
       </div>

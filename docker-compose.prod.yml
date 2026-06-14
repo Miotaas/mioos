@@ -19,7 +19,6 @@ services:
     environment:
       - DATABASE_URL=file:/data/mioos.db
       - NODE_ENV=production
-      - ENABLE_SCHEDULE_RUNNER=true
     env_file:
       - .env
     healthcheck:
@@ -33,6 +32,28 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  mioos-runtime:
+    image: mioos:latest
+    # Override CMD to run the background worker instead of the web server
+    command: ["npm", "run", "runtime"]
+    restart: always
+    depends_on:
+      mioos:
+        condition: service_healthy
+    volumes:
+      - mioos_data:/data
+    environment:
+      - DATABASE_URL=file:/data/mioos.db
+      - NODE_ENV=production
+    env_file:
+      - .env
+    # No ports — the runtime worker is internal-only
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   mioos_data:

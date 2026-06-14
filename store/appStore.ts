@@ -35,7 +35,11 @@ interface AppState {
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (v: boolean) => void;
 
-  activeView: "dashboard" | "tasks" | "projects" | "goals" | "opportunities" | "prospects" | "campaigns" | "agent-overview" | "agents" | "activity" | "operations" | "settings";
+  activeView:
+    // Primary navigation
+    | "dashboard" | "briefing" | "inbox" | "tasks" | "projects" | "goals" | "calendar" | "revenue" | "workforce" | "requests" | "settings"
+    // Legacy / internal views (still routable, not in sidebar)
+    | "activity" | "agent-overview" | "agents" | "operations" | "opportunities" | "prospects" | "campaigns";
   setActiveView: (view: AppState["activeView"]) => void;
 
   captures: MioCapture[];
@@ -43,6 +47,9 @@ interface AppState {
 
   toast: Toast | null;
   showToast: (message: string, type?: "success" | "error") => void;
+
+  prefillRequest: string | null;
+  setPrefillRequest: (v: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -94,4 +101,7 @@ export const useAppStore = create<AppState>((set) => ({
     set({ toast: { message, type, id } });
     setTimeout(() => set((s) => (s.toast?.id === id ? { toast: null } : {})), 3000);
   },
+
+  prefillRequest: null,
+  setPrefillRequest: (v) => set({ prefillRequest: v }),
 }));

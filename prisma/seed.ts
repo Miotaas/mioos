@@ -753,9 +753,701 @@ async function seedTools() {
   console.log(`  ${tools.length} tools created in registry`);
 }
 
+async function seedWorkforcePhase2() {
+  const existingTeams = await prisma.workforceTeam.count();
+  if (existingTeams > 0) {
+    console.log(`⚠️  Workforce already seeded (${existingTeams} teams). Skipping.`);
+    return;
+  }
+
+  console.log("Seeding Phase 2 — Workforce backbone...");
+
+  // ── Workforce Teams ──────────────────────────────────────────────
+  const executive = await prisma.workforceTeam.create({
+    data: {
+      name: "Executive Team",
+      slug: "executive",
+      departmentType: "executive",
+      objective: "Strategic oversight, goal tracking, coordination across all departments",
+      status: "active",
+      currentFocus: "Q2 2026 revenue targets and MioOS launch preparation",
+    },
+  });
+
+  const research = await prisma.workforceTeam.create({
+    data: {
+      name: "Research Team",
+      slug: "research",
+      departmentType: "research",
+      objective: "Deep market research, competitive analysis, opportunity intelligence",
+      status: "active",
+      currentFocus: "AI productivity tools market sizing and top 20 competitors",
+    },
+  });
+
+  const commerce = await prisma.workforceTeam.create({
+    data: {
+      name: "Commerce Team",
+      slug: "commerce",
+      departmentType: "commerce",
+      objective: "Product validation, pricing strategy, go-to-market execution",
+      status: "active",
+      currentFocus: "Validating Mail Co-Pilot pricing model for Dutch SMB market",
+    },
+  });
+
+  const sales = await prisma.workforceTeam.create({
+    data: {
+      name: "Sales Team",
+      slug: "sales",
+      departmentType: "sales",
+      objective: "Lead discovery, prospect qualification, pipeline management",
+      status: "active",
+      currentFocus: "Qualifying top 5 inbound leads from LinkedIn outreach",
+    },
+  });
+
+  const marketing = await prisma.workforceTeam.create({
+    data: {
+      name: "Marketing Team",
+      slug: "marketing",
+      departmentType: "marketing",
+      objective: "Brand positioning, campaigns, ad strategy, creative direction",
+      status: "active",
+      currentFocus: "Drafting LinkedIn thought leadership campaign for AION launch",
+    },
+  });
+
+  const content = await prisma.workforceTeam.create({
+    data: {
+      name: "Content Team",
+      slug: "content",
+      departmentType: "content",
+      objective: "Articles, blog posts, social content, email newsletters",
+      status: "active",
+      currentFocus: "3-part email sequence for Mail Co-Pilot waitlist",
+    },
+  });
+
+  const operations = await prisma.workforceTeam.create({
+    data: {
+      name: "Operations Team",
+      slug: "operations",
+      departmentType: "operations",
+      objective: "Process design, automation, workflow efficiency, internal systems",
+      status: "active",
+      currentFocus: "Automating weekly business review report generation",
+    },
+  });
+
+  const support = await prisma.workforceTeam.create({
+    data: {
+      name: "Support Team",
+      slug: "support",
+      departmentType: "support",
+      objective: "Customer insights, FAQ optimization, knowledge base maintenance",
+      status: "active",
+      currentFocus: "Building FAQ from Hartman Finance pilot feedback",
+    },
+  });
+
+  const development = await prisma.workforceTeam.create({
+    data: {
+      name: "Development Team",
+      slug: "development",
+      departmentType: "development",
+      objective: "MVPs, internal tools, integrations, production deployments",
+      status: "active",
+      currentFocus: "MioOS Phase 2 backend infrastructure",
+    },
+  });
+
+  // ── Projects ─────────────────────────────────────────────────────
+  const aionProject = await prisma.project.create({
+    data: {
+      name: "AION",
+      slug: "aion",
+      description: "AI inference and execution infrastructure. The engine powering autonomous agent workflows.",
+      status: "active",
+      priority: "high",
+      nextAction: "Complete orchestration layer spec and begin prototype",
+      revenueImpact: 50000,
+    },
+  });
+
+  const miOosProject = await prisma.project.create({
+    data: {
+      name: "MioOS",
+      slug: "mioos",
+      description: "Personal AI Command Center. The founder operating system.",
+      status: "active",
+      priority: "urgent",
+      nextAction: "Deploy Phase 2 backend to VPS after testing",
+      revenueImpact: 0,
+    },
+  });
+
+  const mailCopilotProject = await prisma.project.create({
+    data: {
+      name: "Mail Co-Pilot",
+      slug: "mail-copilot",
+      description: "AI email assistant for Gmail — triages, drafts, and acts on email.",
+      status: "active",
+      priority: "high",
+      nextAction: "Finish Chrome extension Gmail API integration",
+      blocker: "Gmail OAuth verification takes 2–4 weeks",
+      revenueImpact: 36000,
+    },
+  });
+
+  await prisma.project.create({
+    data: {
+      name: "AI Offerte Assistant",
+      slug: "ai-offerte-assistant",
+      description: "Automated quote generation for Dutch SMBs. Reads RFPs and produces formatted proposals.",
+      status: "active",
+      priority: "medium",
+      nextAction: "Define target industry vertical and build first template",
+      revenueImpact: 24000,
+    },
+  });
+
+  // ── Goals — Business ────────────────────────────────────────────
+  const firstCustomerGoal = await prisma.goal.create({
+    data: {
+      title: "First paying customer",
+      description: "Close the first recurring revenue contract for any product.",
+      status: "active",
+      progress: 30,
+      goalType: "business",
+      target: 1,
+      targetDate: fromNow(60),
+      notes: "Hartman Finance pilot is most advanced. Kloos Verzekeringen already won. Focus on closing Bakker demo.",
+    },
+  });
+
+  await prisma.goalMilestone.createMany({
+    data: [
+      { goalId: firstCustomerGoal.id, title: "First demo scheduled", completed: true, order: 0 },
+      { goalId: firstCustomerGoal.id, title: "First pilot started", completed: true, order: 1 },
+      { goalId: firstCustomerGoal.id, title: "First contract signed", completed: false, order: 2 },
+      { goalId: firstCustomerGoal.id, title: "First invoice paid", completed: false, order: 3 },
+    ],
+  });
+
+  const mrrGoal = await prisma.goal.create({
+    data: {
+      title: "€5,000 MRR",
+      description: "Reach €5,000 monthly recurring revenue across all products.",
+      status: "active",
+      progress: 8,
+      goalType: "business",
+      target: 5000,
+      targetDate: new Date("2026-12-31"),
+      notes: "Current MRR: €400 (Kloos Verzekeringen). Pipeline: €1,800/mo if Hartman + Bakker close.",
+    },
+  });
+
+  await prisma.goalMilestone.createMany({
+    data: [
+      { goalId: mrrGoal.id, title: "€500 MRR",   completed: true,  order: 0, targetDate: fromNow(-30) },
+      { goalId: mrrGoal.id, title: "€1,000 MRR",  completed: false, order: 1, targetDate: fromNow(30)  },
+      { goalId: mrrGoal.id, title: "€2,500 MRR",  completed: false, order: 2, targetDate: fromNow(90)  },
+      { goalId: mrrGoal.id, title: "€5,000 MRR",  completed: false, order: 3, targetDate: fromNow(180) },
+    ],
+  });
+
+  // ── Goals — Personal ────────────────────────────────────────────
+  const gymGoal = await prisma.goal.create({
+    data: {
+      title: "Gym 4x per week",
+      description: "Consistent training schedule — strength + conditioning.",
+      status: "active",
+      progress: 60,
+      goalType: "personal",
+      notes: "Currently averaging 3x. Need to add one morning session on Fridays.",
+    },
+  });
+
+  await prisma.goalMilestone.createMany({
+    data: [
+      { goalId: gymGoal.id, title: "Join gym", completed: true, order: 0 },
+      { goalId: gymGoal.id, title: "3x/week for 4 weeks straight", completed: true, order: 1 },
+      { goalId: gymGoal.id, title: "4x/week for 4 weeks straight", completed: false, order: 2 },
+      { goalId: gymGoal.id, title: "Maintain for 3 months", completed: false, order: 3 },
+    ],
+  });
+
+  const japanGoal = await prisma.goal.create({
+    data: {
+      title: "Japan trip",
+      description: "2–3 week trip to Tokyo, Kyoto, Osaka. Target: autumn 2026.",
+      status: "active",
+      progress: 20,
+      goalType: "personal",
+      target: 4000,
+      notes: "Budget: ~€4,000. Need to book flights 3 months in advance for best prices.",
+    },
+  });
+
+  await prisma.goalMilestone.createMany({
+    data: [
+      { goalId: japanGoal.id, title: "Set budget", completed: true, order: 0 },
+      { goalId: japanGoal.id, title: "Choose dates (Oct–Nov 2026)", completed: false, order: 1 },
+      { goalId: japanGoal.id, title: "Book flights", completed: false, order: 2 },
+      { goalId: japanGoal.id, title: "Book accommodation", completed: false, order: 3 },
+      { goalId: japanGoal.id, title: "Itinerary planned", completed: false, order: 4 },
+    ],
+  });
+
+  await prisma.goal.create({
+    data: {
+      title: "Read 12 books",
+      description: "One book per month — mix of business, philosophy, and fiction.",
+      status: "active",
+      progress: 42,
+      goalType: "personal",
+      target: 12,
+      notes: "Currently at book 5 of 12. Reading: The Almanack of Naval Ravikant.",
+    },
+  });
+
+  await prisma.goal.create({
+    data: {
+      title: "Save €5,000",
+      description: "Personal savings buffer. Emergency fund + future investments.",
+      status: "active",
+      progress: 35,
+      goalType: "personal",
+      target: 5000,
+      notes: "€1,750 saved so far. Automated €300/month transfer active.",
+    },
+  });
+
+  // ── Revenue Entries ──────────────────────────────────────────────
+  await prisma.revenueEntry.createMany({
+    data: [
+      {
+        title: "Kloos Verzekeringen — Case Builder",
+        amount: 1000,
+        currency: "EUR",
+        revenueType: "live",
+        serviceType: "service",
+        status: "active",
+        projectId: null,
+        sourceTeamId: sales.id,
+        probability: 100,
+      },
+      {
+        title: "Hartman Finance — Revenue Detector pilot",
+        amount: 700,
+        currency: "EUR",
+        revenueType: "pipeline",
+        serviceType: "service",
+        status: "active",
+        sourceTeamId: sales.id,
+        probability: 75,
+        expectedCloseDate: fromNow(18),
+      },
+      {
+        title: "Bakker & Partners — Document Guardian",
+        amount: 600,
+        currency: "EUR",
+        revenueType: "pipeline",
+        serviceType: "service",
+        status: "active",
+        sourceTeamId: sales.id,
+        probability: 50,
+        expectedCloseDate: fromNow(30),
+      },
+      {
+        title: "Mail Co-Pilot — early access batch",
+        amount: 4800,
+        currency: "EUR",
+        revenueType: "potential",
+        serviceType: "product",
+        status: "active",
+        projectId: mailCopilotProject.id,
+        sourceTeamId: commerce.id,
+        probability: 30,
+        expectedCloseDate: fromNow(90),
+      },
+      {
+        title: "AI Offerte Assistant — productized service",
+        amount: 2400,
+        currency: "EUR",
+        revenueType: "potential",
+        serviceType: "service",
+        status: "active",
+        sourceTeamId: commerce.id,
+        probability: 20,
+        expectedCloseDate: fromNow(120),
+      },
+    ],
+  });
+
+  // ── Workforce Outputs ────────────────────────────────────────────
+  const researchOutput = await prisma.workforceOutput.create({
+    data: {
+      teamId: research.id,
+      title: "AI email productivity market — size and top players",
+      description: "TAM €2.3B. Fastest growing segment: AI-native email clients targeting SMBs. Top competitors: Superhuman, Shortwave, SaneBox. Key gap: actionable automation vs. just summarization.",
+      outputType: "research",
+      status: "completed",
+      projectId: mailCopilotProject.id,
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: commerce.id,
+      title: "Mail Co-Pilot pricing validation — Dutch SMB segment",
+      description: "Price sensitivity research across 12 conversations. Sweet spot: €49–79/month per user. Annual plans at 20% discount well-received. Enterprise tier at €199/mo for 5 seats viable.",
+      outputType: "product_candidate",
+      status: "approved",
+      projectId: mailCopilotProject.id,
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: sales.id,
+      title: "12 qualified prospects — AI document management vertical",
+      description: "Screened 60 companies, qualified 12 as strong fits. All 12 have 10–50 employees, handle contracts regularly, and expressed pain around deadline tracking.",
+      outputType: "prospect",
+      status: "completed",
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: marketing.id,
+      title: "LinkedIn thought leadership series — AI for founders",
+      description: "5-post series targeting Dutch-speaking founders. Theme: AI as leverage for solo operators. Estimated reach: 8,000–12,000 impressions based on account size.",
+      outputType: "campaign",
+      status: "approved",
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: content.id,
+      title: "Mail Co-Pilot waitlist email sequence (3 emails)",
+      description: "Welcome email, value demonstration email, and urgency email for 200+ waitlist subscribers. Optimized for demo booking CTA.",
+      outputType: "content",
+      status: "draft",
+      projectId: mailCopilotProject.id,
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: development.id,
+      title: "MioOS Phase 2 — backend database schema and API routes",
+      description: "7 new Prisma models: WorkforceTeam, WorkforceOutput, TeamHandoff, Approval, RevenueEntry, Project, GoalMilestone. All API routes implemented and seeded.",
+      outputType: "tool",
+      status: "completed",
+      projectId: miOosProject.id,
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: operations.id,
+      title: "Weekly business review automation spec",
+      description: "Automated weekly digest: revenue snapshot, lead pipeline, goal progress, team activity. Runs every Sunday 20:00. Delivered to founder inbox.",
+      outputType: "automation",
+      status: "draft",
+    },
+  });
+
+  await prisma.workforceOutput.create({
+    data: {
+      teamId: support.id,
+      title: "Hartman Finance pilot FAQ — top 8 questions",
+      description: "Credit note handling, invoice sync frequency, false positive management, API rate limits. All documented for future client onboarding.",
+      outputType: "support_insight",
+      status: "completed",
+    },
+  });
+
+  // ── Team Handoffs ────────────────────────────────────────────────
+  await prisma.teamHandoff.create({
+    data: {
+      fromTeamId: research.id,
+      toTeamId: commerce.id,
+      title: "Mail Co-Pilot market research → pricing validation",
+      description: "Research confirmed large TAM and competitor gap. Commerce team to validate pricing model with 10 target customers before launch.",
+      status: "completed",
+      relatedOutputId: researchOutput.id,
+      projectId: mailCopilotProject.id,
+      priority: "high",
+    },
+  });
+
+  await prisma.teamHandoff.create({
+    data: {
+      fromTeamId: sales.id,
+      toTeamId: marketing.id,
+      title: "Qualified prospects → outreach campaign",
+      description: "12 qualified prospects identified in document management vertical. Marketing team to create targeted LinkedIn outreach sequence.",
+      status: "accepted",
+      priority: "high",
+    },
+  });
+
+  await prisma.teamHandoff.create({
+    data: {
+      fromTeamId: commerce.id,
+      toTeamId: development.id,
+      title: "Mail Co-Pilot pricing validated → build early access checkout",
+      description: "Pricing validated at €49–79/month. Development team to build Stripe checkout and early access landing page.",
+      status: "pending",
+      projectId: mailCopilotProject.id,
+      priority: "medium",
+    },
+  });
+
+  await prisma.teamHandoff.create({
+    data: {
+      fromTeamId: content.id,
+      toTeamId: executive.id,
+      title: "Waitlist email sequence ready for review",
+      description: "3-email sequence drafted. Requires founder review before sending to 200+ waitlist subscribers.",
+      status: "pending",
+      projectId: mailCopilotProject.id,
+      priority: "medium",
+    },
+  });
+
+  // ── Approvals ────────────────────────────────────────────────────
+  await prisma.approval.create({
+    data: {
+      title: "Send Mail Co-Pilot waitlist email sequence",
+      description: "Marketing has drafted a 3-email sequence for the 200+ person waitlist. Email 1: welcome. Email 2: value demo. Email 3: urgency + CTA to book a demo.",
+      reason: "This is outbound communication to real contacts. Requires founder approval before sending.",
+      status: "pending",
+      sourceTeamId: content.id,
+      projectId: mailCopilotProject.id,
+      priority: "high",
+      decisionType: "approve_outreach",
+    },
+  });
+
+  await prisma.approval.create({
+    data: {
+      title: "Launch LinkedIn thought leadership campaign",
+      description: "5-post series targeting Dutch founders on the theme of AI as leverage. Posts are drafted and scheduled for Mon/Wed/Fri over 2 weeks.",
+      reason: "Content goes public on your personal LinkedIn profile. Review required before publishing.",
+      status: "pending",
+      sourceTeamId: marketing.id,
+      priority: "medium",
+      decisionType: "approve_content",
+    },
+  });
+
+  await prisma.approval.create({
+    data: {
+      title: "Propose €600/month contract to Bakker & Partners",
+      description: "Following a successful demo, Sales recommends sending a formal proposal at €600/month for the Document Guardian product.",
+      reason: "Sending a commercial proposal to a prospect requires founder sign-off.",
+      status: "pending",
+      sourceTeamId: sales.id,
+      priority: "urgent",
+      decisionType: "approve_proposal",
+    },
+  });
+
+  await prisma.approval.create({
+    data: {
+      title: "Research brief: AION competitive landscape",
+      description: "Research team has completed a review of AI agent orchestration platforms. 14 competitors mapped. Key gaps identified for AION positioning.",
+      reason: "Strategic research output — needs founder review to confirm alignment with AION direction.",
+      status: "approved",
+      sourceTeamId: research.id,
+      projectId: aionProject.id,
+      priority: "medium",
+      decisionType: "review_research",
+      approvedAt: fromNow(-3),
+    },
+  });
+
+  console.log("✓ Phase 2 Workforce seed complete");
+  console.log("  9 workforce teams created");
+  console.log("  4 projects created (AION, MioOS, Mail Co-Pilot, Offerte Assistant)");
+  console.log("  7 goals created (2 business + 5 personal) with milestones");
+  console.log("  5 revenue entries created");
+  console.log("  8 workforce outputs created");
+  console.log("  4 team handoffs created");
+  console.log("  4 approvals created (3 pending, 1 approved)");
+}
+
+async function seedAutomationRules() {
+  const existing = await prisma.automationRule.count();
+  if (existing > 0) {
+    console.log(`⚠️  Automation rules already seeded (${existing} rules). Skipping.`);
+    return;
+  }
+  console.log("Seeding automation rules...");
+
+  const rules = [
+    {
+      name: "Research → Sales Handoff",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "research" }),
+      action: "create_handoff",
+      actionConfig: JSON.stringify({
+        toTeamType:  "sales",
+        title:       "Qualify leads from: {title}",
+        description: "Research team has completed '{title}'. Sales team to review findings and build outreach list.",
+        priority:    "medium",
+      }),
+      active: true,
+    },
+    {
+      name: "Sales Outreach → Founder Approval",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "sales" }),
+      action: "create_approval",
+      actionConfig: JSON.stringify({
+        title:        "Approve outreach: {title}",
+        description:  "Sales team has prepared outreach for '{title}'. Review before sending.",
+        priority:     "high",
+        decisionType: "approve_outreach",
+      }),
+      active: true,
+    },
+    {
+      name: "Marketing Campaign → Founder Approval",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "marketing" }),
+      action: "create_approval",
+      actionConfig: JSON.stringify({
+        title:        "Approve campaign: {title}",
+        description:  "Marketing team has prepared a campaign for '{title}'. Review before launch.",
+        priority:     "high",
+        decisionType: "approve_campaign",
+      }),
+      active: true,
+    },
+    {
+      name: "Content → Founder Approval",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "content" }),
+      action: "create_approval",
+      actionConfig: JSON.stringify({
+        title:        "Approve content: {title}",
+        description:  "Content team has prepared '{title}'. Review before publishing.",
+        priority:     "medium",
+        decisionType: "approve_content",
+      }),
+      active: true,
+    },
+    {
+      name: "Development → Operations Handoff",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "development" }),
+      action: "create_handoff",
+      actionConfig: JSON.stringify({
+        toTeamType:  "operations",
+        title:       "Deploy and monitor: {title}",
+        description: "Development has completed '{title}'. Operations to handle deployment and monitoring.",
+        priority:    "medium",
+      }),
+      active: true,
+    },
+    {
+      name: "Commerce Validation → Founder Approval",
+      trigger: "assignment_completed",
+      condition: JSON.stringify({ departmentType: "commerce" }),
+      action: "create_approval",
+      actionConfig: JSON.stringify({
+        title:        "Review product opportunity: {title}",
+        description:  "Commerce team has validated '{title}'. Review findings before proceeding.",
+        priority:     "medium",
+        decisionType: "approve_product",
+      }),
+      active: true,
+    },
+  ];
+
+  for (const rule of rules) {
+    await prisma.automationRule.create({ data: rule });
+  }
+
+  console.log(`✓ ${rules.length} automation rules seeded`);
+}
+
+
+async function seedWorkflowTemplates() {
+  const existing = await prisma.workflowTemplate.count();
+  if (existing > 0) {
+    console.log(`⚠️  Workflow templates already seeded (${existing} templates). Skipping.`);
+    return;
+  }
+
+  const templates = [
+    {
+      name: "Market Validation",
+      slug: "market-validation",
+      description: "Validate a market opportunity before building",
+      category: "validation",
+      steps: JSON.stringify([
+        { department: "research",  title: "Market Research & Analysis" },
+        { department: "commerce",  title: "Product Opportunity Validation", dependsOn: ["research"] },
+        { department: "sales",     title: "Prospect & Demand Discovery",   dependsOn: ["research"] },
+        { department: "executive", title: "Go/No-Go Decision Brief",       dependsOn: ["commerce", "sales"] },
+      ]),
+    },
+    {
+      name: "Product Launch",
+      slug: "product-launch",
+      description: "Full launch sequence from research to campaign",
+      category: "launch",
+      steps: JSON.stringify([
+        { department: "research",    title: "Competitive Landscape Research" },
+        { department: "development", title: "MVP Technical Specification",  dependsOn: ["research"] },
+        { department: "marketing",   title: "Launch Campaign Brief",        dependsOn: ["research"] },
+        { department: "content",     title: "Launch Content Creation",      dependsOn: ["marketing"] },
+        { department: "sales",       title: "Launch Outreach Plan",         dependsOn: ["marketing"] },
+      ]),
+    },
+    {
+      name: "Lead Generation Sprint",
+      slug: "lead-generation-sprint",
+      description: "Research, qualify, and prepare outreach for new leads",
+      category: "sales",
+      steps: JSON.stringify([
+        { department: "research", title: "ICP & Market Research" },
+        { department: "sales",    title: "Prospect List & Qualification",   dependsOn: ["research"] },
+        { department: "content",  title: "Outreach Copy & Sequences",      dependsOn: ["sales"] },
+      ]),
+    },
+    {
+      name: "Weekly Executive Briefing",
+      slug: "weekly-executive-briefing",
+      description: "Compile weekly situation report for founder review",
+      category: "general",
+      steps: JSON.stringify([
+        { department: "operations", title: "Operational Status Summary" },
+        { department: "sales",      title: "Pipeline & Revenue Update" },
+        { department: "executive",  title: "Weekly Executive Briefing",    dependsOn: ["operations", "sales"] },
+      ]),
+    },
+  ];
+
+  for (const t of templates) {
+    await prisma.workflowTemplate.create({ data: t });
+  }
+
+  console.log(`  ${templates.length} workflow templates seeded`);
+}
 main()
   .then(() => seedBusinessOS())
   .then(() => seedAgentOS())
   .then(() => seedTools())
+  .then(() => seedWorkforcePhase2())
+  .then(() => seedAutomationRules())
+  .then(() => seedWorkflowTemplates())
   .catch(console.error)
   .finally(() => prisma.$disconnect());

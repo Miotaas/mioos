@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MioGoal, MioNode, GoalStatus } from "@/types";
+import { MioGoal, MioProject, GoalStatus } from "@/types";
 import { cn, GOAL_STATUS_COLORS } from "@/lib/utils";
 import { normalizeGoal, isOverdue, formatRelativeDeadline } from "@/lib/normalize";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useAppStore } from "@/store/appStore";
-import { Target, Plus, Calendar, Trash2, Pencil, AlertCircle } from "lucide-react";
+import { Target, Plus, Calendar, Trash2, Pencil, AlertCircle, CheckCircle2, Circle, Zap } from "lucide-react";
 
 const GOAL_STATUSES: GoalStatus[] = ["active", "achieved", "abandoned", "paused"];
 
@@ -18,7 +18,7 @@ interface GoalForm {
   status: GoalStatus;
   progress: number;
   targetDate: string;
-  nodeId: string;
+  projectId: string;
 }
 
 const DEFAULT_FORM: GoalForm = {
@@ -27,14 +27,15 @@ const DEFAULT_FORM: GoalForm = {
   status: "active",
   progress: 0,
   targetDate: "",
-  nodeId: "",
+  projectId: "",
 };
 
 export function GoalsView() {
-  const { showToast } = useAppStore();
+  const { showToast, setActiveView, setPrefillRequest } = useAppStore();
   const [goals, setGoals] = useState<MioGoal[]>([]);
-  const [nodes, setNodes] = useState<MioNode[]>([]);
+  const [projects, setProjects] = useState<MioProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [goalIntelMap, setGoalIntelMap] = useState<Map<string, { stalled: boolean; daysToDeadline: number | null; suggestedActions: string[] }>>(new Map());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<MioGoal | null>(null);
   const [form, setForm] = useState<GoalForm>(DEFAULT_FORM);
@@ -44,12 +45,23 @@ export function GoalsView() {
   useEffect(() => {
     Promise.all([
       fetch("/api/goals").then((r) => r.json()),
-      fetch("/api/nodes").then((r) => r.json()),
-    ]).then(([g, n]) => {
+      fetch("/api/projects").then((r) => r.json()),
+    ]).then(([g, p]) => {
       setGoals((Array.isArray(g) ? g : []).map(normalizeGoal));
-      setNodes(Array.isArray(n) ? n : []);
+      setProjects(Array.isArray(p) ? p : []);
       setLoading(false);
     }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/executive/goals")
+      .then(r => r.json())
+      .then((d: { id: string; stalled: boolean; daysToDeadline: number | null; suggestedActions: string[] }[]) => {
+        if (Array.isArray(d)) {
+          setGoalIntelMap(new Map(d.map(g => [g.id, { stalled: g.stalled, daysToDeadline: g.daysToDeadline, suggestedActions: g.suggestedActions }])));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   function openCreate() {
@@ -67,7 +79,7 @@ export function GoalsView() {
       status: goal.status as GoalStatus,
       progress: goal.progress,
       targetDate: goal.targetDate ? goal.targetDate.split("T")[0] : "",
-      nodeId: goal.nodeId || "",
+      projectId: goal.projectId || "",
     });
     setFormError("");
     setModalOpen(true);
@@ -85,7 +97,7 @@ export function GoalsView() {
         status: form.status,
         progress: Math.min(100, Math.max(0, form.progress)),
         targetDate: form.targetDate || null,
-        nodeId: form.nodeId || null,
+        projectId: form.projectId || null,
       };
       if (editingGoal) {
         const res = await fetch(`/api/goals/${editingGoal.id}`, {
@@ -122,7 +134,7 @@ export function GoalsView() {
     showToast("Goal deleted");
   }
 
-  const getNode = (nodeId?: string | null) => nodes.find((n) => n.id === nodeId);
+  const getProject = (projectId?: string | null) => projects.find((p) => p.id === projectId);
 
   const grouped: Record<string, MioGoal[]> = {
     active: goals.filter((g) => g.status === "active"),
@@ -185,8 +197,8 @@ export function GoalsView() {
               </h2>
               <div className="grid grid-cols-2 gap-3">
                 {statusGoals.map((goal) => {
-                  const node = getNode(goal.nodeId);
-                  const color = node?.color || "#10b981";
+                  const project = getProject(goal.projectId);
+                  const color = "#10b981";
                   const overdue = isOverdue(goal.targetDate) && goal.status === "active";
                   const deadline = goal.targetDate ? formatRelativeDeadline(goal.targetDate) : null;
 
@@ -201,7 +213,14 @@ export function GoalsView() {
                       )}
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <p className="text-sm font-semibold text-text-primary flex-1 min-w-0 pr-2">{goal.title}</p>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-sm font-semibold text-text-primary">{goal.title}</p>
+                          {goalIntelMap.get(goal.id)?.stalled && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-accent-amber/30 bg-accent-amber/5 text-accent-amber font-medium mt-1">
+                              <AlertCircle className="w-2.5 h-2.5" /> Stalled
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
                           <button
                             onClick={() => openEdit(goal)}
@@ -228,9 +247,19 @@ export function GoalsView() {
                       <ProgressBar value={goal.progress} color={color} className="mb-2" />
 
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {node && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-text-muted border border-white/[0.06]">
-                            {node.label}
+                        {goal.goalType && (
+                          <span className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded border font-medium",
+                            goal.goalType === "business"
+                              ? "bg-[#8b5cf6]/10 text-[#8b5cf6] border-[#8b5cf6]/20"
+                              : "bg-accent-purple/10 text-accent-purple border-accent-purple/20"
+                          )}>
+                            {goal.goalType === "business" ? "Business" : "Personal"}
+                          </span>
+                        )}
+                        {project && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/20">
+                            {project.name}
                           </span>
                         )}
                         {deadline && (
@@ -244,6 +273,50 @@ export function GoalsView() {
                           </span>
                         )}
                       </div>
+
+                      {goal.milestones && goal.milestones.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {goal.milestones.slice(0, 3).map((m) => (
+                            <span
+                              key={m.id}
+                              className={cn(
+                                "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border",
+                                m.completed
+                                  ? "bg-accent-green/10 text-accent-green border-accent-green/20"
+                                  : "bg-white/[0.04] text-text-muted border-white/[0.06]"
+                              )}
+                            >
+                              {m.completed
+                                ? <CheckCircle2 className="w-2.5 h-2.5" />
+                                : <Circle className="w-2.5 h-2.5" />}
+                              {m.title}
+                            </span>
+                          ))}
+                          {goal.milestones.length > 3 && (
+                            <span className="text-[10px] text-text-ghost px-1">
+                              +{goal.milestones.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Goal Intelligence — AI help button for active goals */}
+                      {goal.status === "active" && (
+                        <div className="mt-3 pt-2 border-t border-white/[0.05]">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const request = `Help me achieve this goal: "${goal.title}"${goal.description ? `. Context: ${goal.description}` : ""}`;
+                              setPrefillRequest(request);
+                              setActiveView("requests");
+                            }}
+                            className="flex items-center gap-1.5 text-[11px] text-accent-cyan/70 hover:text-accent-cyan transition-colors"
+                          >
+                            <Zap className="w-2.5 h-2.5" />
+                            Request AI help
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -323,12 +396,12 @@ export function GoalsView() {
           <div>
             <label className="text-xs text-text-muted mb-1.5 block">Project (optional)</label>
             <select
-              value={form.nodeId}
-              onChange={(e) => setForm((f) => ({ ...f, nodeId: e.target.value }))}
+              value={form.projectId}
+              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
               className="w-full text-sm bg-surface-3 border border-white/[0.08] rounded-lg px-3 py-2.5 text-text-primary focus:outline-none focus:border-accent-purple/50"
             >
               <option value="">No project</option>
-              {nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
 
