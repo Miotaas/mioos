@@ -38,6 +38,10 @@ interface AppState {
   activeView:
     // Primary navigation
     | "dashboard" | "briefing" | "inbox" | "tasks" | "projects" | "goals" | "calendar" | "revenue" | "workforce" | "requests" | "settings"
+    // Company Command Center (Omega)
+    | "company"
+    // Draft Center
+    | "drafts"
     // Legacy / internal views (still routable, not in sidebar)
     | "activity" | "agent-overview" | "agents" | "operations" | "opportunities" | "prospects" | "campaigns";
   setActiveView: (view: AppState["activeView"]) => void;
@@ -89,7 +93,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
-  activeView: "dashboard",
+  activeView: "company",
   setActiveView: (view) => set({ activeView: view }),
 
   captures: [],
