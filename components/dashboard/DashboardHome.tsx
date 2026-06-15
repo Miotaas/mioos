@@ -4,12 +4,12 @@ import { useEffect, useState, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { normalizeTask, normalizeGoal, isOverdue } from "@/lib/normalize";
 import { useAppStore } from "@/store/appStore";
-import { MioTask, MioGoal, Agent, ApprovalQueueItem, CommerceOpportunity, AgentRun, RevenueEntry, MioProject, WorkforceTeam, WorkforceApproval, Assignment } from "@/types";
+import { MioTask, MioGoal, Agent, ApprovalQueueItem, CommerceOpportunity, AgentRun, RevenueEntry, MioProject, WorkforceTeam, WorkforceApproval, Assignment, UnifiedDraft } from "@/types";
 import {
   ChevronRight, ArrowRight, Bot, CheckCircle2,
   Calendar, TrendingUp, Target, FolderOpen,
   CheckSquare, AlertCircle, Plus, Plug, Zap,
-  Activity, Server,
+  Activity, Server, FileText, Mail, Megaphone, Package, HandshakeIcon, FileCode,
 } from "lucide-react";
 
 // ── types ─────────────────────────────────────────────────────────
@@ -174,6 +174,7 @@ export function DashboardHome() {
   const [calConnected, setCalConn]        = useState<boolean | null>(null);
   const [execRecs, setExecRecs]           = useState<{ id: string; title: string; priority: string; viewTarget?: string }[]>([]);
   const [liveData, setLiveData]           = useState<LiveDashboardData | null>(null);
+  const [recentDrafts, setRecentDrafts]   = useState<UnifiedDraft[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -211,6 +212,13 @@ export function DashboardHome() {
     fetch("/api/executive/recommendations")
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setExecRecs(d.slice(0, 5)); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/drafts?limit=5")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setRecentDrafts(d.slice(0, 5)); })
       .catch(() => {});
   }, []);
 
@@ -395,11 +403,12 @@ export function DashboardHome() {
         {/* ── HERO ─────────────────────────────────────────────── */}
         <div className="mb-10 md:mb-12">
           <p className="text-[11px] text-text-ghost font-medium tracking-[0.12em] uppercase mb-3">
-            {today} · {currentTime}
+            {getGreeting()} · {today} · {currentTime}
           </p>
-          <h1 className="text-[36px] md:text-[48px] font-semibold text-text-primary tracking-tight leading-[1.1] mb-4">
-            {getGreeting()}, <span className="text-[#00D4FF]">Mio</span>
+          <h1 className="text-[36px] md:text-[48px] font-semibold text-text-primary tracking-tight leading-[1.1] mb-2">
+            Founder Mode
           </h1>
+          <p className="text-[15px] text-text-ghost mb-4">Your personal execution workspace</p>
           <p className="text-[15px] md:text-[17px] text-text-secondary leading-relaxed max-w-2xl">
             {buildNarrativeSummary(dueTodayTasks.length, overdueTasks.length, totalPending, openRevenueCount)}
           </p>
@@ -536,6 +545,67 @@ export function DashboardHome() {
                           Open <ChevronRight className="w-3 h-3" />
                         </button>
                       )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── DRAFTS AWAITING REVIEW ───────────────────────────── */}
+        {recentDrafts.length > 0 && (
+          <div className="mb-5">
+            <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5 text-accent-violet" />
+                  <span className="text-[12px] font-semibold text-text-primary">Drafts Awaiting Review</span>
+                  {recentDrafts.filter(d => d.status === "review_needed").length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-accent-amber/20 text-accent-amber text-[10px] font-bold">
+                      {recentDrafts.filter(d => d.status === "review_needed").length}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setActiveView("drafts")}
+                  className="text-[11px] text-text-ghost hover:text-[#00D4FF] transition-colors flex items-center gap-1"
+                >
+                  Draft Center <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="divide-y divide-white/[0.03]">
+                {recentDrafts.map(draft => {
+                  const DraftIcon = {
+                    email: Mail, campaign: Megaphone, content: FileText,
+                    product: Package, proposal: HandshakeIcon, development: FileCode,
+                  }[draft.draftType] ?? FileText;
+                  const statusCls =
+                    draft.status === "review_needed" ? "text-accent-amber" :
+                    draft.status === "approved"      ? "text-accent-green" :
+                    draft.status === "rejected"      ? "text-accent-red"   : "text-text-ghost";
+                  const statusLabel =
+                    draft.status === "review_needed" ? "Review needed" :
+                    draft.status === "approved"      ? "Approved" :
+                    draft.status === "rejected"      ? "Rejected" :
+                    draft.status === "archived"      ? "Archived" : "Draft";
+                  return (
+                    <div
+                      key={draft.id}
+                      onClick={() => setActiveView("drafts")}
+                      className="flex items-start gap-3 px-5 py-3.5 hover:bg-white/[0.015] transition-colors cursor-pointer"
+                    >
+                      <DraftIcon className="w-3.5 h-3.5 text-text-ghost flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-text-secondary truncate">{draft.title}</p>
+                        <p className="text-[11px] text-text-ghost mt-0.5 truncate">
+                          {draft.sourceTeamName && `${draft.sourceTeamName} · `}
+                          {draft.opportunityTitle ?? draft.projectName ?? draft.draftType}
+                        </p>
+                      </div>
+                      <span className={cn("text-[10px] font-medium flex-shrink-0 mt-0.5", statusCls)}>
+                        {statusLabel}
+                      </span>
                     </div>
                   );
                 })}
