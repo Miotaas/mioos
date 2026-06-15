@@ -69,14 +69,14 @@ function fmtTime(date: string): string {
 }
 
 const EXAMPLE_REQUESTS = [
-  "Find 50 logistics companies in North Holland",
-  "Research competitors of Mail Co-Pilot",
+  "Find automation opportunities in logistics",
+  "Generate leads for Mail Co-Pilot",
+  "Research AI opportunities in insurance",
+  "Build an ecommerce business around pet products",
   "Create a launch plan for AI Offerte Assistant",
   "Generate a pricing strategy for MioOS",
   "Write a cold outreach email sequence for B2B leads",
   "Analyze the market for AI-powered invoice tools in the Netherlands",
-  "Build a prospect list of Dutch SaaS companies under 50 employees",
-  "Create a content plan for LinkedIn for the next 30 days",
 ];
 
 const EXEC_STEPS = ["Routing to team", "Creating assignment", "Executing task", "Generating output"];
@@ -217,13 +217,13 @@ export function FounderRequestsView() {
         {/* Header */}
         <div className="mb-8 md:mb-10">
           <p className="text-[11px] text-text-ghost font-medium tracking-[0.12em] uppercase mb-2">
-            AI Workforce
+            System
           </p>
           <h1 className="text-[32px] md:text-[40px] font-semibold text-text-primary tracking-tight leading-tight mb-2">
-            Founder Requests
+            What do you want the company to do?
           </h1>
           <p className="text-[15px] text-text-secondary leading-relaxed">
-            Type what you need. Your AI workforce handles the rest.
+            Your request is routed to the right department and executed.
           </p>
           {completedToday.length > 0 && (
             <p className="text-[13px] text-accent-green mt-2">
@@ -237,13 +237,13 @@ export function FounderRequestsView() {
         {!loading && !hasTeams && (
           <div className="rounded-2xl border border-dashed border-white/[0.08] p-8 text-center mb-8">
             <Users2 className="w-6 h-6 text-text-ghost mx-auto mb-3 opacity-40" />
-            <p className="text-[14px] text-text-secondary font-medium mb-1">No workforce configured yet</p>
-            <p className="text-[12px] text-text-muted mb-4">Set up your AI departments before sending requests.</p>
+            <p className="text-[14px] text-text-secondary font-medium mb-1">No departments configured yet</p>
+            <p className="text-[12px] text-text-muted mb-4">Set up departments before sending requests.</p>
             <button
               onClick={() => setActiveView("workforce")}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan text-[12px] font-medium hover:bg-accent-cyan/15 transition-all"
             >
-              Set up Workforce <ArrowRight className="w-3 h-3" />
+              Set up Departments <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         )}
@@ -262,8 +262,8 @@ export function FounderRequestsView() {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !submitting) submit();
               }}
               placeholder={hasTeams
-                ? "What do you need done? Be specific — your AI workforce will handle it."
-                : "Set up your workforce first to send requests."}
+                ? "What do you need done? Be specific — your departments will handle it."
+                : "Set up departments first to send requests."}
               rows={4}
               disabled={!hasTeams || submitting}
               className="w-full bg-transparent text-[15px] md:text-[17px] text-text-primary placeholder:text-text-ghost outline-none resize-none leading-relaxed disabled:opacity-40"
