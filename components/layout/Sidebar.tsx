@@ -84,7 +84,7 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <div>
             <h1 className="text-[13px] font-semibold text-text-primary tracking-wide leading-none">MioOS</h1>
-            <p className="text-[10px] text-text-ghost mt-0.5">Personal AI Command Center</p>
+            <p className="text-[10px] text-text-ghost mt-0.5">Company OS</p>
           </div>
         )}
       </div>
