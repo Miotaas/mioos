@@ -18,7 +18,7 @@ const DEPARTMENTS = [
     types: ["digital_commerce", "fulfillment"],
     icon: ShoppingBag,
     color: "#10b981",
-    description: "Product research, validation, supplier discovery",
+    description: "Sources and validates product and service opportunities.",
   },
   {
     id: "research",
@@ -26,7 +26,7 @@ const DEPARTMENTS = [
     types: ["research"],
     icon: Search,
     color: "#6366f1",
-    description: "Deep research, market analysis, intelligence",
+    description: "Discovers opportunities, markets and business ideas.",
   },
   {
     id: "sales",
@@ -34,7 +34,7 @@ const DEPARTMENTS = [
     types: ["sales", "lead_generation", "outreach"],
     icon: UserCheck,
     color: "#00D4FF",
-    description: "Lead discovery, prospect qualification, pipeline",
+    description: "Converts validated opportunities into customers.",
   },
   {
     id: "marketing",
@@ -42,7 +42,7 @@ const DEPARTMENTS = [
     types: ["ads"],
     icon: Megaphone,
     color: "#f59e0b",
-    description: "Campaigns, ad strategies, creative direction",
+    description: "Creates demand and market awareness.",
   },
   {
     id: "content",
@@ -50,7 +50,7 @@ const DEPARTMENTS = [
     types: ["content", "writing"],
     icon: FileText,
     color: "#8b5cf6",
-    description: "Articles, blog posts, social content, newsletters",
+    description: "Produces assets that support growth.",
   },
   {
     id: "operations",
@@ -58,7 +58,7 @@ const DEPARTMENTS = [
     types: ["strategy", "project_management", "custom"],
     icon: Settings2,
     color: "#94a3b8",
-    description: "Process improvements, workflows, efficiency",
+    description: "Delivers and improves execution.",
   },
   {
     id: "support",
@@ -66,7 +66,7 @@ const DEPARTMENTS = [
     types: ["support"],
     icon: Headphones,
     color: "#06b6d4",
-    description: "Customer insights, FAQ improvements, knowledge base",
+    description: "Resolves issues and improves customer experience.",
   },
   {
     id: "development",
@@ -74,7 +74,7 @@ const DEPARTMENTS = [
     types: ["development", "dev", "engineering"],
     icon: Code2,
     color: "#a78bfa",
-    description: "MVPs, tools, integrations, internal software",
+    description: "Builds products, automations and solutions.",
   },
   {
     id: "executive",
@@ -82,7 +82,7 @@ const DEPARTMENTS = [
     types: ["ceo"],
     icon: Crown,
     color: "#fbbf24",
-    description: "Strategic oversight, goal tracking, coordination",
+    description: "Allocates capital, priorities and attention.",
   },
 ] as const;
 
@@ -176,6 +176,13 @@ export function WorkforceView() {
     });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/executive/workforce")
+      .then(r => r.json())
+      .then(d => { if (d && !d.error) setWfPerf(d); })
+      .catch(() => {});
+  }, []);
+
   // Advance fake execution progress steps while an assignment is executing
   useEffect(() => {
     if (!executingAssId) { setExecStep(0); return; }
@@ -197,19 +204,26 @@ export function WorkforceView() {
         {/* Header */}
         <div className="mb-8">
           <p className="text-[11px] text-text-ghost font-medium tracking-[0.12em] uppercase mb-2">
-            AI Workforce
+            Company
           </p>
           <h1 className="text-[32px] md:text-[40px] font-semibold text-text-primary tracking-tight leading-tight mb-2">
-            Your AI Departments
+            Departments
           </h1>
           <p className="text-[15px] text-text-secondary">
             {loading
-              ? "Loading workforce…"
-              : teams.length > 0
-              ? `${teams.filter(t => t.status === "active").length} department${teams.filter(t => t.status === "active").length !== 1 ? "s" : ""} active.`
-              : activeAgents > 0
-              ? `${activeAgents} agent${activeAgents !== 1 ? "s" : ""} configured.`
-              : "Set up your first agent to activate a department."}
+              ? "Loading departments…"
+              : (() => {
+                  const activeDepts = teams.filter(t => t.status === "active").length;
+                  const outcomes = wfPerf?.outputsThisWeek ?? 0;
+                  const base = activeDepts > 0
+                    ? `${activeDepts} department${activeDepts !== 1 ? "s" : ""} active`
+                    : activeAgents > 0
+                    ? `${activeAgents} department${activeAgents !== 1 ? "s" : ""} configured`
+                    : "Departments become active when agents are assigned.";
+                  return outcomes > 0
+                    ? `${base} · ${outcomes} outcome${outcomes !== 1 ? "s" : ""} this week`
+                    : base;
+                })()}
             {pendingApprovals > 0 && (
               <>
                 {" · "}
@@ -875,7 +889,6 @@ export function WorkforceView() {
         {/* Workforce Performance — lazy loaded */}
         {(() => {
           if (!wfPerf) {
-            fetch("/api/executive/workforce").then(r => r.json()).then(d => { if (d && !d.error) setWfPerf(d); }).catch(() => {});
             return null;
           }
           const activeTeams = wfPerf.teams.filter(t => t.completedThisWeek > 0 || t.outputsThisWeek > 0 || t.completedThisMonth > 0);
@@ -883,7 +896,7 @@ export function WorkforceView() {
           return (
             <div className="rounded-2xl border border-white/[0.05] bg-[#0d1220] overflow-hidden mb-5">
               <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-text-primary">Workforce Performance</span>
+                <span className="text-[13px] font-semibold text-text-primary">Department Outcomes</span>
                 <div className="flex items-center gap-4 text-[11px] text-text-ghost">
                   <span><span className="text-text-secondary font-medium">{wfPerf.completedThisWeek}</span> done this week</span>
                   <span><span className="text-text-secondary font-medium">{wfPerf.outputsThisWeek}</span> outputs</span>
