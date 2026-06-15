@@ -6,7 +6,7 @@ import { useAppStore } from "@/store/appStore";
 import {
   Menu, X, Brain, Sparkles, LogOut, Settings,
   LayoutDashboard, Inbox, CheckSquare, FolderOpen, Target, Calendar,
-  TrendingUp, Users2, MoreHorizontal, Newspaper, Zap,
+  TrendingUp, Users2, MoreHorizontal, Newspaper, Zap, Building2, FileText, Lightbulb,
 } from "lucide-react";
 
 async function logout() {
@@ -18,45 +18,53 @@ type ViewId = ReturnType<typeof useAppStore.getState>["activeView"];
 
 const navGroups: {
   label: string;
+  accentClass: string;
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
     label: "Cockpit",
+    accentClass: "text-[#8b5cf6]",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { id: "briefing",  label: "Briefing",  icon: Newspaper },
-      { id: "inbox",     label: "Inbox",     icon: Inbox },
+      { id: "dashboard", label: "Founder Mode", icon: LayoutDashboard },
+      { id: "briefing",  label: "Briefing",     icon: Newspaper },
+      { id: "inbox",     label: "Inbox",         icon: Inbox },
     ],
   },
   {
-    label: "Work",
+    label: "Company",
+    accentClass: "text-[#00D4FF]",
     items: [
-      { id: "tasks",    label: "Tasks",    icon: CheckSquare },
+      { id: "company",       label: "Command Center", icon: Building2 },
+      { id: "opportunities", label: "Opportunities",  icon: Lightbulb },
+      { id: "workforce",     label: "Departments",    icon: Users2 },
+      { id: "revenue",       label: "Revenue Health", icon: TrendingUp },
+      { id: "drafts",        label: "Pending Actions",icon: FileText },
+    ],
+  },
+  {
+    label: "Execution",
+    accentClass: "text-[#6366f1]",
+    items: [
       { id: "projects", label: "Projects", icon: FolderOpen },
       { id: "goals",    label: "Goals",    icon: Target },
+      { id: "tasks",    label: "Tasks",    icon: CheckSquare },
       { id: "calendar", label: "Calendar", icon: Calendar },
     ],
   },
   {
-    label: "Business",
+    label: "System",
+    accentClass: "text-text-ghost",
     items: [
-      { id: "revenue",   label: "Revenue",   icon: TrendingUp },
-      { id: "workforce", label: "Workforce", icon: Users2 },
-    ],
-  },
-  {
-    label: "AI",
-    items: [
-      { id: "requests", label: "Requests", icon: Zap },
+      { id: "requests",  label: "Requests", icon: Zap },
+      { id: "settings",  label: "Settings", icon: Settings },
     ],
   },
 ];
 
 const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "dashboard", label: "Home",      icon: LayoutDashboard },
-  { id: "inbox",     label: "Inbox",     icon: Inbox },
-  { id: "revenue",   label: "Revenue",   icon: TrendingUp },
-  { id: "workforce", label: "Workforce", icon: Users2 },
+  { id: "company",   label: "Command", icon: Building2 },
+  { id: "dashboard", label: "Founder", icon: LayoutDashboard },
+  { id: "inbox",     label: "Inbox",   icon: Inbox },
 ];
 
 export function MobileNav() {
@@ -78,7 +86,7 @@ export function MobileNav() {
           </div>
           <div>
             <p className="text-[13px] font-semibold text-text-primary leading-none">MioOS</p>
-            <p className="text-[9px] text-text-ghost leading-none mt-0.5">Command Center</p>
+            <p className="text-[9px] text-text-ghost leading-none mt-0.5">Company OS</p>
           </div>
         </div>
         <button
@@ -113,7 +121,7 @@ export function MobileNav() {
             </div>
             <div>
               <p className="text-[13px] font-semibold text-text-primary">MioOS</p>
-              <p className="text-[10px] text-text-ghost">Command Center</p>
+              <p className="text-[10px] text-text-ghost">Company OS</p>
             </div>
           </div>
           <button
@@ -129,7 +137,7 @@ export function MobileNav() {
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <p className="text-[9px] text-text-ghost uppercase tracking-[0.12em] font-medium px-3 mb-2">
+              <p className={cn("text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2", group.accentClass)}>
                 {group.label}
               </p>
               <div className="space-y-0.5">
@@ -172,18 +180,6 @@ export function MobileNav() {
           >
             <Sparkles className="w-[15px] h-[15px] flex-shrink-0" />
             <span className="font-medium">AI Assistant</span>
-          </button>
-          <button
-            onClick={() => navigate("settings")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all border",
-              activeView === "settings"
-                ? "bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/15"
-                : "text-text-muted hover:text-text-secondary hover:bg-white/[0.03] border-transparent"
-            )}
-          >
-            <Settings className="w-[15px] h-[15px] flex-shrink-0" />
-            <span className="font-medium">Settings</span>
           </button>
           <button
             onClick={logout}
