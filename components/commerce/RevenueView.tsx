@@ -34,6 +34,12 @@ const STATUS_COLOR: Record<string, string> = {
   rejected:   "text-accent-red",
 };
 
+const REVENUE_TYPE_LABEL: Record<string, string> = {
+  live:      "Live Revenue",
+  pipeline:  "Pipeline Revenue",
+  potential: "Potential Revenue",
+};
+
 interface RevenueIntel {
   live: number;
   pipeline: number;
@@ -114,37 +120,37 @@ export function RevenueView() {
         {/* Header */}
         <div className="mb-8">
           <p className="text-[11px] text-text-ghost font-medium tracking-[0.12em] uppercase mb-2">
-            Revenue
+            Company
           </p>
           <h1 className="text-[32px] md:text-[40px] font-semibold text-text-primary tracking-tight leading-tight">
-            Revenue
+            Revenue Health
           </h1>
         </div>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
           <RevenueCard
-            label="Live MRR"
-            value={liveRev > 0 ? fmtEuro(liveRev) : useLegacy ? "—" : "—"}
-            sub={`${liveEntries.length} active contract${liveEntries.length !== 1 ? "s" : ""}`}
+            label="Live Revenue"
+            value={liveRev > 0 ? fmtEuro(liveRev) : "—"}
+            sub={liveEntries.length > 0 ? `${liveEntries.length} active stream${liveEntries.length !== 1 ? "s" : ""}` : "No live revenue yet"}
             color="#10b981"
           />
           <RevenueCard
-            label="Pipeline"
+            label="Pipeline Revenue"
             value={pipeline > 0 ? fmtEuro(pipeline) : "—"}
-            sub="Weighted by probability"
+            sub="Building toward revenue"
             color="#00D4FF"
           />
           <RevenueCard
-            label="Potential"
+            label="Potential Revenue"
             value={potential > 0 ? fmtEuro(potential) : "—"}
-            sub="Early-stage opportunities"
+            sub="Early stage, high upside"
             color="#8b5cf6"
           />
           <RevenueCard
-            label="Entries"
+            label="Active Sources"
             value={String(totalActive || activeOpp.length)}
-            sub="Active revenue sources"
+            sub="Revenue streams tracked"
             color="#f59e0b"
           />
         </div>
@@ -155,7 +161,7 @@ export function RevenueView() {
             <div className="flex items-center gap-2.5">
               <TrendingUp className="w-4 h-4 text-accent-green" />
               <span className="text-[13px] font-semibold text-text-primary">
-                {useLegacy ? "Opportunities" : "Revenue"}
+                {useLegacy ? "Opportunities" : "Revenue Sources"}
               </span>
             </div>
             {useLegacy && (
@@ -181,8 +187,8 @@ export function RevenueView() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] text-text-primary font-medium leading-snug">{entry.title}</p>
-                    <p className="text-[11px] text-text-muted mt-0.5 capitalize">
-                      {entry.revenueType} · {entry.serviceType}
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      {REVENUE_TYPE_LABEL[entry.revenueType] ?? entry.revenueType} · {entry.serviceType}
                       {entry.probability != null && entry.revenueType !== "live"
                         ? ` · ${entry.probability}% probability`
                         : ""}
@@ -202,7 +208,7 @@ export function RevenueView() {
                     )}>
                       {fmtEuro(entry.amount)}/mo
                     </p>
-                    <p className="text-[11px] text-text-ghost mt-0.5 capitalize">{entry.revenueType}</p>
+                    <p className="text-[11px] text-text-ghost mt-0.5">{REVENUE_TYPE_LABEL[entry.revenueType] ?? entry.revenueType}</p>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-text-ghost flex-shrink-0" />
                 </div>
