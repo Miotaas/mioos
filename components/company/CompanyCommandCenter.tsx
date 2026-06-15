@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
 import { Building2, TrendingUp, Zap, AlertTriangle, CheckCircle2,
-  Clock, Target, RefreshCw, Circle, ChevronRight, BarChart3,
-  Lightbulb, Shield } from "lucide-react";
+  RefreshCw, Circle, BarChart3, Lightbulb, Shield, Users2 } from "lucide-react";
 
 interface RevenueEntry { title: string; amount: number; revenueType: string; currency: string; probability: number | null }
 interface Opportunity  { id: string; title: string; opportunityType: string; score: number; confidence: number; estimatedRevenue: number | null; status: string; currentStage: string | null; createdAt: string }
@@ -50,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
 function fmtAway(minutes: number): string {
   if (minutes < 2)    return "just now";
   if (minutes < 60)   return `${minutes}m`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60 > 0 ? ` ${minutes % 60}m` : ""}`.trim();
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h${minutes % 60 > 0 ? ` ${minutes % 60}m` : ""}`;
   return `${Math.floor(minutes / 1440)}d`;
 }
 
@@ -62,18 +61,50 @@ function getBriefGreeting(): string {
   return "Good evening";
 }
 
+function describeTeamOutcome(departmentType: string, outputs: number, completed: number): string {
+  const n = outputs > 0 ? outputs : completed;
+  if (n === 0) return "No activity this week";
+  const w = outputs > 0 ? "output" : "task";
+  if (departmentType === "research")    return `${n} research ${w}${n === 1 ? "" : "s"} this week`;
+  if (departmentType === "sales")       return `${n} prospect${n === 1 ? "" : "s"} qualified`;
+  if (departmentType === "marketing")   return `${n} campaign${n === 1 ? "" : "s"} prepared`;
+  if (departmentType === "content")     return `${n} content piece${n === 1 ? "" : "s"}`;
+  if (departmentType === "development") return `${n} deliverable${n === 1 ? "" : "s"}`;
+  if (departmentType === "commerce")    return `${n} opportunit${n === 1 ? "y" : "ies"} validated`;
+  return `${n} ${w}${n === 1 ? "" : "s"} this week`;
+}
+
 function fmt(n: number): string {
   if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `€${(n / 1_000).toFixed(1)}K`;
   return `€${n.toLocaleString()}`;
 }
 
-function Section({ title, icon: Icon, children, className = "" }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; className?: string }) {
+function Section({
+  title, icon: Icon, children, className = "", onLink, linkLabel,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  className?: string;
+  onLink?: () => void;
+  linkLabel?: string;
+}) {
   return (
     <div className={`bg-surface-1 border border-white/[0.06] rounded-xl p-5 ${className}`}>
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className="w-4 h-4 text-accent-cyan opacity-70" />
-        <h2 className="text-xs font-semibold text-text-ghost uppercase tracking-widest">{title}</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-accent-cyan opacity-70" />
+          <h2 className="text-xs font-semibold text-text-ghost uppercase tracking-widest">{title}</h2>
+        </div>
+        {onLink && (
+          <button
+            onClick={onLink}
+            className="text-[10px] text-text-ghost hover:text-text-secondary border border-white/[0.06] hover:border-white/[0.1] px-2 py-0.5 rounded-md transition-all"
+          >
+            {linkLabel ?? "View →"}
+          </button>
+        )}
       </div>
       {children}
     </div>
@@ -91,7 +122,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub?: str
 }
 
 export function CompanyCommandCenter() {
-  const [data, setData]     = useState<DashboardData | null>(null);
+  const [data, setData]       = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -146,7 +177,7 @@ export function CompanyCommandCenter() {
     );
   }
 
-  const { revenue, opportunities, projects, blocked, approvals, goals, topROIAction, allocationPlan, runtime, artifactsThisWeek } = data;
+  const { revenue, opportunities, projects, blocked, approvals, goals, topROIAction, runtime, artifactsThisWeek } = data;
 
   // Executive Brief — derived data
   const briefDate = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -256,21 +287,17 @@ export function CompanyCommandCenter() {
         </div>
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-accent-cyan" />
-            Company
-          </h1>
-          <p className="text-xs text-text-ghost mt-0.5">
-            Autonomous Company Runtime — {new Date(data.generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-            <span className={`ml-3 inline-flex items-center gap-1 ${runtime.alive ? "text-accent-green" : "text-accent-amber"}`}>
-              <Circle className={`w-1.5 h-1.5 fill-current ${runtime.alive ? "text-accent-green" : "text-accent-amber"}`} />
-              {runtime.alive ? "Runtime live" : "Runtime offline"} · {runtime.loopCount} ticks
-            </span>
-          </p>
-        </div>
+      {/* Runtime status + refresh */}
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-[11px] flex items-center gap-1.5">
+          <Circle className={`w-1.5 h-1.5 fill-current flex-shrink-0 ${runtime.alive ? "text-accent-green" : "text-accent-amber"}`} />
+          <span className={runtime.alive ? "text-accent-green" : "text-accent-amber"}>
+            {runtime.alive ? "Runtime live" : "Runtime offline"}
+          </span>
+          <span className="text-text-ghost">
+            · {runtime.loopCount} ticks · {new Date(data.generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </p>
         <button
           onClick={refresh}
           className="flex items-center gap-1.5 text-[11px] text-text-ghost hover:text-text-primary px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-white/[0.12] transition-all"
@@ -280,222 +307,228 @@ export function CompanyCommandCenter() {
         </button>
       </div>
 
-      {/* Alerts row */}
-      {(blocked.totalIssues > 0 || approvals.pendingCount > 0) && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          {approvals.pendingCount > 0 && (
-            <div className="flex items-center gap-2 bg-accent-amber/10 border border-accent-amber/20 rounded-lg px-4 py-2.5 text-sm">
-              <Shield className="w-4 h-4 text-accent-amber" />
-              <span className="text-text-primary font-medium">{approvals.pendingCount} approval{approvals.pendingCount > 1 ? "s" : ""} need your decision</span>
-            </div>
-          )}
-          {blocked.totalIssues > 0 && (
-            <div className="flex items-center gap-2 bg-accent-red/10 border border-accent-red/20 rounded-lg px-4 py-2.5 text-sm">
-              <AlertTriangle className="w-4 h-4 text-accent-red" />
-              <span className="text-text-primary font-medium">{blocked.totalIssues} blocked or stalled item{blocked.totalIssues > 1 ? "s" : ""}</span>
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* 6-section company grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* === Column 1: Revenue + Goals === */}
-        <div className="space-y-4">
-
-          {/* 1. What is making money? */}
-          <Section title="Revenue" icon={TrendingUp}>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <Metric label="MRR" value={fmt(revenue.mrr)} sub={revenue.potential > 0 ? `${fmt(revenue.potential)} pipeline` : undefined} />
-              <Metric label="Total Active" value={fmt(revenue.total)} sub={revenue.arr > 0 ? `${fmt(revenue.arr)} ARR` : undefined} />
+        {/* ── REVENUE ───────────────────────────────────────────── */}
+        <Section
+          title="Revenue"
+          icon={TrendingUp}
+          onLink={() => setActiveView("revenue")}
+          linkLabel="Revenue Health →"
+        >
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Metric
+              label="Live Revenue"
+              value={fmt(revenue.mrr || revenue.total)}
+              sub={revenue.mrr > 0 ? "monthly recurring" : "no recurring yet"}
+            />
+            <Metric
+              label="Pipeline"
+              value={revenue.potential > 0 ? fmt(revenue.potential) : "—"}
+              sub={revenue.potential > 0 ? "in development" : "building now"}
+            />
+          </div>
+          {revenue.entries.slice(0, 3).map((e, i) => (
+            <div key={i} className="flex items-center justify-between py-2 border-t border-white/[0.04] text-sm">
+              <span className="text-text-secondary truncate max-w-[60%]">{e.title}</span>
+              <span className="text-text-primary font-medium">{fmt(e.amount)}</span>
             </div>
-            {revenue.entries.slice(0, 4).map((e, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-t border-white/[0.04] text-sm">
-                <span className="text-text-secondary truncate max-w-[60%]">{e.title}</span>
-                <span className="text-text-primary font-medium">{fmt(e.amount)}</span>
-              </div>
-            ))}
-            {revenue.entries.length === 0 && (
-              <p className="text-text-ghost text-xs text-center py-2">No revenue entries yet — opportunities being built</p>
-            )}
-          </Section>
-
-          {/* Goals */}
-          {goals.length > 0 && (
-            <Section title="Active Goals" icon={Target}>
-              {goals.map(g => (
-                <div key={g.id} className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-text-secondary truncate max-w-[70%]">{g.title}</span>
-                    <span className="text-xs text-text-ghost">{g.progress ?? 0}%</span>
-                  </div>
-                  <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div className="h-full bg-accent-violet rounded-full transition-all" style={{ width: `${g.progress ?? 0}%` }} />
-                  </div>
-                </div>
-              ))}
-            </Section>
+          ))}
+          {revenue.entries.length === 0 && (
+            <p className="text-text-ghost text-xs text-center py-2">No revenue entries yet</p>
           )}
-        </div>
+        </Section>
 
-        {/* === Column 2: Opportunities + Pipeline === */}
-        <div className="space-y-4">
-
-          {/* 2. What opportunities were discovered? */}
-          <Section title="Opportunities" icon={Lightbulb}>
-            <div className="flex items-center gap-4 mb-4">
-              <Metric label="Active" value={String(opportunities.totalActive)} />
-              <Metric label="This Week" value={String(opportunities.recentCount)} />
-              <Metric label="Artifacts" value={String(artifactsThisWeek)} sub="this week" />
-            </div>
-
-            {/* Funnel pills */}
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {Object.entries(opportunities.funnel).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([status, count]) => (
+        {/* ── OPPORTUNITIES ─────────────────────────────────────── */}
+        <Section
+          title="Opportunities"
+          icon={Lightbulb}
+          onLink={() => setActiveView("opportunities")}
+          linkLabel="View all →"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <Metric label="Active" value={String(opportunities.totalActive)} />
+            <Metric label="This week" value={String(opportunities.recentCount)} sub="discovered" />
+          </div>
+          {Object.keys(opportunities.funnel).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {Object.entries(opportunities.funnel).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([status, count]) => (
                 <span key={status} className={`text-[10px] px-2 py-0.5 rounded-full border border-white/[0.08] ${STATUS_COLORS[status] ?? "text-text-ghost"}`}>
                   {count} {status}
                 </span>
               ))}
             </div>
-
-            {/* Recent discoveries */}
-            <div className="space-y-2">
-              {opportunities.recent.slice(0, 5).map(opp => (
-                <div key={opp.id} className="flex items-start justify-between gap-2 py-1.5 border-t border-white/[0.04]">
-                  <div className="min-w-0">
-                    <p className="text-sm text-text-secondary truncate">{opp.title}</p>
-                    <p className="text-[10px] text-text-ghost">{OPP_TYPE_LABELS[opp.opportunityType] ?? opp.opportunityType} · score {opp.score}/10</p>
-                  </div>
-                  <span className={`text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[opp.status] ?? "text-text-ghost"}`}>
-                    {opp.status}
-                  </span>
-                </div>
-              ))}
-              {opportunities.recent.length === 0 && (
-                <p className="text-text-ghost text-xs text-center py-2">Research team is discovering opportunities</p>
-              )}
+          )}
+          {opportunities.recent.slice(0, 3).map(opp => (
+            <div key={opp.id} className="flex items-start justify-between gap-2 py-1.5 border-t border-white/[0.04]">
+              <p className="text-[12px] text-text-secondary truncate">{opp.title}</p>
+              <span className={`text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[opp.status] ?? "text-text-ghost"}`}>
+                {opp.score}/10
+              </span>
             </div>
-          </Section>
-
-          {/* 3. What projects are progressing? */}
-          <Section title="Projects" icon={BarChart3}>
-            {projects.active.slice(0, 5).map(p => (
-              <div key={p.id} className="py-2 border-t border-white/[0.04]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-text-secondary truncate max-w-[70%]">{p.name}</span>
-                  <div className="flex items-center gap-2">
-                    {p.revenueImpact && <span className="text-[10px] text-accent-green">{fmt(p.revenueImpact)}</span>}
-                    {p.autoCreated && <span className="text-[9px] text-accent-cyan/60 border border-accent-cyan/20 rounded px-1">auto</span>}
-                  </div>
-                </div>
-                {p.nextAction && <p className="text-[10px] text-text-ghost mt-1 truncate">{p.nextAction}</p>}
-              </div>
-            ))}
-            {projects.active.length === 0 && (
-              <p className="text-text-ghost text-xs text-center py-2">No active projects — opportunities create them automatically</p>
-            )}
-          </Section>
-        </div>
-
-        {/* === Column 3: Focus + Blocked + Approvals === */}
-        <div className="space-y-4">
-
-          {/* Top ROI Action */}
-          {topROIAction && (
-            <div className="bg-gradient-to-br from-accent-green/10 to-transparent border border-accent-green/20 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="w-4 h-4 text-accent-green" />
-                <h2 className="text-xs font-semibold text-accent-green uppercase tracking-widest">Highest ROI Action</h2>
-              </div>
-              <p className="text-sm font-medium text-text-primary mb-1">{topROIAction.title}</p>
-              <p className="text-xs text-text-ghost mb-3">{OPP_TYPE_LABELS[topROIAction.opportunityType] ?? topROIAction.opportunityType} · ROI estimate: {fmt(topROIAction.roi)}/mo</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                  <div className="h-full bg-accent-green rounded-full" style={{ width: `${topROIAction.allocationPct}%` }} />
-                </div>
-                <span className="text-[10px] text-accent-green font-medium">{topROIAction.allocationPct}% effort</span>
-              </div>
-              <p className="text-[10px] text-text-ghost mt-2">{topROIAction.recommendation}</p>
-            </div>
+          ))}
+          {opportunities.recent.length === 0 && (
+            <p className="text-text-ghost text-xs text-center py-2">Research team discovering opportunities</p>
           )}
+        </Section>
 
-          {/* Capital Allocation */}
-          {allocationPlan.length > 0 && (
-            <Section title="Effort Allocation" icon={Target}>
-              {allocationPlan.slice(0, 5).map((entry, i) => (
-                <div key={entry.opportunityId} className="flex items-center gap-3 py-2 border-t border-white/[0.04]">
-                  <span className="text-[10px] text-text-ghost w-4 flex-shrink-0">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-text-secondary truncate">{entry.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div className="flex-1 h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
-                        <div className="h-full bg-accent-cyan rounded-full" style={{ width: `${entry.allocationPct}%` }} />
-                      </div>
-                      <span className="text-[9px] text-text-ghost flex-shrink-0">{entry.allocationPct}%</span>
+        {/* ── NEEDS DECISION — visually dominant, amber-tinted ──── */}
+        <Section
+          title="Needs Decision"
+          icon={Shield}
+          className="bg-accent-amber/[0.04] border-accent-amber/25"
+          onLink={() => setActiveView("drafts")}
+          linkLabel="Pending Actions →"
+        >
+          {approvals.pendingCount > 0 ? (
+            <>
+              <div className="text-[40px] font-bold text-accent-amber leading-none mb-4">{approvals.pendingCount}</div>
+              <div className="space-y-0">
+                {approvals.pending.slice(0, 4).map(a => (
+                  <div key={a.id} className="py-2 border-t border-accent-amber/10">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[12px] text-text-secondary truncate">{a.title}</p>
+                      <span className={`text-[10px] flex-shrink-0 font-medium ${
+                        a.priority === "urgent" ? "text-accent-red" :
+                        a.priority === "high"   ? "text-accent-amber" : "text-text-ghost"
+                      }`}>{a.priority}</span>
                     </div>
+                    {a.sourceTeam?.name && (
+                      <p className="text-[10px] text-text-ghost mt-0.5">{a.sourceTeam.name}</p>
+                    )}
                   </div>
-                </div>
-              ))}
-            </Section>
-          )}
-
-          {/* 4. What is blocked? */}
-          {blocked.totalIssues > 0 && (
-            <Section title="Blocked" icon={AlertTriangle}>
-              {blocked.blockedProjects.map(p => (
-                <div key={p.id} className="flex items-start gap-2 py-2 border-t border-white/[0.04]">
-                  <AlertTriangle className="w-3 h-3 text-accent-red flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-text-secondary">{p.name}</p>
-                    {p.blocker && <p className="text-[10px] text-accent-red">{p.blocker}</p>}
-                  </div>
-                </div>
-              ))}
-              {blocked.stalledOpportunities.map(o => (
-                <div key={o.id} className="flex items-start gap-2 py-2 border-t border-white/[0.04]">
-                  <Clock className="w-3 h-3 text-accent-amber flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-text-secondary">{o.title}</p>
-                    <p className="text-[10px] text-text-ghost">Stalled at: {o.currentStage ?? o.status}</p>
-                  </div>
-                </div>
-              ))}
-            </Section>
-          )}
-
-          {/* 5. What needs approval? */}
-          {approvals.pendingCount > 0 && (
-            <Section title="Needs Your Decision" icon={Shield}>
-              {approvals.pending.slice(0, 5).map(a => (
-                <div key={a.id} className="py-2 border-t border-white/[0.04]">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm text-text-secondary truncate">{a.title}</p>
-                      <p className="text-[10px] text-text-ghost">{a.sourceTeam?.name ?? "System"}</p>
-                    </div>
-                    <span className={`text-[10px] flex-shrink-0 font-medium ${a.priority === "urgent" ? "text-accent-red" : a.priority === "high" ? "text-accent-amber" : "text-text-ghost"}`}>
-                      {a.priority}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {approvals.pendingCount > 5 && (
-                <p className="text-[10px] text-text-ghost text-center pt-2">+{approvals.pendingCount - 5} more in Inbox</p>
+                ))}
+              </div>
+              {approvals.pendingCount > 4 && (
+                <p className="text-[10px] text-text-ghost text-center pt-2 border-t border-accent-amber/10">
+                  +{approvals.pendingCount - 4} more
+                </p>
               )}
-            </Section>
-          )}
-
-          {/* All clear */}
-          {blocked.totalIssues === 0 && approvals.pendingCount === 0 && (
-            <div className="flex items-center gap-3 bg-accent-green/5 border border-accent-green/15 rounded-xl p-4">
+            </>
+          ) : (
+            <div className="flex items-center gap-3 py-2">
               <CheckCircle2 className="w-4 h-4 text-accent-green flex-shrink-0" />
               <div>
                 <p className="text-sm text-text-primary font-medium">All clear</p>
-                <p className="text-xs text-text-ghost">No blockers or pending approvals</p>
+                <p className="text-xs text-text-ghost">No decisions waiting</p>
               </div>
             </div>
           )}
-        </div>
+        </Section>
+
+        {/* ── DEPARTMENTS ───────────────────────────────────────── */}
+        <Section
+          title="Departments"
+          icon={Users2}
+          onLink={() => setActiveView("workforce")}
+          linkLabel="View Departments →"
+        >
+          {wfTeams.length > 0 ? (
+            <div>
+              {wfTeams
+                .sort((a, b) => (b.outputsThisWeek + b.completedThisWeek) - (a.outputsThisWeek + a.completedThisWeek))
+                .slice(0, 5)
+                .map(t => (
+                  <div key={t.teamId} className="flex items-center gap-2.5 py-2 border-t border-white/[0.04]">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      t.outputsThisWeek > 0  ? "bg-accent-green" :
+                      t.completedThisWeek > 0 ? "bg-accent-cyan/60" : "bg-white/20"
+                    }`} />
+                    <span className="text-[12px] text-text-secondary font-medium w-20 flex-shrink-0 truncate">{t.teamName}</span>
+                    <span className="text-[11px] text-text-ghost truncate">
+                      {describeTeamOutcome(t.departmentType, t.outputsThisWeek, t.completedThisWeek)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <p className="text-text-ghost text-xs text-center py-3">Loading department data...</p>
+          )}
+        </Section>
+
+        {/* ── PROJECTS ──────────────────────────────────────────── */}
+        <Section
+          title="Projects"
+          icon={BarChart3}
+          onLink={() => setActiveView("projects")}
+          linkLabel="View Projects →"
+        >
+          {projects.active.slice(0, 4).map(p => (
+            <div key={p.id} className="py-2 border-t border-white/[0.04]">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[12px] text-text-secondary truncate max-w-[70%]">{p.name}</span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {p.revenueImpact && p.revenueImpact > 0 && (
+                    <span className="text-[10px] text-accent-green">{fmt(p.revenueImpact)}</span>
+                  )}
+                  {p.autoCreated && (
+                    <span className="text-[9px] text-accent-cyan/60 border border-accent-cyan/20 rounded px-1">auto</span>
+                  )}
+                </div>
+              </div>
+              {p.nextAction && (
+                <p className="text-[10px] text-text-ghost truncate">{p.nextAction}</p>
+              )}
+            </div>
+          ))}
+          {projects.active.length === 0 && (
+            <p className="text-text-ghost text-xs text-center py-2">No active projects</p>
+          )}
+          {blocked.blockedProjects.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-white/[0.04] flex items-center gap-1.5">
+              <AlertTriangle className="w-3 h-3 text-accent-red flex-shrink-0" />
+              <p className="text-[10px] text-accent-red">
+                {blocked.blockedProjects.length} project{blocked.blockedProjects.length > 1 ? "s" : ""} blocked
+              </p>
+            </div>
+          )}
+        </Section>
+
+        {/* ── INTELLIGENCE — green-tinted synthesis view ────────── */}
+        <Section
+          title="Intelligence"
+          icon={Zap}
+          className="bg-accent-green/[0.02] border-accent-green/15"
+        >
+          {topROIAction ? (
+            <div className="mb-4">
+              <p className="text-[9px] text-accent-green uppercase tracking-wider font-semibold mb-1.5">Highest ROI Action</p>
+              <p className="text-[13px] font-medium text-text-primary leading-snug">{topROIAction.title}</p>
+              <p className="text-[10px] text-text-ghost mt-0.5">
+                {OPP_TYPE_LABELS[topROIAction.opportunityType] ?? topROIAction.opportunityType} · Est. {fmt(topROIAction.roi)}/mo
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className="h-full bg-accent-green rounded-full" style={{ width: `${topROIAction.allocationPct}%` }} />
+                </div>
+                <span className="text-[9px] text-accent-green font-medium">{topROIAction.allocationPct}% effort</span>
+              </div>
+              {topROIAction.recommendation && (
+                <p className="text-[10px] text-text-ghost mt-1.5 leading-relaxed">{topROIAction.recommendation}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-text-ghost text-xs mb-4">Building intelligence plan...</p>
+          )}
+          {goals.length > 0 && (
+            <div className="border-t border-white/[0.04] pt-3">
+              <p className="text-[9px] text-text-ghost uppercase tracking-wider font-semibold mb-2">Active Goals</p>
+              {goals.slice(0, 2).map(g => (
+                <div key={g.id} className="mb-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-text-secondary truncate max-w-[75%]">{g.title}</span>
+                    <span className="text-[10px] text-text-ghost">{g.progress ?? 0}%</span>
+                  </div>
+                  <div className="h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="h-full bg-accent-violet rounded-full" style={{ width: `${g.progress ?? 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
       </div>
     </div>
   );
