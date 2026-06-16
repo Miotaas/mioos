@@ -6,7 +6,7 @@ import { useAppStore } from "@/store/appStore";
 import { normalizeTask } from "@/lib/normalize";
 import {
   WorkforceApproval, ApprovalQueueItem, MioProject, MioTask,
-  RevenueEntry, UnifiedDraft, Assignment, WorkforceTeam,
+  RevenueEntry, UnifiedDraft, Assignment, WorkforceTeam, MioGoal,
 } from "@/types";
 import {
   Sun, AlertCircle, ChevronRight, Calendar,
@@ -90,6 +90,40 @@ function buildBrief(
   return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1) + ".").join(" ");
 }
 
+function buildCatchUpBrief(
+  pendingCount: number,
+  allProjects: MioProject[],
+  allRevEntries: RevenueEntry[],
+  allDrafts: UnifiedDraft[],
+  allAssignments: Assignment[],
+): string {
+  const parts: string[] = [];
+
+  if (pendingCount > 0)
+    parts.push(`${pendingCount} item${pendingCount > 1 ? "s are" : " is"} waiting for your decision`);
+
+  const newOutputs = allDrafts.filter(d => d.status === "review_needed").length;
+  if (newOutputs > 0)
+    parts.push(`${newOutputs} draft${newOutputs > 1 ? "s" : ""} ready for review`);
+
+  const reviewWork = allAssignments.filter(a => a.status === "review").length;
+  if (reviewWork > 0)
+    parts.push(`${reviewWork} assignment${reviewWork > 1 ? "s" : ""} awaiting your approval`);
+
+  const blocked = allProjects.filter(p => p.status === "blocked");
+  if (blocked.length > 0)
+    parts.push(`${blocked.length === 1 ? blocked[0].name + " is" : `${blocked.length} projects are`} still blocked`);
+
+  const totalRev = allRevEntries.filter(e => e.revenueType === "live" && e.status === "active").reduce((s, e) => s + e.amount, 0);
+  if (totalRev > 0)
+    parts.push(`revenue is at ${totalRev >= 1000 ? `€${Math.round(totalRev / 1000)}k` : `€${Math.round(totalRev)}`} MRR`);
+
+  if (parts.length === 0)
+    return "Nothing changed while you were away. You have a clean slate.";
+
+  return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1) + ".").join(" ");
+}
+
 // ── types ────────────────────────────────────────────────────────────
 
 interface CalEvent {
@@ -128,6 +162,11 @@ export function TodayView() {
   const [execRecs,     setExecRecs]     = useState<{ id: string; title: string; priority: string }[]>([]);
   const [teams,        setTeams]        = useState<WorkforceTeam[]>([]);
 
+  // catch-up mode (shown when returning after >24h)
+  const [catchUpMode, setCatchUpMode] = useState(false);
+  // personal goals for life signals in agenda
+  const [lifeGoals, setLifeGoals] = useState<MioGoal[]>([]);
+
   // brief refresh key
   const [briefKey, setBriefKey] = useState(0);
   // dispatch modal
@@ -146,7 +185,8 @@ export function TodayView() {
       fetch("/api/drafts?limit=8").then(r => r.json()).catch(() => []),
       fetch("/api/assignments?status=review").then(r => r.json()).catch(() => []),
       fetch("/api/workforce/teams").then(r => r.json()).catch(() => []),
-    ]).then(([wfa, ap, pr, tk, re, dr, rv, tm]) => {
+      fetch("/api/goals").then(r => r.json()).catch(() => []),
+    ]).then(([wfa, ap, pr, tk, re, dr, rv, tm, gl]) => {
       setWfApprovals(Array.isArray(wfa) ? wfa.filter((a: WorkforceApproval) => a.status === "pending") : []);
       setApprovals(Array.isArray(ap) ? ap.filter((a: ApprovalQueueItem) => a.status === "pending") : []);
       setProjects(Array.isArray(pr) ? pr.filter((p: MioProject) => ["active","paused","blocked"].includes(p.status)) : []);
@@ -155,7 +195,22 @@ export function TodayView() {
       setDrafts(Array.isArray(dr) ? dr : []);
       setRevAssignments(Array.isArray(rv) ? rv : []);
       setTeams(Array.isArray(tm) ? tm.filter((t: WorkforceTeam) => t.status === "active") : []);
+      const personalGoals = Array.isArray(gl) ? gl.filter((g: MioGoal) => g.goalType === "personal" && g.status !== "achieved" && g.status !== "abandoned") : [];
+      setLifeGoals(personalGoals);
       setLoaded(true);
+
+      // Track last visit for catch-up mode
+      try {
+        const lastVisit = localStorage.getItem("mioos-last-visit");
+        const now = Date.now();
+        if (lastVisit) {
+          const hoursSince = (now - parseInt(lastVisit, 10)) / (1000 * 60 * 60);
+          if (hoursSince > 24) {
+            setCatchUpMode(true);
+          }
+        }
+        localStorage.setItem("mioos-last-visit", String(now));
+      } catch { /* localStorage not available in SSR */ }
     });
 
     fetch("/api/executive/recommendations")
@@ -225,12 +280,23 @@ export function TodayView() {
   // Personal agenda — calendar events + tasks due today
   const todayTasks = tasks.filter(t => isToday(t.dueDate) && t.status !== "done" && t.status !== "cancelled");
   const todayCalEvents = calEvents.filter(e => isToday(e.start));
+  const now48h = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const lifeSignals: CalEvent[] = lifeGoals
+    .filter(g => g.targetDate && new Date(g.targetDate) <= now48h)
+    .map(g => ({
+      id: `life_${g.id}`,
+      title: `Goal: ${g.title}`,
+      start: g.targetDate!,
+      source: "task" as const,
+    }));
+
   const agendaItems: CalEvent[] = [
     ...todayCalEvents,
     ...todayTasks.map(t => ({
       id: `task_${t.id}`, title: t.title,
       start: t.dueDate!, source: "task" as const,
     })),
+    ...lifeSignals,
   ].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
   // Focus — top executive recommendation or derived
@@ -308,6 +374,27 @@ export function TodayView() {
 
           {/* ── LEFT COLUMN ─────────────────────────────────────── */}
           <div className="space-y-5">
+
+            {/* Catch-up mode banner */}
+            {catchUpMode && loaded && (
+              <div className="rounded-2xl bg-accent-amber/[0.06] border border-accent-amber/20 p-5">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-accent-amber flex-shrink-0" />
+                    <p className="text-[13px] font-semibold text-accent-amber">Since you were away</p>
+                  </div>
+                  <button
+                    onClick={() => setCatchUpMode(false)}
+                    className="p-1 rounded text-accent-amber/60 hover:text-accent-amber transition-colors flex-shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-[13px] text-text-secondary leading-relaxed">
+                  {buildCatchUpBrief(totalPending, projects, revEntries, drafts, reviewAssignments)}
+                </p>
+              </div>
+            )}
 
             {/* 1. Today Brief + Focus (merged) */}
             <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] p-6">
