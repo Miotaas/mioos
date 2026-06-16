@@ -4,35 +4,9 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { WorkforceTeam, Assignment, WorkforceOutput, MioProject } from "@/types";
 import {
-  ShoppingBag, Search, UserCheck, Megaphone, FileText,
-  Settings2, Headphones, Code2, Crown, Loader2, Send,
+  ShoppingBag, TrendingUp, Wrench, Video,
+  Loader2, Send,
 } from "lucide-react";
-
-// ── Department config (local copy — do NOT import from WorkforceView) ──────────
-
-const DEPT_CONFIG: Record<string, { label: string; color: string }> = {
-  commerce:    { label: "Commerce",    color: "#10b981" },
-  research:    { label: "Research",    color: "#6366f1" },
-  sales:       { label: "Sales",       color: "#00D4FF" },
-  marketing:   { label: "Marketing",   color: "#f59e0b" },
-  content:     { label: "Content",     color: "#8b5cf6" },
-  operations:  { label: "Operations",  color: "#94a3b8" },
-  support:     { label: "Support",     color: "#06b6d4" },
-  development: { label: "Development", color: "#a78bfa" },
-  executive:   { label: "Executive",   color: "#fbbf24" },
-};
-
-const DEPT_ICONS: Record<string, React.ElementType> = {
-  commerce:    ShoppingBag,
-  research:    Search,
-  sales:       UserCheck,
-  marketing:   Megaphone,
-  content:     FileText,
-  operations:  Settings2,
-  support:     Headphones,
-  development: Code2,
-  executive:   Crown,
-};
 
 // ── Humanise output types ────────────────────────────────────────────────────
 
@@ -54,6 +28,47 @@ function humaniseOutputType(raw: string): string {
   };
   return map[raw] ?? raw.replace(/_/g, " ");
 }
+
+// ── Business Units ────────────────────────────────────────────────────────────
+
+const BUSINESS_UNITS = [
+  {
+    id: "ecommerce",
+    name: "E-commerce Team",
+    mission: "Source, validate and sell products. Build a portfolio of profitable product lines.",
+    executionLabel: "Products & Revenue",
+    departmentPatterns: ["commerce", "digital_commerce", "fulfillment", "ecommerce"],
+    color: "#10b981",
+    Icon: ShoppingBag,
+  },
+  {
+    id: "automation-sales",
+    name: "Automation Sales Team",
+    mission: "Identify businesses with inefficiencies, design automation systems, and convert them into clients.",
+    executionLabel: "Automation Clients",
+    departmentPatterns: ["sales", "outreach", "lead_generation", "automation"],
+    color: "#00D4FF",
+    Icon: Wrench,
+  },
+  {
+    id: "youtube",
+    name: "YouTube Automation Team",
+    mission: "Build and scale faceless YouTube channels. Produce content, grow subscribers, and monetize.",
+    executionLabel: "Videos & Channels",
+    departmentPatterns: ["content", "writing", "youtube", "video"],
+    color: "#8b5cf6",
+    Icon: Video,
+  },
+  {
+    id: "crypto-stock",
+    name: "Crypto / Stock Trader Team",
+    mission: "Research financial markets, build watchlists, analyse opportunities, and prepare trade proposals for approval.",
+    executionLabel: "Trades & Analysis",
+    departmentPatterns: ["research", "crypto", "trading", "finance"],
+    color: "#f59e0b",
+    Icon: TrendingUp,
+  },
+] as const;
 
 // ── Time helper ───────────────────────────────────────────────────────────────
 
@@ -185,7 +200,7 @@ export function TeamsView() {
           <p className="text-[15px] text-text-secondary">
             {loading
               ? "Loading teams…"
-              : `${teams.filter(t => t.status === "active").length} active · ${assignments.filter(a => ["pending","active","review"].includes(a.status)).length} assignments in progress`
+              : `${BUSINESS_UNITS.length} business units · ${assignments.filter(a => ["pending","active","review"].includes(a.status)).length} assignments running`
             }
           </p>
         </div>
@@ -268,71 +283,65 @@ function ActiveWorkTab({
     );
   }
 
-  if (teams.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-[15px] text-text-muted">No active teams</p>
-        <p className="text-[13px] text-text-ghost mt-1">Teams will appear here once configured.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {teams.map(team => {
-        const dept = DEPT_CONFIG[team.departmentType] ?? { label: team.name, color: "#64748b" };
-        const Icon = DEPT_ICONS[team.departmentType] ?? Settings2;
-        const isActive = team.status === "active";
-
-        const teamAssignments = assignments.filter(
-          a => a.teamId === team.id && ["pending", "active", "review"].includes(a.status)
+      {BUSINESS_UNITS.map(unit => {
+        const matchingTeam = teams.find(t =>
+          unit.departmentPatterns.some(
+            p => t.departmentType?.toLowerCase().includes(p) || t.name?.toLowerCase().includes(p)
+          )
         );
+
+        const teamAssignments = matchingTeam
+          ? assignments.filter(
+              a => a.teamId === matchingTeam.id && ["pending", "active", "review"].includes(a.status)
+            )
+          : [];
         const shown = teamAssignments.slice(0, 3);
         const overflow = teamAssignments.length - shown.length;
 
         return (
           <div
-            key={team.id}
-            className={cn(
-              "rounded-2xl border bg-[#0d1220] p-5 transition-colors",
-              isActive ? "border-white/[0.05]" : "border-white/[0.03] opacity-60"
-            )}
+            key={unit.id}
+            className="rounded-2xl border bg-[#0d1220] p-5 transition-colors border-white/[0.05]"
           >
-            {/* Team header */}
+            {/* Header row */}
             <div className="flex items-start gap-3 mb-3">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{
-                  backgroundColor: `${dept.color}18`,
-                  border: `1px solid ${dept.color}30`,
-                }}
+                style={{ backgroundColor: `${unit.color}18`, border: `1px solid ${unit.color}30` }}
               >
-                <Icon className="w-4 h-4" style={{ color: dept.color }} />
+                <unit.Icon className="w-4 h-4" style={{ color: unit.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="text-[14px] font-semibold text-text-primary truncate">
-                    {team.name}
-                  </h3>
-                  {isActive && (
-                    <span className="flex items-center gap-1 text-[10px] text-accent-green font-medium flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent-green/70" />
-                      Active
-                    </span>
-                  )}
-                  {!isActive && (
-                    <span className="text-[10px] text-text-ghost flex-shrink-0 italic">Idle</span>
-                  )}
+                  <h3 className="text-[14px] font-semibold text-text-primary">{unit.name}</h3>
+                  {matchingTeam?.status === "active"
+                    ? <span className="text-[10px] text-accent-green flex items-center gap-1 flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-accent-green/70" />Active</span>
+                    : !matchingTeam
+                    ? <span className="text-[10px] text-text-ghost italic flex-shrink-0">Not configured</span>
+                    : <span className="text-[10px] text-text-ghost italic flex-shrink-0">Idle</span>
+                  }
                 </div>
                 <p className="text-[12px] text-text-muted leading-relaxed">
-                  {team.currentFocus ?? "Idle — no active focus"}
+                  {matchingTeam?.currentFocus ?? unit.mission}
                 </p>
               </div>
             </div>
 
-            {/* Active assignments */}
-            {shown.length > 0 ? (
-              <div className="space-y-1.5 mt-3">
+            {/* Execution type tag */}
+            <div className="mb-3">
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full border"
+                style={{ color: unit.color, borderColor: `${unit.color}30`, backgroundColor: `${unit.color}10` }}
+              >
+                {unit.executionLabel}
+              </span>
+            </div>
+
+            {/* Active assignments if team found */}
+            {matchingTeam && shown.length > 0 && (
+              <div className="space-y-1.5">
                 {shown.map(a => (
                   <div key={a.id} className="flex items-center gap-2">
                     <div
@@ -347,8 +356,16 @@ function ActiveWorkTab({
                   <p className="text-[11px] text-text-ghost pl-3.5">+{overflow} more</p>
                 )}
               </div>
-            ) : (
-              <p className="text-[12px] text-text-ghost mt-3 italic">No active assignments</p>
+            )}
+
+            {matchingTeam && shown.length === 0 && (
+              <p className="text-[12px] text-text-ghost italic">No active assignments</p>
+            )}
+
+            {!matchingTeam && (
+              <p className="text-[12px] text-text-ghost italic">
+                This team will appear here once configured.
+              </p>
             )}
           </div>
         );
@@ -419,14 +436,11 @@ function DispatchTab({
             className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2.5 text-[13px] text-text-secondary outline-none focus:border-accent-cyan/30 transition-colors appearance-none"
           >
             <option value="">Auto-route</option>
-            {teams.map(t => {
-              const dept = DEPT_CONFIG[t.departmentType];
-              return (
-                <option key={t.id} value={t.id}>
-                  {t.name}{dept ? ` (${dept.label})` : ""}
-                </option>
-              );
-            })}
+            {teams.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -515,8 +529,10 @@ function DiscoveriesTab({
       <div className="divide-y divide-white/[0.03]">
         {outputs.map(output => {
           const teamDept = output.team?.departmentType ?? "";
-          const dept = DEPT_CONFIG[teamDept];
-          const color = dept?.color ?? "#64748b";
+          const matchedUnit = BUSINESS_UNITS.find(u =>
+            u.departmentPatterns.some(p => teamDept.toLowerCase().includes(p))
+          );
+          const color = matchedUnit?.color ?? "#64748b";
 
           return (
             <div key={output.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.015] transition-colors">
