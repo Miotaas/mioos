@@ -136,8 +136,8 @@ export function DecideView() {
     setItems(prev => {
       const idx = prev.findIndex(i => i.id === id);
       const next = prev.filter(i => i.id !== id);
-      // Advance selection: pick next item, or previous, or null
-      const nextSelected = next[idx] ?? next[idx - 1] ?? null;
+      // Advance selection to same position, or last item if at end
+      const nextSelected = next[Math.min(idx, next.length - 1)] ?? null;
       setSelected(nextSelected);
       return next;
     });
