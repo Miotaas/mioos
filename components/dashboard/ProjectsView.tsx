@@ -33,6 +33,20 @@ const PRIORITY_BADGE: Record<string, { bg: string; text: string; label: string }
   low:    { bg: "bg-white/[0.04]", text: "text-text-muted", label: "Low" },
 };
 
+const PROJECT_TYPE_BADGE: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  venture:    { label: "Venture",    bg: "bg-accent-green/10",  text: "text-accent-green",  border: "border-accent-green/20" },
+  initiative: { label: "Initiative", bg: "bg-accent-violet/10", text: "text-accent-violet", border: "border-accent-violet/20" },
+};
+
+const STAGE_BADGE: Record<string, { label: string; text: string }> = {
+  exploring:  { label: "Exploring",  text: "text-text-ghost" },
+  validating: { label: "Validating", text: "text-accent-amber" },
+  building:   { label: "Building",   text: "text-accent-cyan" },
+  live:       { label: "Live",       text: "text-accent-green" },
+  paused:     { label: "Paused",     text: "text-text-muted" },
+  killed:     { label: "Killed",     text: "text-accent-red" },
+};
+
 export function ProjectsView() {
   const [projects, setProjects]       = useState<MioProject[]>([]);
   const [outputs, setOutputs]         = useState<WorkforceOutput[]>([]);
@@ -43,6 +57,7 @@ export function ProjectsView() {
   const [loading, setLoading]         = useState(true);
   const [healthMap, setHealthMap]     = useState<Map<string, { status: string; score: number; reasons: string[] }>>(new Map());
   const [statusFilter, setStatusFilter]   = useState<string>("all");
+  const [typeFilter, setTypeFilter]       = useState<"all" | "venture" | "initiative">("all");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [detailTab, setDetailTab]     = useState<"assignments" | "outputs" | "revenue" | "goals">("assignments");
 
@@ -77,7 +92,14 @@ export function ProjectsView() {
   }, []);
 
   const statuses = ["all", ...Array.from(new Set(projects.map((p) => p.status)))];
-  const filtered = statusFilter === "all" ? projects : projects.filter((p) => p.status === statusFilter);
+  const filtered = projects
+    .filter(p => statusFilter === "all" || p.status === statusFilter)
+    .filter(p => typeFilter === "all" || (p.projectType ?? "initiative") === typeFilter)
+    .sort((a, b) => {
+      const aIsVenture = (a.projectType ?? "initiative") === "venture" ? 0 : 1;
+      const bIsVenture = (b.projectType ?? "initiative") === "venture" ? 0 : 1;
+      return aIsVenture - bIsVenture;
+    });
 
   const activeCount = projects.filter((p) => p.status === "active").length;
   const blockedCount = projects.filter((p) => p.blocker).length;
@@ -117,6 +139,33 @@ export function ProjectsView() {
             )}
           >
             {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Type filter */}
+      <div className="flex items-center gap-2 px-6 py-2 border-b border-white/[0.06] overflow-x-auto">
+        {(["all", "venture", "initiative"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTypeFilter(t)}
+            className={cn(
+              "text-xs px-3 py-1 rounded-lg capitalize whitespace-nowrap transition-all",
+              typeFilter === t
+                ? t === "all"
+                  ? "bg-white/[0.08] text-text-secondary border border-white/[0.12]"
+                  : t === "venture"
+                  ? "bg-accent-green/15 text-accent-green border border-accent-green/25"
+                  : "bg-accent-violet/15 text-accent-violet border border-accent-violet/25"
+                : "text-text-muted hover:text-text-secondary hover:bg-white/[0.04]"
+            )}
+          >
+            {t === "all" ? "All types" : PROJECT_TYPE_BADGE[t].label}
+            {t !== "all" && (
+              <span className="ml-1 opacity-60">
+                {projects.filter(p => (p.projectType ?? "initiative") === t).length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -172,6 +221,19 @@ export function ProjectsView() {
 
                 {/* Badges */}
                 <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                  {project.projectType && PROJECT_TYPE_BADGE[project.projectType] && (() => {
+                    const tb = PROJECT_TYPE_BADGE[project.projectType!];
+                    return (
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", tb.bg, tb.text, tb.border)}>
+                        {tb.label}
+                      </span>
+                    );
+                  })()}
+                  {project.stage && STAGE_BADGE[project.stage] && (
+                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.06] font-medium", STAGE_BADGE[project.stage].text)}>
+                      {STAGE_BADGE[project.stage].label}
+                    </span>
+                  )}
                   <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", pb.bg, pb.text, "border-current/20")}>
                     {pb.label}
                   </span>
