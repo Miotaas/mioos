@@ -36,19 +36,22 @@ interface AppState {
   setSidebarCollapsed: (v: boolean) => void;
 
   activeView:
-    // V3 primary navigation (6 destinations)
-    | "today"
-    | "decide"
-    | "projects"
+    // V4 primary navigation (7 destinations)
+    | "command"
+    | "revenue"
+    | "opportunities"
+    | "workforce"
+    | "decisions"
     | "life"
-    | "teams"
     | "settings"
-    // Legacy — still routable, removed from sidebar
+    // V3 legacy — still routable
+    | "today" | "decide" | "projects" | "teams"
+    // Deep legacy
     | "dashboard" | "briefing" | "inbox" | "tasks" | "goals" | "calendar"
-    | "revenue" | "workforce" | "requests" | "company" | "drafts"
-    // Deep-legacy / internal
+    | "requests" | "company" | "drafts"
+    // Internal / agent-level
     | "activity" | "agent-overview" | "agents" | "operations"
-    | "opportunities" | "prospects" | "campaigns";
+    | "prospects" | "campaigns";
   setActiveView: (view: AppState["activeView"]) => void;
 
   captures: MioCapture[];
@@ -98,7 +101,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
-  activeView: "today",
+  activeView: "command",
   setActiveView: (view) => set({ activeView: view }),
 
   captures: [],

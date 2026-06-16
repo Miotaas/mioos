@@ -3,8 +3,9 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  Sun, ClipboardCheck, FolderOpen, Calendar,
-  Users2, Settings, ChevronLeft, ChevronRight,
+  Zap, DollarSign, Target,
+  Users2, CheckSquare, Calendar,
+  Settings, ChevronLeft, ChevronRight,
   Brain, LogOut, Sparkles,
 } from "lucide-react";
 
@@ -21,20 +22,21 @@ const navGroups: {
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
-    label: "Surface",
-    accentClass: "text-[#8b5cf6]",
+    label: "Command Center",
+    accentClass: "text-[#00D4FF]",
     items: [
-      { id: "today",  label: "Today",  icon: Sun },
-      { id: "decide", label: "Decide", icon: ClipboardCheck },
+      { id: "command",       label: "Command",       icon: Zap },
+      { id: "revenue",       label: "Revenue",       icon: DollarSign },
+      { id: "opportunities", label: "Opportunities", icon: Target },
     ],
   },
   {
-    label: "Depth",
+    label: "Operations",
     accentClass: "text-[#6366f1]",
     items: [
-      { id: "projects", label: "Projects", icon: FolderOpen },
-      { id: "life",     label: "Life",     icon: Calendar },
-      { id: "teams",    label: "Teams",    icon: Users2 },
+      { id: "workforce",  label: "Workforce",  icon: Users2 },
+      { id: "decisions",  label: "Decisions",  icon: CheckSquare },
+      { id: "life",       label: "Life",       icon: Calendar },
     ],
   },
   {
@@ -69,7 +71,7 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <div>
             <h1 className="text-[13px] font-semibold text-text-primary tracking-wide leading-none">MioOS</h1>
-            <p className="text-[10px] text-text-ghost mt-0.5">Company OS</p>
+            <p className="text-[10px] text-text-ghost mt-0.5">AI Command Center</p>
           </div>
         )}
       </div>

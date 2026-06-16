@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
   Menu, X, Brain, Sparkles, LogOut, Settings,
-  Sun, ClipboardCheck, FolderOpen, Calendar,
-  Users2, MoreHorizontal,
+  Zap, DollarSign, Target, Users2, CheckSquare,
+  Calendar, MoreHorizontal,
 } from "lucide-react";
 
 async function logout() {
@@ -22,20 +22,21 @@ const navGroups: {
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
-    label: "Surface",
-    accentClass: "text-[#8b5cf6]",
+    label: "Command Center",
+    accentClass: "text-[#00D4FF]",
     items: [
-      { id: "today",  label: "Today",  icon: Sun },
-      { id: "decide", label: "Decide", icon: ClipboardCheck },
+      { id: "command",       label: "Command",       icon: Zap },
+      { id: "revenue",       label: "Revenue",       icon: DollarSign },
+      { id: "opportunities", label: "Opportunities", icon: Target },
     ],
   },
   {
-    label: "Depth",
+    label: "Operations",
     accentClass: "text-[#6366f1]",
     items: [
-      { id: "projects", label: "Projects", icon: FolderOpen },
-      { id: "life",     label: "Life",     icon: Calendar },
-      { id: "teams",    label: "Teams",    icon: Users2 },
+      { id: "workforce",  label: "Workforce",  icon: Users2 },
+      { id: "decisions",  label: "Decisions",  icon: CheckSquare },
+      { id: "life",       label: "Life",       icon: Calendar },
     ],
   },
   {
@@ -48,9 +49,9 @@ const navGroups: {
 ];
 
 const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "today",    label: "Today",    icon: Sun },
-  { id: "decide",   label: "Decide",   icon: ClipboardCheck },
-  { id: "projects", label: "Projects", icon: FolderOpen },
+  { id: "command",   label: "Command",   icon: Zap },
+  { id: "workforce", label: "Teams",     icon: Users2 },
+  { id: "decisions", label: "Decisions", icon: CheckSquare },
 ];
 
 export function MobileNav() {
@@ -72,7 +73,7 @@ export function MobileNav() {
           </div>
           <div>
             <p className="text-[13px] font-semibold text-text-primary leading-none">MioOS</p>
-            <p className="text-[9px] text-text-ghost leading-none mt-0.5">Company OS</p>
+            <p className="text-[9px] text-text-ghost leading-none mt-0.5">AI Command Center</p>
           </div>
         </div>
         <button
@@ -107,7 +108,7 @@ export function MobileNav() {
             </div>
             <div>
               <p className="text-[13px] font-semibold text-text-primary">MioOS</p>
-              <p className="text-[10px] text-text-ghost">Company OS</p>
+              <p className="text-[10px] text-text-ghost">AI Command Center</p>
             </div>
           </div>
           <button
