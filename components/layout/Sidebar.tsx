@@ -3,10 +3,9 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  CheckSquare, FolderOpen, Target, Calendar,
-  TrendingUp, Users2, Zap, FileText,
-  Settings, ChevronLeft, ChevronRight,
-  Brain, LogOut, Sparkles, Lightbulb, Sun,
+  Sun, ClipboardCheck, FolderOpen, Calendar,
+  Users2, Settings, ChevronLeft, ChevronRight,
+  Brain, LogOut, Sparkles,
 } from "lucide-react";
 
 async function logout() {
@@ -22,38 +21,27 @@ const navGroups: {
   items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }[] = [
   {
-    label: "Cockpit",
+    label: "Surface",
     accentClass: "text-[#8b5cf6]",
     items: [
-      { id: "today", label: "Today", icon: Sun },
+      { id: "today",  label: "Today",  icon: Sun },
+      { id: "decide", label: "Decide", icon: ClipboardCheck },
     ],
   },
   {
-    label: "Company",
-    accentClass: "text-[#00D4FF]",
-    items: [
-      { id: "opportunities", label: "Opportunities",  icon: Lightbulb },
-      { id: "workforce",     label: "Departments",    icon: Users2 },
-      { id: "revenue",       label: "Revenue Health", icon: TrendingUp },
-      { id: "drafts",        label: "Pending Actions",icon: FileText },
-    ],
-  },
-  {
-    label: "Execution",
+    label: "Depth",
     accentClass: "text-[#6366f1]",
     items: [
       { id: "projects", label: "Projects", icon: FolderOpen },
-      { id: "goals",    label: "Goals",    icon: Target },
-      { id: "tasks",    label: "Tasks",    icon: CheckSquare },
-      { id: "calendar", label: "Calendar", icon: Calendar },
+      { id: "life",     label: "Life",     icon: Calendar },
+      { id: "teams",    label: "Teams",    icon: Users2 },
     ],
   },
   {
     label: "System",
     accentClass: "text-text-ghost",
     items: [
-      { id: "requests",  label: "Requests", icon: Zap },
-      { id: "settings",  label: "Settings", icon: Settings },
+      { id: "settings", label: "Settings", icon: Settings },
     ],
   },
 ];
