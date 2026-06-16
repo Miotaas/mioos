@@ -6,12 +6,12 @@ import { useAppStore } from "@/store/appStore";
 import { normalizeTask } from "@/lib/normalize";
 import {
   WorkforceApproval, ApprovalQueueItem, MioProject, MioTask,
-  RevenueEntry, UnifiedDraft, Assignment, WorkforceTeam, MioGoal,
+  RevenueEntry, UnifiedDraft, Assignment, WorkforceTeam, MioGoal, WorkforceOutput,
 } from "@/types";
 import {
   Sun, AlertCircle, ChevronRight, Calendar,
   TrendingUp, Zap, ArrowRight, RefreshCw,
-  X, FolderOpen, Users2,
+  X, Users2,
   CheckSquare,
 } from "lucide-react";
 
@@ -40,24 +40,6 @@ function timeAgo(s: string): string {
   if (mins < 60)   return `${mins}m ago`;
   if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
   return `${Math.floor(mins / 1440)}d ago`;
-}
-
-function projectHealth(p: MioProject): "green" | "amber" | "red" {
-  if (p.status === "blocked") return "red";
-  if (p.status === "paused")  return "amber";
-  return "green";
-}
-
-function projectHealthLabel(p: MioProject): string {
-  if (p.status === "blocked") return "Blocked";
-  if (p.status === "paused")  return "On Hold";
-  return "On Track";
-}
-
-function projectStatusLine(p: MioProject): string {
-  if (p.blocker)    return `Blocked: ${p.blocker}`;
-  if (p.nextAction) return p.nextAction;
-  return "Active";
 }
 
 // ── morning brief ────────────────────────────────────────────────────
@@ -166,6 +148,7 @@ export function TodayView() {
   const [catchUpMode, setCatchUpMode] = useState(false);
   // personal goals for life signals in agenda
   const [lifeGoals, setLifeGoals] = useState<MioGoal[]>([]);
+  const [teamOutputs, setTeamOutputs] = useState<WorkforceOutput[]>([]);
 
   // brief refresh key
   const [briefKey, setBriefKey] = useState(0);
@@ -186,7 +169,8 @@ export function TodayView() {
       fetch("/api/assignments?status=review").then(r => r.json()).catch(() => []),
       fetch("/api/workforce/teams").then(r => r.json()).catch(() => []),
       fetch("/api/goals").then(r => r.json()).catch(() => []),
-    ]).then(([wfa, ap, pr, tk, re, dr, rv, tm, gl]) => {
+      fetch("/api/workforce/outputs?limit=10").then(r => r.json()).catch(() => []),
+    ]).then(([wfa, ap, pr, tk, re, dr, rv, tm, gl, outs]) => {
       setWfApprovals(Array.isArray(wfa) ? wfa.filter((a: WorkforceApproval) => a.status === "pending") : []);
       setApprovals(Array.isArray(ap) ? ap.filter((a: ApprovalQueueItem) => a.status === "pending") : []);
       setProjects(Array.isArray(pr) ? pr.filter((p: MioProject) => ["active","paused","blocked"].includes(p.status)) : []);
@@ -197,6 +181,13 @@ export function TodayView() {
       setTeams(Array.isArray(tm) ? tm.filter((t: WorkforceTeam) => t.status === "active") : []);
       const personalGoals = Array.isArray(gl) ? gl.filter((g: MioGoal) => g.goalType === "personal" && g.status !== "achieved" && g.status !== "abandoned") : [];
       setLifeGoals(personalGoals);
+      const recentOutputs = Array.isArray(outs)
+        ? outs
+          .filter((o: WorkforceOutput) => ["completed", "approved", "in_review"].includes(o.status))
+          .sort((a: WorkforceOutput, b: WorkforceOutput) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5)
+        : [];
+      setTeamOutputs(recentOutputs);
       setLoaded(true);
 
       // Track last visit for catch-up mode
@@ -338,7 +329,7 @@ export function TodayView() {
   const brief = buildBrief(totalPending, blockedNames, liveMRR, topRec?.title ?? "");
 
   // ── render ───────────────────────────────────────────────────────────
-  const hasRightContent = projects.length > 0 || revEntries.length > 0 || aiOutputs.length > 0;
+  const hasRightContent = teamOutputs.length > 0 || revEntries.length > 0 || aiOutputs.length > 0;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -580,46 +571,38 @@ export function TodayView() {
           {/* ── RIGHT COLUMN ─────────────────────────────────────── */}
           <div className="space-y-5">
 
-            {/* 5. Project Pulse — only shown when there are projects */}
-            {projects.length > 0 && (
+            {/* 5. Team Activity — shown when teams have recent outputs */}
+            {teamOutputs.length > 0 && (
               <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
                 <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="w-3.5 h-3.5 text-accent-violet" />
-                    <span className="text-[13px] font-semibold text-text-primary">Project Pulse</span>
+                    <Users2 className="w-3.5 h-3.5 text-accent-cyan" />
+                    <span className="text-[13px] font-semibold text-text-primary">Team Activity</span>
                   </div>
                   <button
-                    onClick={() => setActiveView("projects")}
+                    onClick={() => setActiveView("teams")}
                     className="text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
                   >
-                    All projects <ChevronRight className="w-3 h-3" />
+                    All teams <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
                 <div className="divide-y divide-white/[0.03]">
-                  {projects.slice(0, 8).map(p => {
-                    const health = projectHealth(p);
-                    const dotCls = health === "green" ? "bg-accent-green" : health === "amber" ? "bg-accent-amber" : "bg-accent-red";
+                  {teamOutputs.map(o => {
+                    const statusCls =
+                      o.status === "completed" || o.status === "approved" ? "bg-accent-green" :
+                      o.status === "in_review" ? "bg-accent-amber" : "bg-text-ghost";
                     return (
-                      <div
-                        key={p.id}
-                        className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.015] transition-colors cursor-pointer group"
-                        onClick={() => setActiveView("projects")}
-                      >
-                        <div className={cn("w-2 h-2 rounded-full flex-shrink-0", dotCls)} />
+                      <div key={o.id} className="flex items-center gap-4 px-6 py-3.5">
+                        <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", statusCls)} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] text-text-primary font-medium leading-tight truncate">
-                            {p.name}
+                          <p className="text-[12px] text-text-ghost mb-0.5">
+                            {o.team?.name ?? "AI Team"} · {o.outputType.replace(/_/g, " ")}
                           </p>
-                          <p className="text-[11px] text-text-ghost mt-0.5 truncate">
-                            {projectHealthLabel(p)} · {projectStatusLine(p)}
-                          </p>
+                          <p className="text-[13px] text-text-secondary font-medium leading-snug truncate">{o.title}</p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-[10px] text-text-ghost hidden sm:block">
-                            {timeAgo(p.updatedAt)}
-                          </span>
-                          <ChevronRight className="w-3.5 h-3.5 text-text-ghost group-hover:text-text-muted transition-colors" />
-                        </div>
+                        <span className="text-[10px] text-text-ghost flex-shrink-0 tabular-nums">
+                          {timeAgo(o.createdAt)}
+                        </span>
                       </div>
                     );
                   })}
