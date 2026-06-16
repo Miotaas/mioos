@@ -1051,6 +1051,8 @@ export interface RevenueEntry {
 }
 
 export type ProjectStatus = "active" | "paused" | "blocked" | "completed" | "archived";
+export type ProjectType = "venture" | "initiative";
+export type ProjectStage = "exploring" | "validating" | "building" | "live" | "paused" | "killed";
 
 export interface MioProject {
   id: string;
@@ -1062,6 +1064,8 @@ export interface MioProject {
   nextAction: string | null;
   blocker: string | null;
   revenueImpact: number | null;
+  projectType?: ProjectType | null;
+  stage?: ProjectStage | null;
   createdAt: string;
   updatedAt: string;
   revenueCount?: number;
