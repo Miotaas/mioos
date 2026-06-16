@@ -54,6 +54,10 @@ export default function Home() {
         <div className="relative z-10 flex-1 overflow-hidden pb-[60px] md:pb-0">
           {/* MioOS 2.0 Today */}
           {activeView === "today"      && <ErrorBoundary label="Today"><TodayView /></ErrorBoundary>}
+          {/* V3 destinations — stub routes (dedicated views in Tasks 8–10) */}
+          {activeView === "decide" && <ErrorBoundary label="Decide"><DraftsView /></ErrorBoundary>}
+          {activeView === "life"   && <ErrorBoundary label="Life"><CalendarView /></ErrorBoundary>}
+          {activeView === "teams"  && <ErrorBoundary label="Teams"><WorkforceView /></ErrorBoundary>}
           {/* Primary navigation */}
           {activeView === "dashboard"  && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
           {activeView === "briefing"   && <ErrorBoundary label="Briefing"><BriefingView /></ErrorBoundary>}
