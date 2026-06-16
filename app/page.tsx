@@ -25,6 +25,7 @@ import { CompanyCommandCenter } from "@/components/company/CompanyCommandCenter"
 import { DraftsView } from "@/components/agents/DraftsView";
 import { TodayView } from "@/components/today/TodayView";
 import { DecideView } from "@/components/decide/DecideView";
+import { TeamsView } from "@/components/teams/TeamsView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,7 @@ export default function Home() {
           {/* V3 destinations — stub routes (dedicated views in Tasks 8–10) */}
           {activeView === "decide" && <ErrorBoundary label="Decide"><DecideView /></ErrorBoundary>}
           {activeView === "life"   && <ErrorBoundary label="Life"><CalendarView /></ErrorBoundary>}
-          {activeView === "teams"  && <ErrorBoundary label="Teams"><WorkforceView /></ErrorBoundary>}
+          {activeView === "teams"  && <ErrorBoundary label="Teams"><TeamsView /></ErrorBoundary>}
           {/* Primary navigation */}
           {activeView === "dashboard"  && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
           {activeView === "briefing"   && <ErrorBoundary label="Briefing"><BriefingView /></ErrorBoundary>}
