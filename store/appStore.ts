@@ -36,16 +36,19 @@ interface AppState {
   setSidebarCollapsed: (v: boolean) => void;
 
   activeView:
-    // MioOS 2.0 — Today (default landing)
+    // V3 primary navigation (6 destinations)
     | "today"
-    // Primary navigation
-    | "dashboard" | "briefing" | "inbox" | "tasks" | "projects" | "goals" | "calendar" | "revenue" | "workforce" | "requests" | "settings"
-    // Company Command Center (Omega)
-    | "company"
-    // Draft Center
-    | "drafts"
-    // Legacy / internal views (still routable, not in sidebar)
-    | "activity" | "agent-overview" | "agents" | "operations" | "opportunities" | "prospects" | "campaigns";
+    | "decide"
+    | "projects"
+    | "life"
+    | "teams"
+    | "settings"
+    // Legacy — still routable, removed from sidebar
+    | "dashboard" | "briefing" | "inbox" | "tasks" | "goals" | "calendar"
+    | "revenue" | "workforce" | "requests" | "company" | "drafts"
+    // Deep-legacy / internal
+    | "activity" | "agent-overview" | "agents" | "operations"
+    | "opportunities" | "prospects" | "campaigns";
   setActiveView: (view: AppState["activeView"]) => void;
 
   captures: MioCapture[];
