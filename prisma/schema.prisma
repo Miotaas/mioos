@@ -1160,6 +1160,8 @@ model Project {
   revenueImpact Float?
   opportunityId String?   // Phase 9 — linked Opportunity (auto-created projects)
   autoCreated   Boolean   @default(false) // Phase 9 — created by Opportunity Engine
+  projectType   String   @default("initiative") // venture | initiative
+  stage         String   @default("exploring")  // exploring | validating | building | live | paused | killed
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
