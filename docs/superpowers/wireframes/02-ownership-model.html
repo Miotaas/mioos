@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MioOS V3 — Information Ownership Model</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0f1a; color: #c8d0e0; min-height: 100vh; padding: 40px 24px; }
+  h1 { font-size: 18px; font-weight: 600; color: #e8edf5; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #6b7a94; margin-bottom: 32px; }
+  .principle { font-size: 15px; font-weight: 600; color: #e8edf5; background: #0d1f14; border: 1px solid #1a3624; border-radius: 10px; padding: 16px 20px; margin-bottom: 32px; line-height: 1.7; }
+  .principle span { color: #6ea98a; }
+
+  /* OWNERSHIP MAP */
+  .map { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 40px; }
+  .page-col { background: #0d1526; border: 1px solid #1e2a3e; border-radius: 12px; overflow: hidden; }
+  .page-header { padding: 12px 14px; border-bottom: 1px solid #1e2a3e; }
+  .page-name { font-size: 13px; font-weight: 600; color: #e8edf5; }
+  .page-role { font-size: 10px; color: #6b7a94; margin-top: 2px; }
+  .items-list { padding: 10px 14px; }
+  .item { font-size: 11px; color: #c8d0e0; padding: 5px 0; border-bottom: 1px solid #131d30; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+  .item:last-child { border-bottom: none; }
+  .item-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .owns .item-dot { background: #6ea98a; }
+  .surfaces .item-dot { background: #3b82f6; }
+  .section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #3a4a64; padding: 8px 0 4px; }
+
+  /* TODAY HIGHLIGHT */
+  .today-col .page-header { background: #0d1a2e; }
+  .today-col .page-name { color: #60a5fa; }
+  .decide-col .page-header { background: #1f1508; }
+  .decide-col .page-name { color: #f59e0b; }
+  .projects-col .page-header { background: #0d1a1d; }
+  .projects-col .page-name { color: #34d399; }
+  .life-col .page-header { background: #1a0d2e; }
+  .life-col .page-name { color: #a78bfa; }
+  .teams-col .page-header { background: #0d1a26; }
+  .teams-col .page-name { color: #22d3ee; }
+
+  /* FLOW DIAGRAM */
+  .flow-section { margin-bottom: 40px; }
+  .flow-title { font-size: 14px; font-weight: 600; color: #e8edf5; margin-bottom: 16px; }
+  .flow-diagram { background: #080d18; border: 1px solid #1a2236; border-radius: 12px; padding: 24px; display: flex; align-items: flex-start; gap: 0; overflow-x: auto; }
+  .flow-node { background: #0d1526; border-radius: 8px; padding: 12px 14px; min-width: 140px; flex-shrink: 0; }
+  .flow-node-title { font-size: 12px; font-weight: 600; color: #e8edf5; margin-bottom: 4px; }
+  .flow-node-desc { font-size: 10px; color: #6b7a94; line-height: 1.5; }
+  .flow-arrow { display: flex; align-items: center; padding: 0 10px; color: #3a4a64; font-size: 18px; flex-shrink: 0; }
+  .flow-node.today { border: 1px solid #1e3a6e; }
+  .flow-node.decide { border: 1px solid #3a2a08; }
+  .flow-node.projects { border: 1px solid #0d3a28; }
+  .flow-node.teams { border: 1px solid #0d2a3a; }
+
+  /* ELIMINATED TABLE */
+  .eliminated { background: #1f0d0d; border: 1px solid #361a1a; border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
+  .eliminated h3 { font-size: 13px; font-weight: 600; color: #f87171; margin-bottom: 12px; }
+  .elim-row { display: flex; align-items: baseline; gap: 12px; padding: 5px 0; border-bottom: 1px solid #2a1515; font-size: 12px; }
+  .elim-row:last-child { border-bottom: none; }
+  .elim-page { color: #f87171; min-width: 160px; font-weight: 500; }
+  .elim-reason { color: #a96e6e; }
+
+  /* ADDED TABLE */
+  .added { background: #0d1f14; border: 1px solid #1a3624; border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
+  .added h3 { font-size: 13px; font-weight: 600; color: #6ea98a; margin-bottom: 12px; }
+  .add-row { display: flex; align-items: baseline; gap: 12px; padding: 5px 0; border-bottom: 1px solid #152514; font-size: 12px; }
+  .add-row:last-child { border-bottom: none; }
+  .add-page { color: #6ea98a; min-width: 160px; font-weight: 500; }
+  .add-reason { color: #6b7a94; }
+
+  footer { margin-top: 40px; font-size: 11px; color: #3a4a64; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>MioOS V3 — Information Ownership Model</h1>
+<p class="subtitle">Every piece of information has exactly one canonical home. Today surfaces only — it owns nothing.</p>
+
+<div class="principle">
+  Core principle: <span>One truth, one place.</span><br>
+  If information appears in two pages, one of them is wrong.<br>
+  Today is a <span>lens</span>, not a database. Every signal on Today is a pointer to its canonical home.
+</div>
+
+<!-- OWNERSHIP MAP -->
+<div style="font-size:12px;color:#6b7a94;margin-bottom:12px;">
+  <span style="display:inline-flex;align-items:center;gap:5px;margin-right:20px;"><span style="width:8px;height:8px;border-radius:50%;background:#6ea98a;display:inline-block;"></span> Owns this data (canonical home)</span>
+  <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;"></span> Surfaces this data (read-only lens)</span>
+</div>
+
+<div class="map">
+
+  <div class="page-col today-col">
+    <div class="page-header">
+      <div class="page-name">☀ Today</div>
+      <div class="page-role">Surface layer · Read-only</div>
+    </div>
+    <div class="items-list">
+      <div class="section-label">Surfaces (owns nothing)</div>
+      <div class="item surfaces"><div class="item-dot"></div>Top 3 decisions pending</div>
+      <div class="item surfaces"><div class="item-dot"></div>Project health pulse</div>
+      <div class="item surfaces"><div class="item-dot"></div>Revenue signal (MRR)</div>
+      <div class="item surfaces"><div class="item-dot"></div>Today's calendar events</div>
+      <div class="item surfaces"><div class="item-dot"></div>Most urgent blocker</div>
+      <div class="item surfaces"><div class="item-dot"></div>Top AI output ready</div>
+      <div class="item surfaces"><div class="item-dot"></div>Focus recommendation</div>
+    </div>
+  </div>
+
+  <div class="page-col decide-col">
+    <div class="page-header">
+      <div class="page-name">⊡ Decide</div>
+      <div class="page-role">Decision hub · All judgment</div>
+    </div>
+    <div class="items-list">
+      <div class="section-label">Owns</div>
+      <div class="item owns"><div class="item-dot"></div>Workforce approvals</div>
+      <div class="item owns"><div class="item-dot"></div>Agent approvals</div>
+      <div class="item owns"><div class="item-dot"></div>AI drafts / outputs</div>
+      <div class="item owns"><div class="item-dot"></div>Proposals</div>
+      <div class="item owns"><div class="item-dot"></div>Opportunity reviews</div>
+      <div class="item owns"><div class="item-dot"></div>Recommendations</div>
+      <div class="item owns"><div class="item-dot"></div>Pending actions</div>
+    </div>
+  </div>
+
+  <div class="page-col projects-col">
+    <div class="page-header">
+      <div class="page-name">◈ Projects</div>
+      <div class="page-role">Work hub · All ventures</div>
+    </div>
+    <div class="items-list">
+      <div class="section-label">Owns</div>
+      <div class="item owns"><div class="item-dot"></div>Ventures / projects</div>
+      <div class="item owns"><div class="item-dot"></div>Tasks per project</div>
+      <div class="item owns"><div class="item-dot"></div>Goals per project</div>
+      <div class="item owns"><div class="item-dot"></div>Revenue entries</div>
+      <div class="item owns"><div class="item-dot"></div>Blockers</div>
+      <div class="item owns"><div class="item-dot"></div>Next actions</div>
+      <div class="item owns"><div class="item-dot"></div>Opportunities (approved)</div>
+    </div>
+  </div>
+
+  <div class="page-col life-col">
+    <div class="page-header">
+      <div class="page-name">◎ Life</div>
+      <div class="page-role">Personal layer · Non-work</div>
+    </div>
+    <div class="items-list">
+      <div class="section-label">Owns</div>
+      <div class="item owns"><div class="item-dot"></div>Calendar / agenda</div>
+      <div class="item owns"><div class="item-dot"></div>Personal goals</div>
+      <div class="item owns"><div class="item-dot"></div>Health & habits</div>
+      <div class="item owns"><div class="item-dot"></div>Travel plans</div>
+      <div class="item owns"><div class="item-dot"></div>Personal tasks</div>
+      <div class="item owns"><div class="item-dot"></div>Reminders</div>
+    </div>
+  </div>
+
+  <div class="page-col teams-col">
+    <div class="page-header">
+      <div class="page-name">⚡ Teams</div>
+      <div class="page-role">AI workforce · Background ops</div>
+    </div>
+    <div class="items-list">
+      <div class="section-label">Owns</div>
+      <div class="item owns"><div class="item-dot"></div>AI team registry</div>
+      <div class="item owns"><div class="item-dot"></div>Work dispatch</div>
+      <div class="item owns"><div class="item-dot"></div>Team memory</div>
+      <div class="item owns"><div class="item-dot"></div>Execution logs</div>
+      <div class="item owns"><div class="item-dot"></div>Automation rules</div>
+      <div class="section-label">Surfaces</div>
+      <div class="item surfaces"><div class="item-dot"></div>Completed outputs → Decide</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DECISION FLOW -->
+<div class="flow-section">
+  <div class="flow-title">Decision flow — how information moves through MioOS</div>
+  <div class="flow-diagram">
+    <div class="flow-node teams">
+      <div class="flow-node-title">⚡ Teams</div>
+      <div class="flow-node-desc">AI team completes work, produces output, detects opportunity</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node decide">
+      <div class="flow-node-title">⊡ Decide</div>
+      <div class="flow-node-desc">Output enters decision queue. Awaits founder judgment.</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node today">
+      <div class="flow-node-title">☀ Today</div>
+      <div class="flow-node-desc">Top 3 surfaced. "3 decisions waiting" → Review link</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node decide">
+      <div class="flow-node-title">⊡ Decide</div>
+      <div class="flow-node-desc">Founder reviews, approves, rejects, or requests changes</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node projects">
+      <div class="flow-node-title">◈ Projects</div>
+      <div class="flow-node-desc">Approved work enters project. Executed. Revenue tracked.</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT GETS REMOVED -->
+<div class="eliminated">
+  <h3>Pages eliminated from current MioOS</h3>
+  <div class="elim-row"><div class="elim-page">Departments / Workforce</div><div class="elim-reason">Merged into Teams. Founders don't manage org charts — they dispatch work.</div></div>
+  <div class="elim-row"><div class="elim-page">Pending Actions (standalone)</div><div class="elim-reason">Becomes Decide. Same function, clearer name, canonical ownership.</div></div>
+  <div class="elim-row"><div class="elim-page">Goals (standalone page)</div><div class="elim-reason">Business goals live inside Projects. Personal goals live inside Life. No standalone page needed.</div></div>
+  <div class="elim-row"><div class="elim-page">Requests / Command Console</div><div class="elim-reason">Work dispatch moves to Teams. No separate destination needed.</div></div>
+  <div class="elim-row"><div class="elim-page">Opportunities (standalone)</div><div class="elim-reason">Unapproved opportunities → Decide (need judgment). Approved → Projects. Never standalone.</div></div>
+  <div class="elim-row"><div class="elim-page">Revenue Health (standalone)</div><div class="elim-reason">Revenue lives inside each Project. A revenue summary surfaces on Today. No standalone page.</div></div>
+</div>
+
+<!-- FINAL NAV -->
+<div class="added">
+  <h3>Final MioOS V3 navigation — 6 destinations total</h3>
+  <div class="add-row"><div class="add-page">☀ Today</div><div class="add-reason">Briefing surface. Surfaces signals from all other pages. Owns nothing.</div></div>
+  <div class="add-row"><div class="add-page">⊡ Decide</div><div class="add-reason">All decisions: approvals, drafts, proposals, AI outputs. The only place decisions are processed.</div></div>
+  <div class="add-row"><div class="add-page">◈ Projects</div><div class="add-reason">All ventures, tasks, goals, blockers, revenue. The only place project work lives.</div></div>
+  <div class="add-row"><div class="add-page">◎ Life</div><div class="add-reason">Calendar, personal goals, health, travel, reminders. The only place personal life lives.</div></div>
+  <div class="add-row"><div class="add-page">⚡ Teams</div><div class="add-reason">AI workforce. Dispatch work, view activity, configure teams. Outputs go to Decide automatically.</div></div>
+  <div class="add-row"><div class="add-page">⚙ Settings</div><div class="add-reason">Configuration only. No operational content.</div></div>
+</div>
+
+<footer>MioOS V3 · Ownership Model · Tell me in the terminal: does this ownership model feel right?</footer>
+
+</body>
+</html>

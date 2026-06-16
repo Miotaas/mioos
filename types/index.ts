@@ -523,7 +523,7 @@ export type WorkflowExecutionStatus = "pending" | "executed" | "failed" | "block
 export type ScheduleExecutionStatus = "success" | "failed" | "skipped";
 export type ToolExecutionStatus = "pending" | "success" | "failed";
 export type MemorySuggestionStatus = "pending" | "approved" | "rejected";
-export type SystemLogSourceType = "agent" | "workflow" | "schedule" | "tool" | "approval" | "system" | "assignment" | "workforce_output";
+export type SystemLogSourceType = "agent" | "workflow" | "schedule" | "tool" | "approval" | "system" | "assignment" | "workforce_output" | "opportunity";
 
 export interface SystemConfig {
   key: string;
@@ -906,6 +906,7 @@ export interface WorkforceOutput {
   projectId: string | null;
   goalId: string | null;
   revenueEntryId: string | null;
+  opportunityId: string | null;
   reviewedAt: string | null;
   approvedAt: string | null;
   completedAt: string | null;
@@ -978,10 +979,55 @@ export interface WorkforceApproval {
   projectId: string | null;
   priority: Priority;
   decisionType: ApprovalDecisionType;
+  riskLevel: string;
   approvedAt: string | null;
+  autoApprovedAt: string | null;
+  escalatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   sourceTeam?: Pick<WorkforceTeam, "id" | "name" | "slug" | "departmentType"> | null;
+}
+
+export interface ActionResult {
+  id: string;
+  approvalId: string;
+  actionType: string;
+  status: "dispatched" | "failed";
+  title: string;
+  description: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DraftType = "email" | "campaign" | "content" | "product" | "proposal" | "development";
+
+export interface UnifiedDraft {
+  id: string;
+  draftType: DraftType;
+  title: string;
+  preview: string | null;
+  editableContent: string | null;
+  status: string;
+  sourceApprovalId: string | null;
+  sourceOutputId: string | null;
+  projectId: string | null;
+  opportunityId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  opportunityTitle: string | null;
+  projectName: string | null;
+  sourceTeamName: string | null;
+  // type-specific extras (optional)
+  subject?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  platform?: string | null;
+  priceSuggestion?: number | null;
+  customer?: string | null;
+  repoNameSuggestion?: string | null;
 }
 
 export type RevenueType = "pipeline" | "potential" | "live" | "closed";
@@ -1048,6 +1094,7 @@ export interface Assignment {
   projectId: string | null;
   goalId: string | null;
   revenueEntryId: string | null;
+  opportunityId: string | null;
   priority: Priority;
   createdAt: string;
   startedAt: string | null;
@@ -1094,4 +1141,114 @@ export interface AssignmentExecutionResult {
   handoffsCreated: number;
   approvalsCreated: number;
   logs: string[];
+}
+
+// ── Phase 8: Opportunity Engine ─────────────────────────────────────
+
+export type VentureOpportunityType =
+  | "automation_service"
+  | "ecommerce_product"
+  | "saas_product"
+  | "content_business"
+  | "internal_tool";
+
+export type VentureOpportunityStatus =
+  | "discovered"
+  | "researching"
+  | "validating"
+  | "approved"
+  | "building"
+  | "marketing"
+  | "selling"
+  | "demo"
+  | "pilot"
+  | "deployment"
+  | "live"
+  | "revenue_generating"
+  | "rejected"
+  | "archived";
+
+export type OpportunityEffort = "low" | "medium" | "high";
+
+export interface Opportunity {
+  id: string;
+  title: string;
+  description: string | null;
+  opportunityType: VentureOpportunityType;
+  source: string;
+  status: VentureOpportunityStatus;
+  currentStage: string | null;
+  score: number;
+  confidence: number;
+  estimatedRevenue: number | null;
+  estimatedEffort: OpportunityEffort | null;
+  market: string | null;
+  targetCustomer: string | null;
+  evidence: string | null;        // JSON array
+  risks: string | null;           // JSON array
+  assumptions: string | null;     // JSON array
+  validationPlan: string | null;
+  executionStrategy: string | null;
+  nextRecommendedStep: string | null;
+  assignedWorkflowTemplate: string | null;
+  projectId: string | null;
+  goalId: string | null;
+  revenueEntryId: string | null;
+  sourceOutputId: string | null;
+  workflowRoutedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignments?: Assignment[];
+}
+
+export interface OpportunitySummary {
+  total: number;
+  discovered: number;
+  active: number;
+  live: number;
+  estimatedRevenue: number;
+}
+
+// ── Phase 9: Artifact Engine ─────────────────────────────────────────────
+
+export type ArtifactType =
+  | "prospect_list"
+  | "market_analysis"
+  | "validation_report"
+  | "outreach_sequence"
+  | "campaign"
+  | "ad_angles"
+  | "landing_page"
+  | "product_page"
+  | "proposal"
+  | "demo_spec"
+  | "automation_blueprint"
+  | "technical_plan"
+  | "deployment_plan"
+  | "faq"
+  | "knowledge_base"
+  | "executive_review";
+
+export type ArtifactStatus = "draft" | "ready" | "approved" | "superseded" | "archived";
+
+export interface Artifact {
+  id: string;
+  title: string;
+  artifactType: ArtifactType;
+  content: string | null;
+  status: ArtifactStatus;
+  sourceTeamId: string | null;
+  sourceAssignmentId: string | null;
+  sourceOutputId: string | null;
+  opportunityId: string | null;
+  projectId: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArtifactSummary {
+  total: number;
+  thisWeek: number;
+  byType: Record<string, number>;
 }

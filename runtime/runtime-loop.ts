@@ -185,6 +185,186 @@ async function runAlerts(): Promise<void> {
   }
 }
 
+// ── Capital Allocator ─────────────────────────────────────────────────
+
+const KEY_LAST_ALLOCATION   = "runtime:lastCapitalAllocation";
+const ALLOCATION_INTERVAL_H = Number(process.env.ALLOCATION_INTERVAL_H ?? "12");
+
+async function maybeRunCapitalAllocation(): Promise<void> {
+  const lastRunRec = await prisma.runtimeState.findUnique({ where: { key: KEY_LAST_ALLOCATION } }).catch(() => null);
+  if (lastRunRec) {
+    const hoursSince = (Date.now() - new Date(lastRunRec.value as string).getTime()) / 3_600_000;
+    if (hoursSince < ALLOCATION_INTERVAL_H) return;
+  }
+
+  await prisma.runtimeState.upsert({
+    where:  { key: KEY_LAST_ALLOCATION },
+    create: { key: KEY_LAST_ALLOCATION, value: new Date().toISOString() },
+    update: { value: new Date().toISOString() },
+  }).catch(() => {});
+
+  try {
+    const { runCapitalAllocation } = await import("../lib/company/capital-allocator");
+    const { allocationPlan } = await runCapitalAllocation();
+    if (allocationPlan.length > 0) {
+      console.log(`[allocator] Updated allocation for ${allocationPlan.length} opportunities — top: "${allocationPlan[0]?.title ?? "none"}"`);
+    }
+  } catch (err) {
+    console.error("[allocator] Capital allocation failed:", err);
+  }
+}
+
+// ── Autonomous Research Engine ─────────────────────────────────────────
+
+const KEY_LAST_RESEARCH   = "runtime:lastAutonomousResearch";
+const RESEARCH_INTERVAL_H = Number(process.env.RESEARCH_INTERVAL_H ?? "6");
+
+async function maybeRunAutonomousResearch(): Promise<void> {
+  const lastRunRec = await prisma.runtimeState.findUnique({ where: { key: KEY_LAST_RESEARCH } }).catch(() => null);
+  if (lastRunRec) {
+    const hoursSince = (Date.now() - new Date(lastRunRec.value as string).getTime()) / 3_600_000;
+    if (hoursSince < RESEARCH_INTERVAL_H) return;
+  }
+
+  await prisma.runtimeState.upsert({
+    where:  { key: KEY_LAST_RESEARCH },
+    create: { key: KEY_LAST_RESEARCH, value: new Date().toISOString() },
+    update: { value: new Date().toISOString() },
+  }).catch(() => {});
+
+  try {
+    const { runAutonomousResearch } = await import("../lib/company/research-engine");
+    const result = await runAutonomousResearch();
+    if (result.tasksCreated > 0) {
+      console.log(`[research-engine] Created ${result.tasksCreated} autonomous discovery task(s)`);
+    }
+  } catch (err) {
+    console.error("[research-engine] Autonomous research failed:", err);
+  }
+}
+
+// ── Opportunity Extractor ──────────────────────────────────────────────
+// Scans recent research outputs and extracts opportunities from unprocessed ones
+
+async function runOpportunityExtractor(): Promise<void> {
+  try {
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000); // last 48h
+
+    // Get recent research outputs
+    const researchOutputs = await prisma.workforceOutput.findMany({
+      where: {
+        outputType: "research",
+        createdAt:  { gte: since },
+        content:    { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+    if (researchOutputs.length === 0) return;
+
+    const { extractOpportunitiesFromOutput } = await import("../lib/opportunity-engine");
+    let extracted = 0;
+
+    for (const output of researchOutputs) {
+      // Skip if opportunities already extracted from this output
+      const existing = await prisma.opportunity.count({ where: { sourceOutputId: output.id } });
+      if (existing > 0) continue;
+      if (!output.content) continue;
+
+      const count = await extractOpportunitiesFromOutput({
+        id:        output.id,
+        title:     output.title,
+        content:   output.content,
+        goalId:    output.goalId,
+        projectId: output.projectId,
+      });
+      extracted += count;
+    }
+
+    if (extracted > 0) {
+      console.log(`[opportunities] Extracted ${extracted} opportunit(ies) from research outputs`);
+    }
+  } catch (err) {
+    console.error("[opportunities] Extractor failed:", err);
+  }
+}
+
+// ── Opportunity Router ─────────────────────────────────────────────────
+
+async function runOpportunityRouter(): Promise<void> {
+  try {
+    const { processDiscoveredOpportunities } = await import("../lib/opportunity-engine");
+    const result = await processDiscoveredOpportunities();
+    if (result.routed > 0) {
+      console.log(`[opportunities] Routed ${result.routed}/${result.processed} discovered opportunit(ies) to workflows`);
+    }
+  } catch (err) {
+    console.error("[opportunities] Router failed:", err);
+  }
+}
+
+// ── Executive Orchestrator ─────────────────────────────────────────────
+
+async function maybeRunExecutiveOrchestrator(): Promise<void> {
+  const {
+    KEY_LAST_ORCHESTRATION,
+    ORCHESTRATION_INTERVAL_H,
+  } = await import("../lib/executive-orchestrator");
+
+  const lastRunRec = await prisma.runtimeState.findUnique({ where: { key: KEY_LAST_ORCHESTRATION } }).catch(() => null);
+  if (lastRunRec) {
+    const hoursSince = (Date.now() - new Date(lastRunRec.value).getTime()) / 3_600_000;
+    if (hoursSince < ORCHESTRATION_INTERVAL_H) return;
+  }
+
+  await prisma.runtimeState.upsert({
+    where:  { key: KEY_LAST_ORCHESTRATION },
+    create: { key: KEY_LAST_ORCHESTRATION, value: new Date().toISOString() },
+    update: { value: new Date().toISOString() },
+  }).catch(() => {});
+
+  try {
+    const { runExecutiveOrchestrator } = await import("../lib/executive-orchestrator");
+    const result = await runExecutiveOrchestrator();
+    if (result.acted) {
+      console.log(`[orchestrator] Daily review: ${result.summary}`);
+    } else {
+      console.log(`[orchestrator] Daily review complete — ${result.summary}`);
+    }
+  } catch (err) {
+    console.error("[orchestrator] Executive orchestrator failed:", err);
+  }
+}
+
+// ── Autonomous Conditions ──────────────────────────────────────────────
+
+const KEY_LAST_CONDITIONS     = "runtime:lastConditionCheck";
+const CONDITIONS_INTERVAL_H   = 12; // check every 12 hours
+
+async function maybeRunAutonomousConditions(): Promise<void> {
+  const lastRunRec = await prisma.runtimeState.findUnique({ where: { key: KEY_LAST_CONDITIONS } }).catch(() => null);
+  if (lastRunRec) {
+    const hoursSince = (Date.now() - new Date(lastRunRec.value).getTime()) / 3_600_000;
+    if (hoursSince < CONDITIONS_INTERVAL_H) return;
+  }
+
+  await prisma.runtimeState.upsert({
+    where:  { key: KEY_LAST_CONDITIONS },
+    create: { key: KEY_LAST_CONDITIONS, value: new Date().toISOString() },
+    update: { value: new Date().toISOString() },
+  }).catch(() => {});
+
+  try {
+    const { checkAutonomousConditions } = await import("../lib/autonomous-conditions");
+    const result = await checkAutonomousConditions();
+    if (result.assignmentsCreated > 0) {
+      console.log(`[conditions] Created ${result.assignmentsCreated} autonomous assignment(s): ${result.results.map(r => r.condition).join(", ")}`);
+    }
+  } catch (err) {
+    console.error("[conditions] Autonomous conditions check failed:", err);
+  }
+}
+
 // ── Main Loop ─────────────────────────────────────────────────────────
 
 export async function runRuntimeLoop(): Promise<void> {
@@ -217,6 +397,24 @@ export async function runRuntimeLoop(): Promise<void> {
 
     // 8. Send operational alerts if any critical conditions exist
     await runAlerts();
+
+    // 9. Autonomous research — ensure Research team always has discovery tasks
+    await maybeRunAutonomousResearch();
+
+    // 10. Extract opportunities from recent research outputs
+    await runOpportunityExtractor();
+
+    // 11. Route newly discovered opportunities to sequential pipeline chains
+    await runOpportunityRouter();
+
+    // 12. Check autonomous conditions (revenue gap, ecommerce goals, stalled projects)
+    await maybeRunAutonomousConditions();
+
+    // 13. Capital allocator — score ROI, update team focus, recommend effort distribution
+    await maybeRunCapitalAllocation();
+
+    // 14. Executive orchestrator — daily portfolio review, auto-reject weak opps, promote strong ones
+    await maybeRunExecutiveOrchestrator();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`[loop] Tick complete in ${elapsed}s | queue: +${queueResult.processed} done, ${queueResult.failed} failed`);

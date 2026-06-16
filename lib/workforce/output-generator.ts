@@ -1,5 +1,5 @@
 import { getAIProvider, isAIEnabled } from "@/lib/ai/provider";
-import { getDepartmentPrompt, STRUCTURED_OUTPUT_INSTRUCTIONS } from "@/lib/ai/prompts";
+import { getDepartmentPrompt, STRUCTURED_OUTPUT_INSTRUCTIONS, ARTIFACT_PROMPT_ADDITIONS } from "@/lib/ai/prompts";
 
 export type TeamDepartmentType =
   | "research" | "sales" | "marketing" | "content" | "operations"
@@ -79,11 +79,12 @@ export async function generateOutputContent(opts: GenerateOptions): Promise<stri
       systemPrompt = INTERNAL_ANALYSIS_SYSTEM_PROMPT;
       userPrompt = buildInternalAnalysisPrompt(title, description, internalContext);
     } else {
-      // External request: standard department prompt
+      // External request: standard department prompt + artifact-type additions
       systemPrompt = getDepartmentPrompt(departmentType);
       const basePrompt = buildAIPrompt(title, description, outputType, priority);
       const memoryNote = memoryContext ? `\n\n## Context from Previous Work\n${memoryContext}` : "";
-      userPrompt = basePrompt + memoryNote + STRUCTURED_OUTPUT_INSTRUCTIONS;
+      const artifactNote = ARTIFACT_PROMPT_ADDITIONS[departmentType.toLowerCase()] ?? "";
+      userPrompt = basePrompt + memoryNote + artifactNote + STRUCTURED_OUTPUT_INSTRUCTIONS;
     }
 
     try {

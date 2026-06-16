@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
   Menu, X, Brain, Sparkles, LogOut, Settings,
-  LayoutDashboard, Inbox, CheckSquare, FolderOpen, Target, Calendar,
-  TrendingUp, Users2, MoreHorizontal, Newspaper, Zap, Building2, FileText, Lightbulb,
+  Inbox, CheckSquare, FolderOpen, Target, Calendar,
+  TrendingUp, Users2, MoreHorizontal, Zap, FileText, Lightbulb, Sun,
 } from "lucide-react";
 
 async function logout() {
@@ -25,16 +25,13 @@ const navGroups: {
     label: "Cockpit",
     accentClass: "text-[#8b5cf6]",
     items: [
-      { id: "dashboard", label: "Founder Mode", icon: LayoutDashboard },
-      { id: "briefing",  label: "Briefing",     icon: Newspaper },
-      { id: "inbox",     label: "Inbox",         icon: Inbox },
+      { id: "today", label: "Today", icon: Sun },
     ],
   },
   {
     label: "Company",
     accentClass: "text-[#00D4FF]",
     items: [
-      { id: "company",       label: "Command Center", icon: Building2 },
       { id: "opportunities", label: "Opportunities",  icon: Lightbulb },
       { id: "workforce",     label: "Departments",    icon: Users2 },
       { id: "revenue",       label: "Revenue Health", icon: TrendingUp },
@@ -62,9 +59,9 @@ const navGroups: {
 ];
 
 const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "company",   label: "Command", icon: Building2 },
-  { id: "dashboard", label: "Founder", icon: LayoutDashboard },
-  { id: "inbox",     label: "Inbox",   icon: Inbox },
+  { id: "today",  label: "Today",   icon: Sun },
+  { id: "drafts", label: "Actions", icon: FileText },
+  { id: "inbox",  label: "Inbox",   icon: Inbox },
 ];
 
 export function MobileNav() {

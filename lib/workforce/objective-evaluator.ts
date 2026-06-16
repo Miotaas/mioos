@@ -42,15 +42,16 @@ async function getBusinessContext(): Promise<BusinessContext> {
 
 function needsWork(departmentType: string, ctx: BusinessContext): boolean {
   switch (departmentType.toLowerCase()) {
-    case "research":       return ctx.activeProjects.length > 0 || ctx.activeGoals.length > 0;
-    case "sales":          return ctx.openLeads > 0;
+    // Research ALWAYS needs work — it is the fuel of the autonomous company
+    case "research":       return true;
+    case "sales":          return true; // Sales should always be prospecting
     case "marketing":      return ctx.activeGoals.length > 0 || ctx.activeProjects.length > 0;
     case "content":        return ctx.activeGoals.length > 0 || ctx.activeProjects.length > 0;
     case "operations":     return ctx.overdueTasks > 0 || ctx.blockedProjects > 0;
     case "support":        return ctx.openSupportIssues > 0;
-    case "executive":      return ctx.pendingApprovals > 0 || ctx.overdueTasks > 2 || ctx.blockedProjects > 0;
+    case "executive":      return true; // Executive always reviews portfolio
     case "development":    return ctx.activeProjects.length > 0;
-    case "commerce":       return ctx.activeGoals.length > 0;
+    case "commerce":       return true; // Commerce should always be validating
     default:               return ctx.activeProjects.length > 0;
   }
 }

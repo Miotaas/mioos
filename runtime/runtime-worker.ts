@@ -38,8 +38,8 @@ const DEPT_DEFAULTS: Record<string, {
     requiresApproval: false,
     approvalTriggers: [],
     maxDailyRuns:     3,
-    objectiveTitle:   "Market & Opportunity Research",
-    objective:        "Research market opportunities, competitive intelligence, and strategic insights relevant to active projects and goals. Surface findings that can inform sales, marketing, and product decisions.",
+    objectiveTitle:   "Opportunity Discovery & Market Research",
+    objective:        "Discover and research concrete business opportunities: automation services for small businesses, e-commerce products, SaaS ideas, or content niches. For each opportunity found, provide: niche/industry, specific pain point, solution approach, revenue potential, target customer, competitive landscape, and a GO/NO-GO recommendation. Focus on opportunities with clear revenue potential within 90 days.",
     frequency:        "daily",
   },
   sales: {

@@ -13,7 +13,10 @@
     "db:studio": "prisma studio",
     "runtime": "tsx runtime/runtime-worker.ts",
     "runtime:once": "tsx runtime/runtime-worker.ts --once",
-    "runtime:dev": "tsx watch runtime/runtime-worker.ts"
+    "runtime:dev": "tsx watch runtime/runtime-worker.ts",
+    "workforce:worker": "tsx runtime/runtime-worker.ts",
+    "workforce:worker:once": "tsx runtime/runtime-worker.ts --once",
+    "workforce:worker:dev": "tsx watch runtime/runtime-worker.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.6",

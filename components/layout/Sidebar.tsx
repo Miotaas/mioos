@@ -3,10 +3,10 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  LayoutDashboard, Inbox, CheckSquare, FolderOpen, Target, Calendar,
-  TrendingUp, Users2, Newspaper, Zap, FileText,
+  CheckSquare, FolderOpen, Target, Calendar,
+  TrendingUp, Users2, Zap, FileText,
   Settings, ChevronLeft, ChevronRight,
-  Brain, LogOut, Sparkles, Building2, Lightbulb,
+  Brain, LogOut, Sparkles, Lightbulb, Sun,
 } from "lucide-react";
 
 async function logout() {
@@ -25,16 +25,13 @@ const navGroups: {
     label: "Cockpit",
     accentClass: "text-[#8b5cf6]",
     items: [
-      { id: "dashboard", label: "Founder Mode", icon: LayoutDashboard },
-      { id: "briefing",  label: "Briefing",     icon: Newspaper },
-      { id: "inbox",     label: "Inbox",         icon: Inbox },
+      { id: "today", label: "Today", icon: Sun },
     ],
   },
   {
     label: "Company",
     accentClass: "text-[#00D4FF]",
     items: [
-      { id: "company",       label: "Command Center", icon: Building2 },
       { id: "opportunities", label: "Opportunities",  icon: Lightbulb },
       { id: "workforce",     label: "Departments",    icon: Users2 },
       { id: "revenue",       label: "Revenue Health", icon: TrendingUp },
@@ -93,7 +90,7 @@ export function Sidebar() {
       <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-6">
         {navGroups.map((group) => (
           <div key={group.label}>
-            {!sidebarCollapsed && (
+            {!sidebarCollapsed && group.items.length > 1 && (
               <p className={cn("text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2", group.accentClass)}>
                 {group.label}
               </p>

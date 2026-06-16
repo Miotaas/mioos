@@ -21,6 +21,9 @@ import { FounderRequestsView } from "@/components/agents/FounderRequestsView";
 import { RevenueView } from "@/components/commerce/RevenueView";
 import { CalendarView } from "@/components/dashboard/CalendarView";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { CompanyCommandCenter } from "@/components/company/CompanyCommandCenter";
+import { DraftsView } from "@/components/agents/DraftsView";
+import { TodayView } from "@/components/today/TodayView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
@@ -49,6 +52,8 @@ export default function Home() {
 
         {/* extra bottom padding on mobile for the tab bar */}
         <div className="relative z-10 flex-1 overflow-hidden pb-[60px] md:pb-0">
+          {/* MioOS 2.0 Today */}
+          {activeView === "today"      && <ErrorBoundary label="Today"><TodayView /></ErrorBoundary>}
           {/* Primary navigation */}
           {activeView === "dashboard"  && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}
           {activeView === "briefing"   && <ErrorBoundary label="Briefing"><BriefingView /></ErrorBoundary>}
@@ -58,8 +63,10 @@ export default function Home() {
           {activeView === "goals"      && <ErrorBoundary label="Goals"><GoalsView /></ErrorBoundary>}
           {activeView === "calendar"   && <ErrorBoundary label="Calendar"><CalendarView /></ErrorBoundary>}
           {activeView === "revenue"    && <ErrorBoundary label="Revenue"><RevenueView /></ErrorBoundary>}
+          {activeView === "company"    && <ErrorBoundary label="Company"><CompanyCommandCenter /></ErrorBoundary>}
           {activeView === "workforce"  && <ErrorBoundary label="Workforce"><WorkforceView /></ErrorBoundary>}
           {activeView === "requests"   && <ErrorBoundary label="Requests"><FounderRequestsView /></ErrorBoundary>}
+          {activeView === "drafts"     && <ErrorBoundary label="Drafts"><DraftsView /></ErrorBoundary>}
           {activeView === "settings"   && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
           {/* Legacy views — still routable from within primary views */}
           {activeView === "activity"       && <ErrorBoundary label="Activity"><ActivityView /></ErrorBoundary>}

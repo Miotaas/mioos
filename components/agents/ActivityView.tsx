@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
-import { Agent, AgentRun, ApprovalQueueItem, WorkforceApproval, TeamHandoff, WorkforceOutput, Assignment } from "@/types";
+import { Agent, AgentRun, ApprovalQueueItem, WorkforceApproval, TeamHandoff, WorkforceOutput, Assignment, ActionResult } from "@/types";
 import {
   Activity, CheckCircle2, XCircle, Clock, Zap, ArrowRight,
 } from "lucide-react";
@@ -66,6 +66,7 @@ export function ActivityView() {
   const [assignments, setAssignments]       = useState<Assignment[]>([]);
   const [filter, setFilter]                 = useState<Filter>("all");
   const [approving, setApproving]           = useState<Record<string, boolean>>({});
+  const [actionResults, setActionResults]   = useState<Record<string, ActionResult>>({});
 
   function humanizeAction(actionType?: string): string {
     if (!actionType) return "";
@@ -125,13 +126,26 @@ export function ActivityView() {
   async function handleWorkforceApproval(id: string, decision: "approved" | "rejected") {
     setApproving(prev => ({ ...prev, [`w_${id}`]: true }));
     try {
-      await fetch(`/api/workforce-approvals/${id}`, {
+      const res = await fetch(`/api/workforce-approvals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: decision }),
       });
-      setWApprovals(prev => prev.filter(a => a.id !== id));
-      showToast(decision === "approved" ? "Approved" : "Rejected");
+      if (res.ok) {
+        const data = await res.json();
+        // Update approval in-place so the ActionResult status is visible
+        if (data.approval) {
+          setWApprovals(prev => prev.map(a => a.id === id ? { ...a, ...data.approval } : a));
+        }
+        if (data.actionResult) {
+          setActionResults(prev => ({ ...prev, [id]: data.actionResult }));
+        }
+        const label = data.actionResult?.title ? ` — ${data.actionResult.title}` : "";
+        showToast(decision === "approved" ? `Approved${label}` : "Rejected");
+      } else {
+        setWApprovals(prev => prev.filter(a => a.id !== id));
+        showToast(decision === "approved" ? "Approved" : "Rejected");
+      }
     } finally {
       setApproving(prev => ({ ...prev, [`w_${id}`]: false }));
     }
@@ -480,6 +494,18 @@ export function ActivityView() {
                     <p className="text-[12px] text-text-secondary">{item.title}</p>
                     {item.reason && (
                       <p className="text-[11px] text-text-ghost mt-0.5 leading-relaxed">{item.reason}</p>
+                    )}
+                    {/* ActionResult — shown after workforce approval dispatch */}
+                    {item.kind === "workforce_approval" && item.workforceApprovalId && actionResults[item.workforceApprovalId] && (
+                      <p className={cn(
+                        "text-[10px] mt-0.5 font-medium",
+                        actionResults[item.workforceApprovalId].status === "failed"
+                          ? "text-accent-red"
+                          : "text-accent-green"
+                      )}>
+                        {actionResults[item.workforceApprovalId].status === "failed" ? "⚠ " : "✓ "}
+                        {actionResults[item.workforceApprovalId].title}
+                      </p>
                     )}
                     {/* Handoff lifecycle info */}
                     {handoffObj?.acceptedAt && (

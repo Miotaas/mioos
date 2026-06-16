@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MioOS V3 — Today + Decide Layouts</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0f1a; color: #c8d0e0; min-height: 100vh; padding: 40px 24px; }
+  h1 { font-size: 18px; font-weight: 600; color: #e8edf5; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #6b7a94; margin-bottom: 32px; }
+
+  .page-title { font-size: 14px; font-weight: 700; color: #e8edf5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .page-title span { font-size: 11px; color: #6b7a94; font-weight: 400; }
+
+  .annotation { font-size: 11px; color: #6b7a94; background: #0d1526; border: 1px solid #1e2a3e; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; line-height: 1.6; }
+  .annotation strong { color: #c8d0e0; }
+
+  /* BROWSER CHROME */
+  .browser { background: #080d18; border: 1px solid #1a2236; border-radius: 12px; overflow: hidden; margin-bottom: 48px; }
+  .browser-bar { background: #0d1526; border-bottom: 1px solid #1a2236; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .browser-dot { width: 7px; height: 7px; border-radius: 50%; background: #1e2a3e; }
+  .browser-url { flex: 1; background: #080d18; border: 1px solid #1a2236; border-radius: 5px; padding: 4px 10px; font-size: 10px; color: #3a4a64; margin: 0 10px; }
+
+  /* APP SHELL */
+  .app-shell { display: flex; min-height: 520px; }
+  .sidebar { width: 148px; flex-shrink: 0; background: #0a0f1e; border-right: 1px solid #1a2236; padding: 14px 10px; display: flex; flex-direction: column; }
+  .sidebar-logo { background: #1a2236; border-radius: 7px; height: 24px; width: 80px; margin-bottom: 18px; }
+  .nav-section-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #3a4a64; padding: 0 6px; margin-top: 10px; margin-bottom: 4px; }
+  .nav-item { font-size: 11px; color: #6b7a94; padding: 6px 8px; border-radius: 6px; margin-bottom: 1px; display: flex; align-items: center; gap: 6px; }
+  .nav-item.active { background: #1e3a6e; color: #60a5fa; }
+  .nav-item.active-amber { background: #2a1e0a; color: #f59e0b; }
+  .nav-icon { font-size: 10px; width: 12px; text-align: center; }
+  .main { flex: 1; overflow: hidden; }
+
+  /* TODAY LAYOUT */
+  .today-main { padding: 20px; height: 100%; overflow-y: auto; }
+  .today-header { margin-bottom: 16px; }
+  .today-date { font-size: 9px; color: #6b7a94; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .today-title { font-size: 20px; font-weight: 600; color: #e8edf5; }
+  .today-grid { display: grid; grid-template-columns: 42fr 58fr; gap: 12px; }
+  .today-left { display: flex; flex-direction: column; gap: 10px; }
+  .today-right { display: flex; flex-direction: column; gap: 10px; }
+
+  .card { background: #0d1526; border: 1px solid #1a2236; border-radius: 10px; overflow: hidden; }
+  .card-header { padding: 9px 14px; border-bottom: 1px solid #1a2236; display: flex; align-items: center; gap: 6px; }
+  .card-title { font-size: 11px; font-weight: 600; color: #e8edf5; flex: 1; }
+  .card-count { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+  .card-count-amber { background: #3a2a08; color: #f59e0b; }
+  .card-count-green { background: #0d2a1a; color: #34d399; }
+  .card-count-cyan { background: #0d2236; color: #22d3ee; }
+  .card-body { padding: 12px 14px; }
+  .card-link { font-size: 10px; color: #3a4a64; display: flex; align-items: center; gap: 3px; }
+  .card-link:hover { color: #6b7a94; }
+
+  /* BRIEF CARD */
+  .brief-status { font-size: 10px; color: #6b7a94; margin-bottom: 8px; }
+  .brief-text { font-size: 12px; color: #c8d0e0; line-height: 1.6; margin-bottom: 10px; }
+  .brief-focus { border-top: 1px solid #1a2236; padding-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .focus-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7a94; }
+  .focus-text { font-size: 11px; color: #e8edf5; font-weight: 500; flex: 1; }
+  .focus-btn { font-size: 10px; background: #1e3a6e; color: #60a5fa; padding: 3px 10px; border-radius: 5px; border: 1px solid #2a4a8e; flex-shrink: 0; }
+
+  /* ATTENTION ITEMS */
+  .attn-item { padding: 9px 14px; border-bottom: 1px solid #0f1826; display: flex; align-items: center; gap: 10px; }
+  .attn-item:last-child { border-bottom: none; }
+  .attn-bar { width: 2px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+  .attn-content { flex: 1; min-width: 0; }
+  .attn-title { font-size: 11px; color: #e8edf5; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .attn-sub { font-size: 10px; color: #6b7a94; margin-top: 1px; }
+  .attn-btn { font-size: 10px; color: #9aa5bc; background: #1a2236; border: 1px solid #1e2a3e; padding: 3px 9px; border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; gap: 3px; }
+  .attn-footer { padding: 8px 14px; border-top: 1px solid #1a2236; }
+  .attn-footer-text { font-size: 10px; color: #3a4a64; display: flex; align-items: center; gap: 4px; }
+
+  /* VENTURE PULSE ITEMS */
+  .pulse-item { padding: 8px 14px; border-bottom: 1px solid #0f1826; display: flex; align-items: center; gap: 8px; }
+  .pulse-item:last-child { border-bottom: none; }
+  .pulse-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pulse-name { font-size: 11px; color: #c8d0e0; flex: 1; }
+  .pulse-status { font-size: 10px; color: #6b7a94; }
+
+  /* REVENUE CARD */
+  .rev-narrative { font-size: 11px; color: #9aa5bc; line-height: 1.6; margin-bottom: 10px; }
+  .rev-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 1px solid #1a2236; }
+  .rev-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7a94; margin-bottom: 3px; }
+  .rev-value { font-size: 16px; font-weight: 700; font-family: monospace; color: #34d399; }
+  .rev-value-pipe { font-size: 16px; font-weight: 600; font-family: monospace; color: #c8d0e0; }
+
+  /* AGENDA */
+  .agenda-item { padding: 7px 14px; border-bottom: 1px solid #0f1826; display: flex; align-items: center; gap: 8px; }
+  .agenda-item:last-child { border-bottom: none; }
+  .agenda-time { font-size: 10px; color: #22d3ee; font-family: monospace; width: 34px; flex-shrink: 0; }
+  .agenda-title { font-size: 11px; color: #c8d0e0; }
+
+  /* DISPATCH BTN */
+  .dispatch-btn { margin-left: auto; font-size: 10px; background: #1e3a6e; color: #60a5fa; padding: 5px 12px; border-radius: 6px; border: 1px solid #2a4a8e; display: flex; align-items: center; gap: 5px; }
+
+  /* DECIDE LAYOUT */
+  .decide-main { display: flex; height: 100%; }
+  .decide-list { width: 320px; flex-shrink: 0; border-right: 1px solid #1a2236; display: flex; flex-direction: column; }
+  .decide-toolbar { padding: 12px 14px; border-bottom: 1px solid #1a2236; background: #0a0f1e; }
+  .decide-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .decide-title { font-size: 13px; font-weight: 600; color: #e8edf5; }
+  .decide-total { font-size: 10px; color: #f59e0b; background: #2a1e0a; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+  .decide-tabs { display: flex; gap: 2px; }
+  .decide-tab { font-size: 10px; padding: 3px 9px; border-radius: 5px; color: #6b7a94; }
+  .decide-tab.active { background: #1e2a3e; color: #c8d0e0; }
+  .decide-items { flex: 1; overflow-y: auto; }
+  .decide-item { padding: 10px 14px; border-bottom: 1px solid #0f1826; display: flex; align-items: flex-start; gap: 8px; cursor: pointer; }
+  .decide-item.selected { background: #0d1a2e; }
+  .decide-item-bar { width: 2px; min-height: 32px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+  .decide-item-content { flex: 1; min-width: 0; }
+  .decide-item-team { font-size: 10px; color: #6b7a94; margin-bottom: 2px; }
+  .decide-item-title { font-size: 11px; color: #e8edf5; font-weight: 500; line-height: 1.4; }
+  .decide-item-type { font-size: 9px; color: #6b7a94; background: #1a2236; padding: 1px 6px; border-radius: 3px; margin-top: 4px; display: inline-block; }
+
+  /* DETAIL PANEL */
+  .decide-detail { flex: 1; display: flex; flex-direction: column; background: #080d18; }
+  .detail-header { padding: 14px 18px; border-bottom: 1px solid #1a2236; }
+  .detail-team { font-size: 10px; color: #6b7a94; margin-bottom: 4px; }
+  .detail-title { font-size: 13px; font-weight: 600; color: #e8edf5; line-height: 1.4; }
+  .detail-meta { display: flex; gap: 8px; margin-top: 6px; }
+  .detail-tag { font-size: 9px; color: #6b7a94; background: #1a2236; padding: 2px 7px; border-radius: 4px; }
+  .detail-body { flex: 1; padding: 16px 18px; overflow-y: auto; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #3a4a64; margin-bottom: 6px; }
+  .detail-text { font-size: 11px; color: #9aa5bc; line-height: 1.7; background: #0d1526; border-radius: 6px; padding: 10px 12px; }
+  .detail-footer { padding: 14px 18px; border-top: 1px solid #1a2236; display: flex; gap: 8px; align-items: center; }
+  .action-approve { font-size: 11px; font-weight: 600; background: #0d2a1a; border: 1px solid #1a4a2a; color: #34d399; padding: 7px 16px; border-radius: 7px; }
+  .action-reject { font-size: 11px; font-weight: 600; background: #1f0d0d; border: 1px solid #361a1a; color: #f87171; padding: 7px 16px; border-radius: 7px; }
+  .action-changes { font-size: 11px; color: #6b7a94; background: #1a2236; border: 1px solid #1e2a3e; padding: 7px 12px; border-radius: 7px; }
+  .action-defer { font-size: 11px; color: #6b7a94; padding: 7px 8px; border-radius: 7px; margin-left: auto; }
+
+  /* DIVIDER */
+  .section-divider { border: none; border-top: 1px solid #1a2236; margin: 40px 0 36px; }
+
+  footer { margin-top: 40px; font-size: 11px; color: #3a4a64; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>MioOS V3 — Today + Decide Layouts</h1>
+<p class="subtitle">The two pages the founder lives in. Everything else is depth.</p>
+
+<!-- ═══════════════════════════════════════════════════
+     TODAY
+════════════════════════════════════════════════════ -->
+<div class="page-title">☀ Today <span>— surface layer, reads from all other pages, owns nothing</span></div>
+
+<div class="annotation">
+  <strong>Layout principle:</strong> Left column = judgment (brief + attention). Right column = context (ventures, revenue, agenda). The founder reads left-to-right: understand the day → check priorities → scan health → glance at schedule.<br>
+  <strong>No processing on this page.</strong> "Review →" always navigates to Decide. "Open →" always navigates to the canonical home.
+</div>
+
+<div class="browser">
+  <div class="browser-bar">
+    <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+    <div class="browser-url">localhost:3000</div>
+    <div class="dispatch-btn">⚡ Dispatch Work</div>
+  </div>
+  <div class="app-shell">
+    <div class="sidebar">
+      <div class="sidebar-logo"></div>
+      <div class="nav-item active"><div class="nav-icon">☀</div> Today</div>
+      <div class="nav-item active-amber"><div class="nav-icon">⊡</div> Decide <span style="margin-left:auto;font-size:9px;background:#2a1e0a;color:#f59e0b;padding:1px 5px;border-radius:3px;">3</span></div>
+      <div class="nav-section-label">Projects</div>
+      <div class="nav-item"><div class="nav-icon">◈</div> Ventures</div>
+      <div class="nav-item"><div class="nav-icon">◎</div> Initiatives</div>
+      <div class="nav-section-label">Personal</div>
+      <div class="nav-item"><div class="nav-icon">◷</div> Life</div>
+      <div class="nav-section-label">Intelligence</div>
+      <div class="nav-item"><div class="nav-icon">⚡</div> Teams</div>
+      <div style="margin-top:auto;"></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div> Settings</div>
+    </div>
+    <div class="main">
+      <div class="today-main">
+        <div class="today-header">
+          <div class="today-date">☀ Today · Tuesday 16 June</div>
+          <div class="today-title">Tuesday</div>
+        </div>
+        <div class="today-grid">
+          <div class="today-left">
+            <!-- BRIEF + FOCUS -->
+            <div class="card">
+              <div class="card-body">
+                <div class="brief-status">All clear today</div>
+                <div class="brief-text">No urgent decisions or blockers. Revenue is on track. Your highest-leverage action is completing the AION technical spec.</div>
+                <div class="brief-focus">
+                  <div>
+                    <div class="focus-label">Focus</div>
+                    <div class="focus-text">AION technical spec</div>
+                  </div>
+                  <div class="focus-btn">Start →</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ATTENTION -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Attention</div>
+                <div class="card-count card-count-amber">30</div>
+              </div>
+              <div class="attn-item">
+                <div class="attn-bar" style="background:#f59e0b;"></div>
+                <div class="attn-content">
+                  <div class="attn-title">Campaign proposal ready</div>
+                  <div class="attn-sub">Marketing team · Approval</div>
+                </div>
+                <div class="attn-btn">Review →</div>
+              </div>
+              <div class="attn-item">
+                <div class="attn-bar" style="background:#f59e0b;"></div>
+                <div class="attn-content">
+                  <div class="attn-title">OAuth architecture decision</div>
+                  <div class="attn-sub">AION team · Decision</div>
+                </div>
+                <div class="attn-btn">Review →</div>
+              </div>
+              <div class="attn-item">
+                <div class="attn-bar" style="background:#f87171;"></div>
+                <div class="attn-content">
+                  <div class="attn-title">Mail Co-Pilot is blocked</div>
+                  <div class="attn-sub">Deployment dependency</div>
+                </div>
+                <div class="attn-btn">Review →</div>
+              </div>
+              <div class="attn-footer">
+                <div class="attn-footer-text">View all 30 pending items in Decide →</div>
+              </div>
+            </div>
+
+            <!-- AGENDA -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Agenda</div>
+                <div class="card-link">Open Life →</div>
+              </div>
+              <div class="agenda-item">
+                <div class="agenda-time">10:00</div>
+                <div class="agenda-title">Meeting title</div>
+              </div>
+              <div class="agenda-item">
+                <div class="agenda-time">14:30</div>
+                <div class="agenda-title">Another event</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="today-right">
+            <!-- VENTURE PULSE -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Ventures</div>
+                <div class="card-link">Open Projects →</div>
+              </div>
+              <div class="pulse-item">
+                <div class="pulse-dot" style="background:#34d399;"></div>
+                <div class="pulse-name">AION</div>
+                <div class="pulse-status">On track</div>
+              </div>
+              <div class="pulse-item">
+                <div class="pulse-dot" style="background:#34d399;"></div>
+                <div class="pulse-name">MioOS</div>
+                <div class="pulse-status">On track</div>
+              </div>
+              <div class="pulse-item">
+                <div class="pulse-dot" style="background:#f87171;"></div>
+                <div class="pulse-name">Mail Co-Pilot</div>
+                <div class="pulse-status" style="color:#f87171;">Blocked</div>
+              </div>
+            </div>
+
+            <!-- REVENUE -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Revenue</div>
+                <div class="card-link">Open Projects →</div>
+              </div>
+              <div class="card-body">
+                <div class="rev-narrative">Revenue narrative generated from data. Summarizes MRR trend and pipeline position in one sentence.</div>
+                <div class="rev-numbers">
+                  <div>
+                    <div class="rev-label">Monthly Revenue</div>
+                    <div class="rev-value">€—</div>
+                  </div>
+                  <div>
+                    <div class="rev-label">Pipeline</div>
+                    <div class="rev-value-pipe">€—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI TEAMS SIGNAL (only if output ready) -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Teams</div>
+                <div class="card-count card-count-cyan">2</div>
+                <div class="card-link" style="margin-left:auto;">Open Teams →</div>
+              </div>
+              <div class="pulse-item">
+                <div class="pulse-dot" style="background:#22d3ee;"></div>
+                <div class="pulse-name">Research output ready</div>
+                <div class="attn-btn" style="font-size:9px;padding:2px 7px;">Review →</div>
+              </div>
+              <div class="pulse-item">
+                <div class="pulse-dot" style="background:#22d3ee;"></div>
+                <div class="pulse-name">Draft ready for review</div>
+                <div class="attn-btn" style="font-size:9px;padding:2px 7px;">Review →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════════════
+     DECIDE
+════════════════════════════════════════════════════ -->
+<div class="page-title">⊡ Decide <span>— canonical home for all decisions. The only place you Approve, Reject, or Request changes.</span></div>
+
+<div class="annotation">
+  <strong>Layout principle:</strong> Left panel = list of all pending decisions (filterable by type). Right panel = detail view for the selected item. Actions live in the detail panel — not the list. The founder selects an item, reads full context, then decides.<br>
+  <strong>Nothing lives here permanently.</strong> Every item in Decide either gets approved (→ Projects or executed), rejected (→ archived), or deferred (stays, deprioritized). Decide is a processing surface, not a storage layer.
+</div>
+
+<div class="browser">
+  <div class="browser-bar">
+    <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+    <div class="browser-url">localhost:3000/decide</div>
+  </div>
+  <div class="app-shell">
+    <div class="sidebar">
+      <div class="sidebar-logo"></div>
+      <div class="nav-item"><div class="nav-icon">☀</div> Today</div>
+      <div class="nav-item active-amber"><div class="nav-icon">⊡</div> Decide <span style="margin-left:auto;font-size:9px;background:#2a1e0a;color:#f59e0b;padding:1px 5px;border-radius:3px;">30</span></div>
+      <div class="nav-section-label">Projects</div>
+      <div class="nav-item"><div class="nav-icon">◈</div> Ventures</div>
+      <div class="nav-item"><div class="nav-icon">◎</div> Initiatives</div>
+      <div class="nav-section-label">Personal</div>
+      <div class="nav-item"><div class="nav-icon">◷</div> Life</div>
+      <div class="nav-section-label">Intelligence</div>
+      <div class="nav-item"><div class="nav-icon">⚡</div> Teams</div>
+      <div style="margin-top:auto;"></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div> Settings</div>
+    </div>
+    <div class="main">
+      <div class="decide-main">
+        <!-- DECIDE LIST PANEL -->
+        <div class="decide-list">
+          <div class="decide-toolbar">
+            <div class="decide-title-row">
+              <div class="decide-title">Decide</div>
+              <div class="decide-total">30 pending</div>
+            </div>
+            <div class="decide-tabs">
+              <div class="decide-tab active">All</div>
+              <div class="decide-tab">Approvals</div>
+              <div class="decide-tab">Drafts</div>
+              <div class="decide-tab">Proposals</div>
+            </div>
+          </div>
+          <div class="decide-items">
+            <div class="decide-item selected">
+              <div class="decide-item-bar" style="background:#f59e0b;"></div>
+              <div class="decide-item-content">
+                <div class="decide-item-team">Marketing team</div>
+                <div class="decide-item-title">Campaign proposal ready for review</div>
+                <div class="decide-item-type">Approval</div>
+              </div>
+            </div>
+            <div class="decide-item">
+              <div class="decide-item-bar" style="background:#f59e0b;"></div>
+              <div class="decide-item-content">
+                <div class="decide-item-team">AION team</div>
+                <div class="decide-item-title">OAuth architecture decision required</div>
+                <div class="decide-item-type">Decision</div>
+              </div>
+            </div>
+            <div class="decide-item">
+              <div class="decide-item-bar" style="background:#a78bfa;"></div>
+              <div class="decide-item-content">
+                <div class="decide-item-team">Research team</div>
+                <div class="decide-item-title">Vertical Templates market validation report</div>
+                <div class="decide-item-type">Proposal · go/no-go</div>
+              </div>
+            </div>
+            <div class="decide-item">
+              <div class="decide-item-bar" style="background:#22d3ee;"></div>
+              <div class="decide-item-content">
+                <div class="decide-item-team">Content team</div>
+                <div class="decide-item-title">Product launch announcement draft</div>
+                <div class="decide-item-type">Draft</div>
+              </div>
+            </div>
+            <div class="decide-item">
+              <div class="decide-item-bar" style="background:#f59e0b;"></div>
+              <div class="decide-item-content">
+                <div class="decide-item-team">Sales team</div>
+                <div class="decide-item-title">Outreach sequence for enterprise segment</div>
+                <div class="decide-item-type">Approval</div>
+              </div>
+            </div>
+            <div style="padding:8px 14px;font-size:10px;color:#3a4a64;border-top:1px solid #0f1826;margin-top:4px;">+25 more items</div>
+          </div>
+        </div>
+
+        <!-- DECIDE DETAIL PANEL -->
+        <div class="decide-detail">
+          <div class="detail-header">
+            <div class="detail-team">Marketing team · Submitted 2h ago</div>
+            <div class="detail-title">Campaign proposal ready for review</div>
+            <div class="detail-meta">
+              <div class="detail-tag">Approval</div>
+              <div class="detail-tag">High priority</div>
+              <div class="detail-tag">Related: Mail Co-Pilot</div>
+            </div>
+          </div>
+          <div class="detail-body">
+            <div class="detail-section">
+              <div class="detail-section-label">Summary</div>
+              <div class="detail-text">The marketing team has prepared a campaign targeting [segment]. The proposal includes strategy, timeline, budget estimate, and expected outcomes. All required validation has been completed.</div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-section-label">Evidence & confidence</div>
+              <div class="detail-text">Market research conducted by Research team. Confidence: High. Risk level: Low. Budget required: [amount]. Timeline: [duration].</div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-section-label">Output</div>
+              <div class="detail-text">Campaign brief, copy drafts, targeting parameters — all attached and ready to execute upon approval.</div>
+            </div>
+          </div>
+          <div class="detail-footer">
+            <div class="action-approve">✓ Approve</div>
+            <div class="action-reject">✕ Reject</div>
+            <div class="action-changes">Request changes</div>
+            <div class="action-defer">Defer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>MioOS V3 · Today + Decide layouts · Do these feel right? Tell me in the terminal — then we write the spec.</footer>
+
+</body>
+</html>

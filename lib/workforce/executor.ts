@@ -101,6 +101,7 @@ export async function executeAssignment(assignmentId: string): Promise<Assignmen
       projectId:   assignment.projectId ?? null,
       goalId:      assignment.goalId ?? null,
       revenueEntryId: assignment.revenueEntryId ?? null,
+      opportunityId:  assignment.opportunityId ?? null,
     },
     include: { team: { select: { id: true, name: true, slug: true, departmentType: true } } },
   });
@@ -112,6 +113,44 @@ export async function executeAssignment(assignmentId: string): Promise<Assignmen
   });
 
   logs.push(`Output saved: ${output.id}`);
+
+  // ── 3b. Generate Artifact (typed business artifact) ───────────────
+
+  try {
+    const { createArtifactFromOutput } = await import("@/lib/artifact-engine");
+    const artifactId = await createArtifactFromOutput({
+      outputId:      output.id,
+      assignmentId,
+      teamId:        team.id,
+      departmentType,
+      title:         assignment.title,
+      content:       outputContent,
+      opportunityId: assignment.opportunityId ?? null,
+      projectId:     assignment.projectId ?? null,
+      goalId:        assignment.goalId ?? null,
+    });
+    if (artifactId) logs.push(`Artifact created: ${artifactId}`);
+  } catch (err) {
+    console.error("[executor] Artifact creation failed:", err);
+  }
+
+  // ── 3c. Advance sequential pipeline if linked to opportunity ────────
+
+  if (assignment.opportunityId) {
+    try {
+      const { advanceToNextStage } = await import("@/lib/company/department-pipeline");
+      const advance = await advanceToNextStage(assignment.opportunityId, {
+        id:      output.id,
+        content: outputContent,
+        title:   assignment.title,
+      });
+      if (advance.advanced) {
+        logs.push(`Pipeline advanced → ${advance.nextDept}`);
+      }
+    } catch (err) {
+      console.error("[executor] Pipeline advancement failed:", err);
+    }
+  }
 
   // Post a system message to the assignment thread
   await prisma.assignmentMessage.create({
@@ -132,6 +171,7 @@ export async function executeAssignment(assignmentId: string): Promise<Assignmen
     outputId:       output.id,
     priority:       assignment.priority,
     title:          assignment.title,
+    opportunityId:  assignment.opportunityId ?? null,
   });
 
   if (handoffsCreated > 0) logs.push(`${handoffsCreated} handoff(s) created`);
@@ -209,12 +249,13 @@ export async function executeAssignment(assignmentId: string): Promise<Assignmen
 
   const serializedOutput = {
     ...output,
-    createdAt:   output.createdAt.toISOString(),
-    updatedAt:   output.updatedAt.toISOString(),
-    reviewedAt:  null,
-    approvedAt:  null,
-    completedAt: null,
-    ownerTeamId: null,
+    createdAt:    output.createdAt.toISOString(),
+    updatedAt:    output.updatedAt.toISOString(),
+    reviewedAt:   null,
+    approvedAt:   null,
+    completedAt:  null,
+    ownerTeamId:  null,
+    opportunityId: null,
   } as unknown as WorkforceOutput;
 
   return {

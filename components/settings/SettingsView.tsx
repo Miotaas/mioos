@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Info, Shield, Activity, Bot, Server, CheckCircle2, XCircle,
   Loader2, LogOut, AlertTriangle, Power, Database, Clock, Plug,
-  Calendar, ExternalLink,
+  Calendar, ExternalLink, Gauge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +82,30 @@ export function SettingsView() {
   const [aiTesting, setAiTesting]   = useState(false);
   const [aiTestResult, setAiTestResult] = useState<{ ok: boolean; latency?: number; message?: string; response?: string } | null>(null);
 
+  type FocusMode = "conservative" | "normal" | "aggressive";
+  interface ThrottleStatus {
+    mode: FocusMode;
+    limits: {
+      maxDailyOpportunitiesTotal: number;
+      maxDailyOpportunitiesByType: Record<string, number>;
+      maxDailyWorkflowsRouted: number;
+      maxPendingApprovals: number;
+      maxActiveOpportunities: number;
+      maxActivePipelineProjects: number;
+    };
+    current: {
+      dailyOpportunitiesCreated: number;
+      activeOpportunities: number;
+      pendingApprovals: number;
+      dailyWorkflowsRouted: number;
+      activePipelineProjects: number;
+    };
+    breaches: string[];
+    lastPauseReason: string | null;
+  }
+  const [throttle, setThrottle]       = useState<ThrottleStatus | null>(null);
+  const [throttleSaving, setThrottleSaving] = useState(false);
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const nodeEnv = process.env.NODE_ENV ?? "development";
 
@@ -114,7 +138,22 @@ export function SettingsView() {
     }
   }
 
+  async function setFocusMode(mode: FocusMode) {
+    setThrottleSaving(true);
+    try {
+      await fetch("/api/autonomy/focus-mode", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ mode }),
+      });
+      setThrottle(prev => prev ? { ...prev, mode } : prev);
+    } finally {
+      setThrottleSaving(false);
+    }
+  }
+
   useEffect(() => {
+    fetch("/api/autonomy/focus-mode").then(r => r.json()).then(setThrottle).catch(() => {});
     fetch("/api/ai/config").then(r => r.json()).then(setAiConfig).catch(() => {});
     loadHealth();
     Promise.all([
@@ -207,6 +246,104 @@ export function SettingsView() {
                 {isPaused ? "Resume Autonomy" : "Emergency Stop"}
               </button>
             </div>
+          </Card>
+
+          {/* ── Founder Focus Mode ───────────────────────────────── */}
+          <Card>
+            <SectionHeader icon={Gauge} title="Founder Focus Mode" />
+            <p className="text-xs text-text-muted mb-4 leading-relaxed">
+              Controls how aggressively the autonomous workforce discovers and executes. Conservative
+              protects your attention by limiting daily output. Aggressive maximizes throughput.
+              When limits are reached, agents continue internal analysis only.
+            </p>
+
+            {throttle ? (
+              <>
+                {/* Mode selector */}
+                <div className="flex gap-2 mb-5">
+                  {(["conservative", "normal", "aggressive"] as FocusMode[]).map(m => (
+                    <button
+                      key={m}
+                      disabled={throttleSaving}
+                      onClick={() => setFocusMode(m)}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all capitalize",
+                        throttle.mode === m
+                          ? m === "conservative"
+                            ? "bg-accent-amber/10 border-accent-amber/40 text-accent-amber"
+                            : m === "normal"
+                              ? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
+                              : "bg-accent-green/10 border-accent-green/40 text-accent-green"
+                          : "bg-transparent border-white/[0.06] text-text-ghost hover:border-white/[0.12] hover:text-text-muted",
+                        throttleSaving && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {throttleSaving && throttle.mode === m ? (
+                        <span className="flex items-center justify-center gap-1.5">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {m}
+                        </span>
+                      ) : m}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Breach alert */}
+                {throttle.breaches.length > 0 && (
+                  <div className="mb-4 px-3 py-2.5 rounded-lg bg-accent-amber/[0.08] border border-accent-amber/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-accent-amber flex-shrink-0" />
+                      <span className="text-xs font-semibold text-accent-amber">Autonomy paused — limits reached</span>
+                    </div>
+                    {throttle.breaches.map((b, i) => (
+                      <p key={i} className="text-[11px] text-accent-amber/80 pl-5">{b}</p>
+                    ))}
+                    {throttle.lastPauseReason && (
+                      <p className="text-[10px] text-text-ghost mt-1.5 pl-5 leading-snug">{throttle.lastPauseReason}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Current limits */}
+                <div className="space-y-0">
+                  <Row
+                    label="Daily opportunities"
+                    value={`${throttle.current.dailyOpportunitiesCreated} / ${throttle.limits.maxDailyOpportunitiesTotal}`}
+                    valueClass={throttle.current.dailyOpportunitiesCreated >= throttle.limits.maxDailyOpportunitiesTotal ? "text-accent-amber" : "text-text-secondary"}
+                  />
+                  <Row
+                    label="Active opportunities"
+                    value={`${throttle.current.activeOpportunities} / ${throttle.limits.maxActiveOpportunities}`}
+                    valueClass={throttle.current.activeOpportunities >= throttle.limits.maxActiveOpportunities ? "text-accent-amber" : "text-text-secondary"}
+                  />
+                  <Row
+                    label="Daily workflows routed"
+                    value={`${throttle.current.dailyWorkflowsRouted} / ${throttle.limits.maxDailyWorkflowsRouted}`}
+                    valueClass={throttle.current.dailyWorkflowsRouted >= throttle.limits.maxDailyWorkflowsRouted ? "text-accent-amber" : "text-text-secondary"}
+                  />
+                  <Row
+                    label="Pending approvals"
+                    value={`${throttle.current.pendingApprovals} / ${throttle.limits.maxPendingApprovals}`}
+                    valueClass={throttle.current.pendingApprovals >= throttle.limits.maxPendingApprovals ? "text-accent-amber" : "text-text-secondary"}
+                  />
+                  <Row
+                    label="Pipeline projects"
+                    value={`${throttle.current.activePipelineProjects} / ${throttle.limits.maxActivePipelineProjects}`}
+                    valueClass={throttle.current.activePipelineProjects >= throttle.limits.maxActivePipelineProjects ? "text-accent-amber" : "text-text-secondary"}
+                  />
+                  <Row
+                    label="automation_service / day"
+                    value={`max ${throttle.limits.maxDailyOpportunitiesByType["automation_service"] ?? "—"}`}
+                  />
+                  <Row
+                    label="ecommerce_product / day"
+                    value={`max ${throttle.limits.maxDailyOpportunitiesByType["ecommerce_product"] ?? "—"}`}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-text-ghost">Loading throttle status…</p>
+            )}
           </Card>
 
           {/* ── App Info ──────────────────────────────────────────── */}

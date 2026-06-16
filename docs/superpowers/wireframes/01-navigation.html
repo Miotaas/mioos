@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MioOS V3 — Navigation Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0f1a; color: #c8d0e0; min-height: 100vh; padding: 40px 24px; }
+  h1 { font-size: 18px; font-weight: 600; color: #e8edf5; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #6b7a94; margin-bottom: 36px; }
+  .question { font-size: 14px; color: #9aa5bc; background: #111827; border: 1px solid #1e2a3e; border-radius: 10px; padding: 14px 18px; margin-bottom: 32px; line-height: 1.6; }
+  .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+  .option { border: 2px solid #1e2a3e; border-radius: 14px; padding: 24px; cursor: pointer; transition: all 0.15s; background: #0d1526; }
+  .option:hover { border-color: #2a4a7f; background: #0f1a2e; }
+  .option.selected { border-color: #3b82f6; background: #0f1e3a; }
+  .option-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7a94; margin-bottom: 10px; }
+  .option-title { font-size: 16px; font-weight: 600; color: #e8edf5; margin-bottom: 8px; }
+  .option-desc { font-size: 12px; color: #6b7a94; line-height: 1.6; margin-bottom: 20px; }
+  .wireframe { background: #080d18; border: 1px solid #1a2236; border-radius: 10px; overflow: hidden; }
+  .wf-bar { background: #0d1526; border-bottom: 1px solid #1a2236; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+  .wf-dot { width: 7px; height: 7px; border-radius: 50%; background: #1e2a3e; }
+  .wf-body { display: flex; min-height: 220px; }
+  .wf-sidebar { background: #0a0f1e; border-right: 1px solid #1a2236; padding: 16px 12px; width: 140px; flex-shrink: 0; }
+  .wf-content { flex: 1; padding: 16px; }
+  .wf-logo { background: #1a2236; border-radius: 6px; height: 22px; width: 80px; margin-bottom: 20px; }
+  .nav-group-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #3a4a64; margin-bottom: 6px; margin-top: 14px; }
+  .nav-item { background: #1a2236; border-radius: 5px; height: 26px; margin-bottom: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 10px; color: #6b7a94; }
+  .nav-item.active { background: #1e3a6e; color: #60a5fa; }
+  .content-block { background: #1a2236; border-radius: 8px; margin-bottom: 10px; }
+  .content-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .block-sm { background: #1a2236; border-radius: 6px; flex: 1; }
+  .tradeoffs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .pro { background: #0d1f14; border: 1px solid #1a3624; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #6ea98a; line-height: 1.5; }
+  .con { background: #1f0d0d; border: 1px solid #361a1a; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #a96e6e; line-height: 1.5; }
+  .pro::before { content: '+ '; font-weight: 700; }
+  .con::before { content: '− '; font-weight: 700; }
+  .pick-note { font-size: 11px; color: #6b7a94; background: #0d1526; border: 1px solid #1e2a3e; border-radius: 6px; padding: 8px 12px; margin-top: 10px; }
+  .recommended { position: relative; }
+  .badge { display: inline-block; background: #1a3a6e; color: #60a5fa; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+  footer { margin-top: 40px; font-size: 11px; color: #3a4a64; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>MioOS V3 — Navigation Architecture</h1>
+<p class="subtitle">Choose the structural model before anything else. Everything else flows from this decision.</p>
+
+<div class="question">
+  The current MioOS has 12+ destinations in the sidebar. The core problem: the founder navigates between tools rather than operating a unified system.<br><br>
+  Three structural models are proposed below. Each reflects a different mental model for what MioOS fundamentally is.
+</div>
+
+<div class="options">
+
+  <!-- OPTION A -->
+  <div class="option" onclick="this.classList.toggle('selected')">
+    <div class="option-label">Option A</div>
+    <div class="option-title">Three Spaces <span class="badge">Current Direction</span></div>
+    <div class="option-desc">Today · Work · System. Each space has a clear purpose. Navigation is minimal — 3 top-level destinations + contextual sub-views.</div>
+
+    <div class="wireframe">
+      <div class="wf-bar"><div class="wf-dot"></div><div class="wf-dot"></div><div class="wf-dot"></div></div>
+      <div class="wf-body">
+        <div class="wf-sidebar">
+          <div class="wf-logo"></div>
+          <div class="nav-item active">☀ Today</div>
+          <div style="height:8px"></div>
+          <div class="nav-group-label">Work</div>
+          <div class="nav-item">◈ Projects</div>
+          <div class="nav-item">◎ Decisions</div>
+          <div class="nav-item">↑ Revenue</div>
+          <div style="height:8px"></div>
+          <div class="nav-group-label">System</div>
+          <div class="nav-item">⚙ Settings</div>
+        </div>
+        <div class="wf-content">
+          <div class="content-block" style="height:60px;padding:10px;font-size:10px;color:#6b7a94;">Morning brief — decisions, focus, signals</div>
+          <div class="content-row">
+            <div class="block-sm" style="height:50px;padding:8px;font-size:9px;color:#6b7a94;">Attention (3)</div>
+            <div class="block-sm" style="height:50px;padding:8px;font-size:9px;color:#6b7a94;">Project Pulse</div>
+          </div>
+          <div class="content-block" style="height:40px;padding:8px;font-size:9px;color:#6b7a94;">Revenue · Agenda · Teams</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tradeoffs">
+      <div class="pro">Familiar pattern — founder knows where to go</div>
+      <div class="pro">Today is clear home base</div>
+      <div class="con">Still requires navigation to "Work" for detail</div>
+      <div class="con">AI teams hidden in System — feels disconnected</div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="option" onclick="this.classList.toggle('selected')">
+    <div class="option-label">Option B</div>
+    <div class="option-title">Single Stream <span class="badge">Radical Simplicity</span></div>
+    <div class="option-desc">One intelligent feed. Everything — decisions, project updates, AI outputs, revenue signals — flows into a prioritized stream. No pages. Context expands in a side panel.</div>
+
+    <div class="wireframe">
+      <div class="wf-bar"><div class="wf-dot"></div><div class="wf-dot"></div><div class="wf-dot"></div></div>
+      <div class="wf-body">
+        <div class="wf-sidebar" style="width:110px;">
+          <div class="wf-logo"></div>
+          <div class="nav-item active">⊡ Stream</div>
+          <div style="height:8px"></div>
+          <div class="nav-item">◈ Projects</div>
+          <div class="nav-item">⚙ Settings</div>
+        </div>
+        <div class="wf-content">
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <div class="content-block" style="height:30px;padding:6px 10px;font-size:9px;color:#e8edf5;margin-bottom:6px;">⚡ Decision needed · Marketing team · proposal</div>
+              <div class="content-block" style="height:30px;padding:6px 10px;font-size:9px;color:#e8edf5;margin-bottom:6px;">⬆ Revenue signal · new contract signed</div>
+              <div class="content-block" style="height:30px;padding:6px 10px;font-size:9px;color:#e8edf5;margin-bottom:6px;">◈ Project X blocked — needs unblocking</div>
+              <div class="content-block" style="height:30px;padding:6px 10px;font-size:9px;color:#6b7a94;margin-bottom:6px;">✓ AI team completed research task</div>
+              <div class="content-block" style="height:30px;padding:6px 10px;font-size:9px;color:#6b7a94;margin-bottom:6px;">◎ Opportunity discovered · low confidence</div>
+            </div>
+            <div style="width:80px;background:#1a2236;border-radius:6px;padding:8px;font-size:8px;color:#6b7a94;line-height:1.8;">Detail<br>panel<br>expands<br>here</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tradeoffs">
+      <div class="pro">Zero navigation — everything surfaces automatically</div>
+      <div class="pro">Founder never misses important signal</div>
+      <div class="con">No calm overview — always feels like inbox</div>
+      <div class="con">Difficult to review project health at a glance</div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="option recommended" onclick="this.classList.toggle('selected')">
+    <div class="option-label">Option C</div>
+    <div class="option-title">Two Layers <span class="badge" style="background:#1a3a1a;color:#6ea98a;">Recommended</span></div>
+    <div class="option-desc">Surface layer (Today + Decide) lives at the top — founder spends 80% of time here. Depth layer (Work, Life, Intelligence) is reference and management — visited when needed.</div>
+
+    <div class="wireframe">
+      <div class="wf-bar"><div class="wf-dot"></div><div class="wf-dot"></div><div class="wf-dot"></div></div>
+      <div class="wf-body">
+        <div class="wf-sidebar">
+          <div class="wf-logo"></div>
+          <div class="nav-group-label">Surface</div>
+          <div class="nav-item active">☀ Today</div>
+          <div class="nav-item">⊡ Decide</div>
+          <div style="height:6px"></div>
+          <div class="nav-group-label">Work</div>
+          <div class="nav-item">◈ Projects</div>
+          <div class="nav-item">↑ Revenue</div>
+          <div style="height:6px"></div>
+          <div class="nav-group-label">Life</div>
+          <div class="nav-item">◷ Calendar</div>
+          <div class="nav-item">◎ Goals</div>
+          <div style="height:6px"></div>
+          <div class="nav-group-label">Intelligence</div>
+          <div class="nav-item">⚡ Teams</div>
+        </div>
+        <div class="wf-content">
+          <div class="content-block" style="height:50px;padding:8px 12px;font-size:10px;color:#c8d0e0;margin-bottom:8px;">Brief — what matters today</div>
+          <div class="content-row">
+            <div class="block-sm" style="height:60px;padding:8px;font-size:9px;color:#6b7a94;">3 decisions surfaced</div>
+            <div class="block-sm" style="height:60px;padding:8px;font-size:9px;color:#6b7a94;">Project health</div>
+          </div>
+          <div class="content-block" style="height:36px;padding:8px;font-size:9px;color:#6b7a94;">Revenue signal · Agenda</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tradeoffs">
+      <div class="pro">Clear mental model: Surface (judgment) vs Depth (management)</div>
+      <div class="pro">Founder knows exactly where decisions happen vs where data lives</div>
+      <div class="pro">Goals and Calendar grouped as Life — not work fragments</div>
+      <div class="pro">AI Teams visible but not dominant</div>
+      <div class="con">Two top-level surface items (Today + Decide) may feel redundant</div>
+      <div class="con">Still requires deciding how much Today vs Decide overlap</div>
+    </div>
+
+    <div class="pick-note">Recommendation: Option C. It solves the fragmentation problem while keeping Today as the calm home base. The "Decide" destination gives all approvals, drafts, and proposals a clear home — so Today can stay brief.</div>
+  </div>
+
+</div>
+
+<footer>MioOS V3 · Navigation Architecture · Click options to select · Tell me your pick in the terminal</footer>
+
+</body>
+</html>

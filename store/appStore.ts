@@ -36,6 +36,8 @@ interface AppState {
   setSidebarCollapsed: (v: boolean) => void;
 
   activeView:
+    // MioOS 2.0 — Today (default landing)
+    | "today"
     // Primary navigation
     | "dashboard" | "briefing" | "inbox" | "tasks" | "projects" | "goals" | "calendar" | "revenue" | "workforce" | "requests" | "settings"
     // Company Command Center (Omega)
@@ -93,7 +95,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
-  activeView: "company",
+  activeView: "today",
   setActiveView: (view) => set({ activeView: view }),
 
   captures: [],

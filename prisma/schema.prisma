@@ -556,6 +556,10 @@ model CampaignDraft {
   successMetric     String?
   status            String   @default("draft") // draft | pending_approval | approved | rejected | ready_to_launch | launched_manually | archived
   createdByAgentId  String?
+  sourceApprovalId  String?
+  sourceOutputId    String?
+  projectId         String?
+  opportunityId     String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1024,6 +1028,7 @@ model WorkforceOutput {
   projectId      String?
   goalId         String?
   revenueEntryId String?
+  opportunityId  String?   // Phase 8 — linked Opportunity
   reviewedAt     DateTime?
   approvedAt     DateTime?
   completedAt    DateTime?
@@ -1134,6 +1139,7 @@ model RevenueEntry {
   status            String    @default("active")   // active | closed_won | closed_lost
   projectId         String?
   sourceTeamId      String?
+  opportunityId     String?   // Phase 9 — linked Opportunity
   probability       Float?
   expectedCloseDate DateTime?
   createdAt         DateTime  @default(now())
@@ -1152,6 +1158,8 @@ model Project {
   nextAction    String?
   blocker       String?
   revenueImpact Float?
+  opportunityId String?   // Phase 9 — linked Opportunity (auto-created projects)
+  autoCreated   Boolean   @default(false) // Phase 9 — created by Opportunity Engine
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1167,6 +1175,7 @@ model Assignment {
   projectId      String?
   goalId         String?
   revenueEntryId String?
+  opportunityId  String?   // Phase 8 — linked Opportunity
   priority       String    @default("medium")  // low | medium | high | urgent
   createdAt      DateTime  @default(now())
   startedAt      DateTime?
@@ -1292,4 +1301,179 @@ model RuntimeState {
   updatedAt DateTime @updatedAt
 
   @@map("runtime_state")
+}
+
+// ============================================================
+// PHASE 9 — ARTIFACT ENGINE
+// ============================================================
+
+model Artifact {
+  id            String    @id @default(cuid())
+  title         String
+  content       String    // Rich markdown content — the executable business artifact
+  artifactType  String    // prospect_list | market_analysis | validation_report | outreach_sequence | campaign | ad_angles | landing_page | product_page | proposal | demo_spec | automation_blueprint | technical_plan | deployment_plan | faq | knowledge_base | executive_review
+  status        String    @default("draft")  // draft | ready | approved | superseded | archived
+  sourceTeamId  String?
+  assignmentId  String?
+  outputId      String?   // linked WorkforceOutput
+  opportunityId String?   // linked Opportunity
+  projectId     String?
+  goalId        String?
+  metadata      String?   // JSON blob for extra structured fields
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("artifacts")
+}
+
+// ============================================================
+// PHASE 8 — OPPORTUNITY ENGINE
+// ============================================================
+
+model Opportunity {
+  id                       String    @id @default(cuid())
+  title                    String
+  description              String?
+  opportunityType          String    // automation_service | ecommerce_product | saas_product | content_business | internal_tool
+  source                   String    @default("research") // research | goal | project | manual | market_signal | condition_check
+  status                   String    @default("discovered") // discovered | researching | validating | approved | building | marketing | selling | demo | pilot | deployment | live | revenue_generating | rejected | archived
+  currentStage             String?   // current workflow stage label
+  score                    Int       @default(5)  // 1-10 business potential
+  confidence               Int       @default(5)  // 1-10 confidence in opportunity
+  estimatedRevenue         Float?
+  estimatedEffort          String?   // low | medium | high
+  market                   String?
+  targetCustomer           String?
+  evidence                 String?   // JSON array of evidence strings
+  risks                    String?   // JSON array of risk strings
+  assumptions              String?   // JSON array of assumption strings
+  validationPlan           String?
+  executionStrategy        String?
+  nextRecommendedStep      String?
+  assignedWorkflowTemplate String?   // automation_service | ecommerce | saas | content | internal
+  workflowChain            String?   // JSON: ordered dept array ["sales","development","marketing"]
+  currentStageIndex        Int       @default(0)
+  projectId                String?
+  goalId                   String?
+  revenueEntryId           String?
+  sourceOutputId           String?   // WorkforceOutput that triggered this
+  workflowRoutedAt         DateTime? // set when workflow chain was created
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@map("opportunities")
+}
+
+// ============================================================
+// PHASE 9 — APPROVAL ACTION DISPATCHER
+// ============================================================
+
+model ActionResult {
+  id           String   @id @default(cuid())
+  approvalId   String   @unique
+  actionType   String   // approve_outreach | approve_campaign | approve_content | approve_product | approve_deployment | approve_proposal | review_research | founder_decision
+  status       String   @default("dispatched") // dispatched | failed
+  title        String
+  description  String?
+  targetType   String?  // email_draft | campaign_draft | content_draft | product_draft | proposal_draft | development_draft | workforce_output
+  targetId     String?
+  error        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("action_results")
+}
+
+model EmailDraft {
+  id               String   @id @default(cuid())
+  title            String
+  subject          String?
+  body             String?
+  recipientName    String?
+  recipientEmail   String?
+  status           String   @default("draft") // draft | ready | archived
+  sourceApprovalId String?
+  sourceOutputId   String?
+  projectId        String?
+  opportunityId    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("email_drafts")
+}
+
+model ContentDraft {
+  id               String   @id @default(cuid())
+  title            String
+  body             String?
+  platform         String?  // wordpress | webflow | ghost | linkedin | x | instagram
+  tags             String?  // JSON array
+  publishingNotes  String?
+  status           String   @default("draft") // draft | ready | archived
+  sourceApprovalId String?
+  sourceOutputId   String?
+  projectId        String?
+  opportunityId    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("content_drafts")
+}
+
+model ProductDraft {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  priceSuggestion  Float?
+  supplierNotes    String?
+  marginNotes      String?
+  imagesNeeded     String?
+  launchChecklist  String?  // JSON array
+  status           String   @default("draft") // draft | ready | archived
+  sourceApprovalId String?
+  sourceOutputId   String?
+  projectId        String?
+  opportunityId    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("product_drafts")
+}
+
+model ProposalDraft {
+  id               String   @id @default(cuid())
+  title            String
+  customer         String?
+  problem          String?
+  solution         String?
+  pricing          String?
+  scope            String?
+  timeline         String?
+  status           String   @default("draft") // draft | ready | sent | archived
+  sourceApprovalId String?
+  sourceOutputId   String?
+  projectId        String?
+  opportunityId    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("proposal_drafts")
+}
+
+model DevelopmentDraft {
+  id                      String   @id @default(cuid())
+  title                   String
+  repoNameSuggestion      String?
+  readmeContent           String?
+  fileStructure           String?  // markdown outline
+  implementationChecklist String?  // JSON array
+  status                  String   @default("draft") // draft | ready | archived
+  sourceApprovalId        String?
+  sourceOutputId          String?
+  projectId               String?
+  opportunityId           String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("development_drafts")
 }
