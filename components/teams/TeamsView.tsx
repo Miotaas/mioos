@@ -125,6 +125,13 @@ export function TeamsView() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 20);
 
+  // Auto-dismiss dispatch success banner
+  useEffect(() => {
+    if (!dispatchSuccess) return;
+    const t = setTimeout(() => setDispatchSuccess(false), 3000);
+    return () => clearTimeout(t);
+  }, [dispatchSuccess]);
+
   // ── Dispatch submit ───────────────────────────────────────────────
 
   async function handleDispatch() {
@@ -154,7 +161,6 @@ export function TeamsView() {
       setDispatchTeam("");
       setDispatchProject("");
       setDispatchSuccess(true);
-      setTimeout(() => setDispatchSuccess(false), 3000);
     } catch {
       setDispatchError("Something went wrong. Please try again.");
     } finally {
