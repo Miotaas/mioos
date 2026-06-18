@@ -1,0 +1,108 @@
+<h2>Design Section 1 — Navigation Architecture</h2>
+<p class="subtitle">Final nav structure. Does this look right before we move to page designs?</p>
+
+<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+
+  <!-- SIDEBAR MOCKUP -->
+  <div class="mockup" style="width: 220px; flex-shrink: 0;">
+    <div class="mockup-header">Sidebar</div>
+    <div class="mockup-body" style="padding: 0; background: #0a0f1e;">
+      <!-- Logo -->
+      <div style="padding: 14px 12px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px;">
+        <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid #00D4FF;"></div>
+        </div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: #e2e8f0;">MioOS</div>
+          <div style="font-size: 9px; color: #4a5568; margin-top: 1px;">Company OS</div>
+        </div>
+      </div>
+
+      <!-- Cockpit -->
+      <div style="padding: 12px 8px 6px;">
+        <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #8b5cf6; padding: 0 8px; margin-bottom: 4px; font-weight: 600;">Cockpit</div>
+        <!-- Command Center — active/default -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.15); margin-bottom: 2px;">
+          <div style="width: 14px; height: 14px; background: rgba(0,212,255,0.2); border-radius: 4px; display:flex;align-items:center;justify-content:center;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; background: #00D4FF;"></div>
+          </div>
+          <span style="font-size: 12px; font-weight: 600; color: #00D4FF;">Command Center</span>
+          <div style="margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: #00D4FF; opacity: 0.6;"></div>
+        </div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Dashboard</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Briefing</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent;">Inbox</div>
+      </div>
+
+      <!-- Company -->
+      <div style="padding: 10px 8px 6px;">
+        <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #00D4FF; padding: 0 8px; margin-bottom: 4px; font-weight: 600;">Company</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent; display:flex;align-items:center;gap:6px;"><span style="color:#10b981;font-size:9px;">◈</span> Opportunities</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent; display:flex;align-items:center;gap:6px;"><span style="color:#00D4FF;font-size:9px;">◈</span> Workforce</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent; display:flex;align-items:center;gap:6px;"><span style="color:#f59e0b;font-size:9px;">◈</span> Drafts</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; display:flex;align-items:center;gap:6px;"><span style="color:#00D4FF;font-size:9px;">◈</span> Revenue</div>
+      </div>
+
+      <!-- Execution -->
+      <div style="padding: 10px 8px 6px;">
+        <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #6366f1; padding: 0 8px; margin-bottom: 4px; font-weight: 600;">Execution</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Projects</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Goals</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Tasks</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent;">Calendar</div>
+      </div>
+
+      <!-- System -->
+      <div style="padding: 10px 8px 6px;">
+        <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #4a5568; padding: 0 8px; margin-bottom: 4px; font-weight: 600;">System</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; margin-bottom: 1px; border: 1px solid transparent;">Requests</div>
+        <div style="font-size: 11px; color: #4a5568; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent;">Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT CHANGED + WHAT'S LINKED -->
+  <div style="flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;">
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #10b981; margin-bottom: 10px; font-weight: 600;">What Changed</div>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>Default view: <code style="color:#00D4FF;background:rgba(0,212,255,0.06);padding:1px 4px;border-radius:3px;">"dashboard"</code> → <code style="color:#00D4FF;background:rgba(0,212,255,0.06);padding:1px 4px;border-radius:3px;">"company"</code></span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>Logo subtitle: "Command Center" → "Company OS"</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>"Work" group renamed → "Execution"</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>"Business" group collapsed → items moved to "Company"</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>"AI" group removed → Requests moves to "System"</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>Opportunities surfaced in Company group (was legacy/hidden)</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>Command Center moved from Company group → Cockpit (1st item)</span></div>
+        <div style="font-size: 11px; color: #a0aec0; display:flex; gap:8px;"><span style="color:#10b981;flex-shrink:0;">→</span> <span>Accent colors: Cockpit=purple, Company=cyan, Execution=violet, System=ghost</span></div>
+      </div>
+    </div>
+
+    <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;">
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #6366f1; margin-bottom: 10px; font-weight: 600;">Command Center → Drill-Down Links</div>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px; padding: 5px 8px; background: rgba(255,255,255,0.02); border-radius: 5px;">
+          <span style="color:#a0aec0;">Revenue section</span><span style="color:#00D4FF;">→ Revenue page</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px; padding: 5px 8px; background: rgba(255,255,255,0.02); border-radius: 5px;">
+          <span style="color:#a0aec0;">Opportunities section</span><span style="color:#10b981;">→ Opportunities page</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px; padding: 5px 8px; background: rgba(255,255,255,0.02); border-radius: 5px;">
+          <span style="color:#a0aec0;">Workforce section</span><span style="color:#00D4FF;">→ Workforce page</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px; padding: 5px 8px; background: rgba(255,255,255,0.02); border-radius: 5px;">
+          <span style="color:#a0aec0;">Projects section</span><span style="color:#6366f1;">→ Projects page</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px; padding: 5px 8px; background: rgba(255,255,255,0.02); border-radius: 5px;">
+          <span style="color:#a0aec0;">Approvals section</span><span style="color:#f59e0b;">→ Inbox + Drafts pages</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 12px 16px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.1); border-radius: 10px;">
+      <div style="font-size: 10px; color: #718096;">4 files change atomically: <code style="color:#00D4FF;">appStore.ts</code> · <code style="color:#00D4FF;">page.tsx</code> · <code style="color:#00D4FF;">Sidebar.tsx</code> · <code style="color:#00D4FF;">MobileNav.tsx</code></div>
+      <div style="font-size: 10px; color: #718096; margin-top: 4px;">Mobile bottom tabs: Command Center · Dashboard · Inbox · ⋯ More</div>
+    </div>
+  </div>
+
+</div>

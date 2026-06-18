@@ -3,36 +3,50 @@
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
-import { normalizeTask } from "@/lib/normalize";
 import {
-  WorkforceApproval, ApprovalQueueItem, MioProject, MioTask,
-  RevenueEntry, UnifiedDraft, Assignment, WorkforceTeam, MioGoal, WorkforceOutput,
+  WorkforceApproval, ApprovalQueueItem, MioProject,
+  RevenueEntry, WorkforceTeam, WorkforceOutput,
 } from "@/types";
 import {
-  Sun, AlertCircle, ChevronRight, Calendar,
-  TrendingUp, Zap, ArrowRight, RefreshCw,
-  X, Users2,
-  CheckSquare,
+  Sun, RefreshCw, ArrowRight, AlertTriangle,
+  Zap, X, ChevronRight, Scale,
 } from "lucide-react";
 
-// ── helpers ─────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────
 
-function isToday(s: string | null | undefined): boolean {
-  if (!s) return false;
-  const d = new Date(s), t = new Date();
-  return d.getFullYear() === t.getFullYear() &&
-         d.getMonth() === t.getMonth() &&
-         d.getDate() === t.getDate();
-}
+const DEPT_COLOR: Record<string, string> = {
+  ecommerce:          "#22C55E",
+  "automation-sales": "#8B5CF6",
+  youtube:            "#F97316",
+  "crypto-stock":     "#00D4FF",
+};
+
+const OUTPUT_LABELS: Record<string, string> = {
+  product_research:  "product research",
+  supplier_lead:     "supplier lead",
+  validation_report: "validation",
+  campaign_draft:    "campaign draft",
+  script:            "script",
+  market_analysis:   "market analysis",
+  trade_proposal:    "trade proposal",
+  lead:              "lead",
+  lead_generation:   "lead",
+  proposal:          "proposal",
+  research:          "research report",
+  analysis:          "analysis",
+  content:           "content",
+  outreach:          "outreach draft",
+  video:             "video",
+  thumbnail:         "thumbnail",
+  channel_analysis:  "channel analysis",
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────
 
 function fmtEuro(n: number): string {
   if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `€${(n / 1_000).toFixed(0)}k`;
   return `€${Math.round(n)}`;
-}
-
-function fmtTime(s: string): string {
-  return new Date(s).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 function timeAgo(s: string): string {
@@ -42,676 +56,490 @@ function timeAgo(s: string): string {
   return `${Math.floor(mins / 1440)}d ago`;
 }
 
-// ── morning brief ────────────────────────────────────────────────────
+function outputLabel(type: string): string {
+  return OUTPUT_LABELS[type] ?? type.replace(/_/g, " ");
+}
 
-function buildBrief(
-  pendingCount: number,
-  blockedProjects: string[],
-  liveMRR: number,
-  topFocus: string,
-): string {
+// Primary slugs for the 4 master-prompt business units
+const PRIMARY_SLUGS = new Set(["ecommerce", "automation-sales", "youtube", "crypto-stock"]);
+
+function getTeamDept(team: WorkforceTeam): string {
+  // Exact slug match first — handles master-prompt teams regardless of departmentType
+  const slug = (team.slug ?? "").toLowerCase();
+  if (slug === "ecommerce")        return "ecommerce";
+  if (slug === "automation-sales") return "automation-sales";
+  if (slug === "youtube")          return "youtube";
+  if (slug === "crypto-stock")     return "crypto-stock";
+  // Fallback pattern matching for legacy teams
+  const s = (team.departmentType ?? slug).toLowerCase();
+  if (s.includes("ecommerce") || s.includes("commerce")) return "ecommerce";
+  if (s.includes("automation") || s.includes("sales"))   return "automation-sales";
+  if (s.includes("youtube")    || s.includes("media"))   return "youtube";
+  if (s.includes("crypto") || s.includes("stock") || s.includes("trad")) return "crypto-stock";
+  return s;
+}
+
+// ── Types ──────────────────────────────────────────────────────────────
+
+interface RevenueSnapshot {
+  actual:    number;
+  pipeline:  number;
+  projected: number;
+  entries:   RevenueEntry[];
+}
+
+interface OpportunitySnap {
+  id:               string;
+  title:            string;
+  estimatedRevenue?: number | null;
+  createdAt:        string;
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────
+
+function SectionLabel({
+  text, note, count, countColor = "#6b7280",
+}: {
+  text: string; note?: string; count?: number; countColor?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-text-ghost whitespace-nowrap">
+        {text}
+      </p>
+      {count !== undefined && (
+        <span
+          className="text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+          style={{ color: countColor, backgroundColor: `${countColor}20` }}
+        >
+          {count}
+        </span>
+      )}
+      <div className="flex-1 h-px bg-white/[0.04]" />
+      {note && (
+        <span className="text-[10px] text-text-ghost/50 whitespace-nowrap">{note}</span>
+      )}
+    </div>
+  );
+}
+
+function TeamImpactStrip({
+  team, outputs, color, onNavigate,
+}: {
+  team: WorkforceTeam;
+  outputs: WorkforceOutput[];
+  color: string;
+  onNavigate: () => void;
+}) {
+  const latestAt = outputs.length > 0
+    ? outputs.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b).createdAt
+    : null;
+
+  // Group by type for outcome sentence
+  const typeCounts = new Map<string, number>();
+  for (const o of outputs) typeCounts.set(o.outputType, (typeCounts.get(o.outputType) ?? 0) + 1);
+
   const parts: string[] = [];
-
-  if (pendingCount > 0)
-    parts.push(`${pendingCount} approval${pendingCount > 1 ? "s are" : " is"} waiting for your review`);
-
-  if (blockedProjects.length > 0) {
-    const names = blockedProjects.slice(0, 2).join(" and ");
-    parts.push(`${names} ${blockedProjects.length > 1 ? "are" : "is"} blocked and need${blockedProjects.length > 1 ? "" : "s"} your attention`);
+  for (const [type, count] of typeCounts) {
+    const lbl = outputLabel(type);
+    parts.push(`${count} ${lbl}${count > 1 ? "s" : ""}`);
   }
+  const sentence = parts.length > 0
+    ? parts.slice(0, 3).join(", ").replace(/^./, c => c.toUpperCase()) + " created."
+    : `${outputs.length} output${outputs.length > 1 ? "s" : ""} created.`;
 
-  if (liveMRR > 0)
-    parts.push(`Revenue is tracking at ${fmtEuro(liveMRR)} MRR`);
-
-  if (topFocus)
-    parts.push(`Your highest-leverage action today is ${topFocus.toLowerCase()}`);
-
-  if (parts.length === 0)
-    return "Nothing urgent today. A clean slate — use it to push something important forward.";
-
-  return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1) + ".").join(" ");
+  return (
+    <button onClick={onNavigate} className="w-full text-left group">
+      <div className="flex rounded-xl border border-white/[0.04] overflow-hidden hover:border-white/[0.09] transition-colors" style={{ background: "rgba(255,255,255,0.018)" }}>
+        <div className="w-[3px] flex-shrink-0" style={{ backgroundColor: color }} />
+        <div className="flex-1 px-4 py-3.5 min-w-0">
+          <div className="flex items-center justify-between gap-3 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold uppercase tracking-[0.14em] whitespace-nowrap" style={{ color }}>
+                {team.name}
+              </span>
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap" style={{ color, backgroundColor: `${color}18` }}>
+                {outputs.length} {outputs.length === 1 ? "output" : "outputs"}
+              </span>
+            </div>
+            {latestAt && (
+              <span className="text-[10px] text-text-ghost flex-shrink-0">{timeAgo(latestAt)}</span>
+            )}
+          </div>
+          <p className="text-[13px] text-text-secondary leading-snug">{sentence}</p>
+          {outputs.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {outputs.slice(0, 3).map(o => (
+                <span key={o.id} className="text-[10px] px-2 py-0.5 rounded-md text-text-ghost border border-white/[0.05] truncate max-w-[180px]">
+                  {o.title}
+                </span>
+              ))}
+              {outputs.length > 3 && (
+                <span className="text-[10px] text-text-ghost">+{outputs.length - 3} more</span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center pr-4 flex-shrink-0">
+          <ChevronRight className="w-3.5 h-3.5 text-text-ghost group-hover:text-text-muted transition-colors" />
+        </div>
+      </div>
+    </button>
+  );
 }
 
-function buildCatchUpBrief(
-  pendingCount: number,
-  allProjects: MioProject[],
-  allRevEntries: RevenueEntry[],
-  allDrafts: UnifiedDraft[],
-  allAssignments: Assignment[],
-): string {
-  const parts: string[] = [];
-
-  if (pendingCount > 0)
-    parts.push(`${pendingCount} item${pendingCount > 1 ? "s are" : " is"} waiting for your decision`);
-
-  const newOutputs = allDrafts.filter(d => d.status === "review_needed").length;
-  if (newOutputs > 0)
-    parts.push(`${newOutputs} draft${newOutputs > 1 ? "s" : ""} ready for review`);
-
-  const reviewWork = allAssignments.filter(a => a.status === "review").length;
-  if (reviewWork > 0)
-    parts.push(`${reviewWork} assignment${reviewWork > 1 ? "s" : ""} awaiting your approval`);
-
-  const blocked = allProjects.filter(p => p.status === "blocked");
-  if (blocked.length > 0)
-    parts.push(`${blocked.length === 1 ? blocked[0].name + " is" : `${blocked.length} projects are`} still blocked`);
-
-  const totalRev = allRevEntries.filter(e => e.revenueType === "live" && e.status === "active").reduce((s, e) => s + e.amount, 0);
-  if (totalRev > 0)
-    parts.push(`revenue is at ${totalRev >= 1000 ? `€${Math.round(totalRev / 1000)}k` : `€${Math.round(totalRev)}`} MRR`);
-
-  if (parts.length === 0)
-    return "Nothing changed while you were away. You have a clean slate.";
-
-  return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1) + ".").join(" ");
+function RevenueMetric({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div>
+      <p className="text-[9px] uppercase tracking-[0.1em] text-text-ghost mb-1">{label}</p>
+      <p className="text-[22px] font-mono font-semibold leading-none" style={{ color }}>{value}</p>
+    </div>
+  );
 }
 
-// ── types ────────────────────────────────────────────────────────────
-
-interface CalEvent {
-  id: string;
-  title: string;
-  start: string;
-  allDay?: boolean;
-  source: "calendar" | "task";
-}
-
-type AttnType = "wf_approval" | "agent_approval" | "blocker";
-
-interface AttnItem {
-  id: string;
-  type: AttnType;
-  title: string;
-  sub: string;
-  urgency: number;
-}
-
-// ── main ─────────────────────────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────
 
 export function TodayView() {
   const { setActiveView, showToast } = useAppStore();
 
-  // ── data state ─────────────────────────────────────────────────────
-  const [wfApprovals,  setWfApprovals]  = useState<WorkforceApproval[]>([]);
-  const [approvals,    setApprovals]    = useState<ApprovalQueueItem[]>([]);
-  const [projects,     setProjects]     = useState<MioProject[]>([]);
-  const [tasks,        setTasks]        = useState<MioTask[]>([]);
-  const [revEntries,   setRevEntries]   = useState<RevenueEntry[]>([]);
-  const [drafts,       setDrafts]       = useState<UnifiedDraft[]>([]);
-  const [reviewAssignments, setRevAssignments] = useState<Assignment[]>([]);
-  const [calEvents,    setCalEvents]    = useState<CalEvent[]>([]);
-  const [calConnected, setCalConn]      = useState<boolean | null>(null);
-  const [execRecs,     setExecRecs]     = useState<{ id: string; title: string; priority: string }[]>([]);
-  const [teams,        setTeams]        = useState<WorkforceTeam[]>([]);
+  const [teams,         setTeams]         = useState<WorkforceTeam[]>([]);
+  const [outputs,       setOutputs]       = useState<WorkforceOutput[]>([]);
+  const [opportunities, setOpportunities] = useState<OpportunitySnap[]>([]);
+  const [wfApprovals,   setWfApprovals]   = useState<WorkforceApproval[]>([]);
+  const [agentApprovals,setAgentApprovals]= useState<ApprovalQueueItem[]>([]);
+  const [blockedProjects,setBlocked]      = useState<MioProject[]>([]);
+  const [revenue,       setRevenue]       = useState<RevenueSnapshot | null>(null);
+  const [focusRec,      setFocusRec]      = useState<string | null>(null);
+  const [loaded,        setLoaded]        = useState(false);
+  const [sinceLabel,    setSinceLabel]    = useState("your last visit");
+  const [dispatchOpen,  setDispatchOpen]  = useState(false);
 
-  // catch-up mode (shown when returning after >24h)
-  const [catchUpMode, setCatchUpMode] = useState(false);
-  // personal goals for life signals in agenda
-  const [lifeGoals, setLifeGoals] = useState<MioGoal[]>([]);
-  const [teamOutputs, setTeamOutputs] = useState<WorkforceOutput[]>([]);
-
-  // brief refresh key
-  const [briefKey, setBriefKey] = useState(0);
-  // dispatch modal
-  const [dispatchOpen, setDispatchOpen] = useState(false);
-  // tracks whether initial data load has completed
-  const [loaded, setLoaded] = useState(false);
-
-  // ── fetch ───────────────────────────────────────────────────────────
   const load = useCallback(() => {
     Promise.all([
-      fetch("/api/workforce-approvals").then(r => r.json()).catch(() => []),
-      fetch("/api/approvals").then(r => r.json()).catch(() => []),
-      fetch("/api/projects").then(r => r.json()).catch(() => []),
-      fetch("/api/tasks").then(r => r.json()).catch(() => []),
-      fetch("/api/revenue-entries").then(r => r.json()).catch(() => []),
-      fetch("/api/drafts?limit=8").then(r => r.json()).catch(() => []),
-      fetch("/api/assignments?status=review").then(r => r.json()).catch(() => []),
       fetch("/api/workforce/teams").then(r => r.json()).catch(() => []),
-      fetch("/api/goals").then(r => r.json()).catch(() => []),
-      fetch("/api/workforce/outputs?limit=10").then(r => r.json()).catch(() => []),
-    ]).then(([wfa, ap, pr, tk, re, dr, rv, tm, gl, outs]) => {
-      setWfApprovals(Array.isArray(wfa) ? wfa.filter((a: WorkforceApproval) => a.status === "pending") : []);
-      setApprovals(Array.isArray(ap) ? ap.filter((a: ApprovalQueueItem) => a.status === "pending") : []);
-      setProjects(Array.isArray(pr) ? pr.filter((p: MioProject) => ["active","paused","blocked"].includes(p.status)) : []);
-      setTasks(Array.isArray(tk) ? tk.map(normalizeTask) : []);
-      setRevEntries(Array.isArray(re) ? re : []);
-      setDrafts(Array.isArray(dr) ? dr : []);
-      setRevAssignments(Array.isArray(rv) ? rv : []);
+      fetch("/api/workforce/outputs?limit=20").then(r => r.json()).catch(() => []),
+      fetch("/api/opportunities?limit=10").then(r => r.json()).catch(() => []),
+      fetch("/api/workforce-approvals?status=pending").then(r => r.json()).catch(() => []),
+      fetch("/api/approvals?status=pending").then(r => r.json()).catch(() => []),
+      fetch("/api/projects").then(r => r.json()).catch(() => []),
+      fetch("/api/revenue").then(r => r.json()).catch(() => null),
+    ]).then(([tm, outs, opps, wfa, apa, pr, rev]) => {
       setTeams(Array.isArray(tm) ? tm.filter((t: WorkforceTeam) => t.status === "active") : []);
-      const personalGoals = Array.isArray(gl) ? gl.filter((g: MioGoal) => g.goalType === "personal" && g.status !== "achieved" && g.status !== "abandoned") : [];
-      setLifeGoals(personalGoals);
-      const recentOutputs = Array.isArray(outs)
-        ? outs
-          .filter((o: WorkforceOutput) => ["completed", "approved", "in_review"].includes(o.status))
-          .sort((a: WorkforceOutput, b: WorkforceOutput) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5)
-        : [];
-      setTeamOutputs(recentOutputs);
+      setOutputs(Array.isArray(outs) ? outs : []);
+      setOpportunities(Array.isArray(opps) ? opps.slice(0, 5) : []);
+      setWfApprovals(Array.isArray(wfa) ? wfa : []);
+      setAgentApprovals(Array.isArray(apa) ? apa.filter((a: ApprovalQueueItem) => a.status === "pending") : []);
+      setBlocked(Array.isArray(pr) ? pr.filter((p: MioProject) => p.status === "blocked") : []);
+      if (rev && typeof rev === "object" && !Array.isArray(rev)) setRevenue(rev as RevenueSnapshot);
       setLoaded(true);
 
-      // Track last visit for catch-up mode
       try {
-        const lastVisit = localStorage.getItem("mioos-last-visit");
-        const now = Date.now();
-        if (lastVisit) {
-          const hoursSince = (now - parseInt(lastVisit, 10)) / (1000 * 60 * 60);
-          if (hoursSince > 24) {
-            setCatchUpMode(true);
-          }
+        const stored = localStorage.getItem("mioos-last-visit");
+        if (stored) {
+          const mins = Math.floor((Date.now() - parseInt(stored, 10)) / 60000);
+          if (mins < 60)   setSinceLabel(`${mins}m ago`);
+          else if (mins < 1440) setSinceLabel(`${Math.floor(mins / 60)}h ago`);
+          else setSinceLabel(`${Math.floor(mins / 1440)}d ago`);
         }
-        localStorage.setItem("mioos-last-visit", String(now));
-      } catch { /* localStorage not available in SSR */ }
+        localStorage.setItem("mioos-last-visit", String(Date.now()));
+      } catch { /* SSR */ }
     });
 
     fetch("/api/executive/recommendations")
       .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setExecRecs(d.slice(0, 3)); })
+      .then(d => { if (Array.isArray(d) && d.length > 0) setFocusRec(d[0].title); })
       .catch(() => {});
-
-    fetch("/api/connectors/calendar")
-      .then(r => r.json())
-      .then(data => {
-        if (data?.status === "connected" || data?.status === "configured") {
-          setCalConn(true);
-          const events: CalEvent[] = (data.events ?? []).map((e: {
-            id?: string; title?: string; summary?: string;
-            start?: string; dtstart?: string; allDay?: boolean;
-          }) => ({
-            id:     e.id ?? String(Math.random()),
-            title:  e.title ?? e.summary ?? "Event",
-            start:  e.start ?? e.dtstart ?? new Date().toISOString(),
-            allDay: e.allDay,
-            source: "calendar" as const,
-          }));
-          setCalEvents(events);
-        } else {
-          setCalConn(false);
-        }
-      })
-      .catch(() => setCalConn(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  // ── derived data ────────────────────────────────────────────────────
-  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  // ── Derived ───────────────────────────────────────────────────────────
 
-  // Attention items — merge wf approvals + agent approvals + blocked projects
-  const attnItems: AttnItem[] = [
-    ...wfApprovals.map(a => ({
-      id:      a.id,
-      type:    "wf_approval" as AttnType,
-      title:   a.title,
-      sub:     `${a.sourceTeam?.name ?? "Team"} · ${a.decisionType.replace(/_/g, " ")}`,
-      urgency: a.priority === "urgent" ? 100 : a.priority === "high" ? 80 : 60,
-    })),
-    ...approvals.map(a => ({
-      id:      a.id,
-      type:    "agent_approval" as AttnType,
-      title:   a.proposedAction.length > 80 ? a.proposedAction.slice(0, 80) + "…" : a.proposedAction,
-      sub:     `${a.agentRun?.agent?.name ?? "Agent"} · awaiting decision`,
-      urgency: 70,
-    })),
-    ...projects
-      .filter(p => p.status === "blocked")
-      .map(p => ({
-        id:      `blocker_${p.id}`,
-        type:    "blocker" as AttnType,
-        title:   `${p.name} is blocked`,
-        sub:     p.blocker ?? "Needs your attention",
-        urgency: 90,
-      })),
-  ]
-    .sort((a, b) => b.urgency - a.urgency)
-    .slice(0, 3);
+  const dateStr = new Date().toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
 
-  const totalPending = wfApprovals.length + approvals.length;
-
-  // Personal agenda — calendar events + tasks due today
-  const todayTasks = tasks.filter(t => isToday(t.dueDate) && t.status !== "done" && t.status !== "cancelled");
-  const todayCalEvents = calEvents.filter(e => isToday(e.start));
-  const now48h = new Date(Date.now() + 48 * 60 * 60 * 1000);
-  const lifeSignals: CalEvent[] = lifeGoals
-    .filter(g => g.targetDate && new Date(g.targetDate) <= now48h)
-    .map(g => ({
-      id: `life_${g.id}`,
-      title: `Goal: ${g.title}`,
-      start: g.targetDate!,
-      source: "task" as const,
+  // Per-team impact — only the 4 master-prompt business units (exact slug match)
+  const teamImpacts = teams
+    .filter(t => PRIMARY_SLUGS.has(t.slug ?? ""))
+    .map(team => ({
+      team,
+      outputs: outputs.filter(o => (o as any).teamId === team.id),
+      color: DEPT_COLOR[getTeamDept(team)] ?? "#6b7280",
     }));
+  const activeImpacts = teamImpacts.filter(ti => ti.outputs.length > 0);
+  const quietTeams    = teamImpacts.filter(ti => ti.outputs.length === 0);
 
-  const agendaItems: CalEvent[] = [
-    ...todayCalEvents,
-    ...todayTasks.map(t => ({
-      id: `task_${t.id}`, title: t.title,
-      start: t.dueDate!, source: "task" as const,
-    })),
-    ...lifeSignals,
-  ].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  const totalOutputs   = outputs.length;
+  const totalApprovals = wfApprovals.length + agentApprovals.length;
+  const topApproval    = wfApprovals[0] ?? null;
+  const liveRevenue    = revenue?.actual   ?? 0;
+  const pipeline       = revenue?.pipeline ?? 0;
+  const hasRevenue     = liveRevenue > 0 || pipeline > 0;
 
-  // Focus — top executive recommendation or derived
-  const topRec = execRecs[0];
+  function statusLine(): string {
+    if (!loaded) return "Checking in with your workforce…";
+    const parts: string[] = [];
+    if (totalOutputs > 0)
+      parts.push(`${totalOutputs} ${totalOutputs === 1 ? "output" : "outputs"} across ${activeImpacts.length} ${activeImpacts.length === 1 ? "team" : "teams"}`);
+    if (totalApprovals > 0)
+      parts.push(`${totalApprovals} ${totalApprovals === 1 ? "decision" : "decisions"} awaiting review`);
+    if (blockedProjects.length > 0)
+      parts.push(`${blockedProjects.length} ${blockedProjects.length === 1 ? "item" : "items"} blocked`);
+    return parts.length === 0
+      ? "Your workforce has been standing by. Nothing new to report."
+      : parts.join(" · ") + ".";
+  }
 
-  // Revenue signal
-  const liveEntries     = revEntries.filter(e => e.revenueType === "live" && e.status === "active");
-  const pipelineEntries = revEntries.filter(e => e.revenueType === "pipeline" && e.status === "active");
-  const closedEntries   = revEntries.filter(e => e.status === "closed_won").sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  const liveMRR         = liveEntries.reduce((s, e) => s + e.amount, 0);
-  const pipeline        = pipelineEntries.reduce((s, e) => s + e.amount * ((e.probability ?? 100) / 100), 0);
-  const latestClose     = closedEntries[0] ?? null;
+  function focusSentence(): string {
+    if (focusRec) return focusRec;
+    if (totalApprovals > 0)
+      return `Review the ${totalApprovals} pending ${totalApprovals === 1 ? "decision" : "decisions"} in Decide.`;
+    if (blockedProjects.length > 0)
+      return `Unblock ${blockedProjects[0].name} to restore momentum.`;
+    if (opportunities.length > 0)
+      return `Your workforce discovered ${opportunities.length} ${opportunities.length === 1 ? "opportunity" : "opportunities"}. Decide which to pursue.`;
+    if (totalOutputs > 0)
+      return "Review the workforce outputs and provide feedback to keep momentum going.";
+    return "Your workforce is standing by. Dispatch work to start generating value.";
+  }
 
-  // AI outputs — review-needed drafts + assignments in review
-  const aiOutputs: { id: string; team: string; type: string; title: string; source: "draft" | "assignment" }[] = [
-    ...drafts
-      .filter(d => d.status === "review_needed")
-      .slice(0, 5)
-      .map(d => ({
-        id:     d.id,
-        team:   d.sourceTeamName ?? "AI Team",
-        type:   d.draftType,
-        title:  d.title,
-        source: "draft" as const,
-      })),
-    ...reviewAssignments
-      .slice(0, 3)
-      .map(a => ({
-        id:     a.id,
-        team:   a.team?.name ?? "AI Team",
-        type:   "assignment",
-        title:  a.title,
-        source: "assignment" as const,
-      })),
-  ].slice(0, 7);
-
-  // brief
-  const blockedNames = projects.filter(p => p.status === "blocked").map(p => p.name);
-  const brief = buildBrief(totalPending, blockedNames, liveMRR, topRec?.title ?? "");
-
-  // ── render ───────────────────────────────────────────────────────────
-  const hasRightContent = teamOutputs.length > 0 || revEntries.length > 0 || aiOutputs.length > 0;
+  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 py-6 pb-24 md:pb-8">
+      <div className="max-w-[820px] mx-auto px-5 md:px-8 py-8 pb-24 md:pb-12">
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-7 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sun className="w-4 h-4 text-accent-amber opacity-70" />
-              <p className="text-[11px] text-text-ghost font-medium tracking-[0.1em] uppercase">
-                Today · {today}
+        <div className="mb-10">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sun className="w-3 h-3 text-[#F59E0B]" />
+                <span className="text-[10px] font-medium tracking-[0.14em] uppercase text-text-ghost">
+                  {dateStr}
+                </span>
+              </div>
+              <h1 className="text-[34px] md:text-[42px] font-semibold text-text-primary tracking-tight leading-none mb-3">
+                Daily Briefing
+              </h1>
+              <p className="text-[15px] text-text-secondary leading-relaxed max-w-[560px]">
+                {statusLine()}
               </p>
             </div>
-            <h1 className="text-[28px] md:text-[36px] font-semibold text-text-primary tracking-tight leading-none">
-              {new Date().toLocaleDateString("en-GB", { weekday: "long" })}
-            </h1>
+            <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+              <button
+                onClick={load}
+                title="Refresh"
+                className="p-2 rounded-lg border border-white/[0.06] text-text-ghost hover:text-text-muted hover:border-white/[0.1] transition-all"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setDispatchOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[#00D4FF] text-[12px] font-medium hover:bg-[#00D4FF]/15 transition-all"
+              >
+                <Zap className="w-3 h-3" />
+                Dispatch
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setDispatchOpen(true)}
-            className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[#00D4FF] text-[13px] font-medium hover:bg-[#00D4FF]/15 transition-all"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            Dispatch Work
-          </button>
+          <div className="mt-8 h-px bg-white/[0.05]" />
         </div>
 
-        {/* 2-column grid — collapses to single column when right side is empty */}
-        <div className={cn(
-          "grid grid-cols-1 gap-5",
-          hasRightContent && "lg:grid-cols-[42fr_58fr]"
-        )}>
+        <div className="space-y-12">
 
-          {/* ── LEFT COLUMN ─────────────────────────────────────── */}
-          <div className="space-y-5">
+          {/* ── 1. Workforce Impact ─────────────────────────────────── */}
+          <section>
+            <SectionLabel text="Workforce Impact" note={`Since ${sinceLabel}`} />
 
-            {/* Catch-up mode banner */}
-            {catchUpMode && loaded && (
-              <div className="rounded-2xl bg-accent-amber/[0.06] border border-accent-amber/20 p-5">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="w-4 h-4 text-accent-amber flex-shrink-0" />
-                    <p className="text-[13px] font-semibold text-accent-amber">Since you were away</p>
-                  </div>
-                  <button
-                    onClick={() => setCatchUpMode(false)}
-                    className="p-1 rounded text-accent-amber/60 hover:text-accent-amber transition-colors flex-shrink-0"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-[13px] text-text-secondary leading-relaxed">
-                  {buildCatchUpBrief(totalPending, projects, revEntries, drafts, reviewAssignments)}
-                </p>
-              </div>
-            )}
+            {!loaded ? (
+              <p className="text-[14px] text-text-ghost italic">Checking in with your teams…</p>
 
-            {/* 1. Today Brief + Focus (merged) */}
-            <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] p-6">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <p className="text-[11px] text-text-ghost">
-                  {!loaded
-                    ? ""
-                    : totalPending > 0
-                    ? `${totalPending} decision${totalPending > 1 ? "s" : ""} require attention today`
-                    : "All clear today"}
-                </p>
-                <button
-                  onClick={() => { load(); setBriefKey(k => k + 1); }}
-                  className="p-1.5 rounded-lg text-text-ghost hover:text-text-muted transition-colors flex-shrink-0"
-                  title="Refresh"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <p key={briefKey} className="text-[15px] md:text-[16px] text-text-secondary leading-relaxed">
-                {brief}
+            ) : teams.length === 0 ? (
+              <p className="text-[14px] text-text-secondary leading-relaxed">
+                No active workforce teams found. Set up your teams in Workforce to begin tracking value.
               </p>
 
-              {/* Recommended action */}
-              <div className="mt-5 pt-4 border-t border-white/[0.04]">
-                {topRec ? (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-text-ghost uppercase tracking-[0.08em] mb-1">Focus</p>
-                      <p className="text-[13px] text-text-primary font-medium leading-snug truncate">{topRec.title}</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveView("drafts")}
-                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[#00D4FF] text-[12px] font-medium hover:bg-[#00D4FF]/15 transition-all"
-                    >
-                      Start <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : attnItems.length > 0 ? (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-text-ghost uppercase tracking-[0.08em] mb-1">Focus</p>
-                      <p className="text-[13px] text-text-primary font-medium leading-snug truncate">{attnItems[0].title}</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveView("drafts")}
-                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-amber/10 border border-accent-amber/20 text-accent-amber text-[12px] font-medium hover:bg-accent-amber/15 transition-all"
-                    >
-                      Review <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setActiveView("projects")}
-                    className="flex items-center gap-1.5 text-[12px] text-text-ghost hover:text-text-muted transition-colors"
-                  >
-                    Open Projects <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+            ) : activeImpacts.length === 0 ? (
+              <p className="text-[14px] text-text-secondary leading-relaxed">
+                No new value was created while you were away. Your workforce is standing by.
+              </p>
+
+            ) : (
+              <div className="space-y-2.5">
+                {activeImpacts.map(ti => (
+                  <TeamImpactStrip
+                    key={ti.team.id}
+                    team={ti.team}
+                    outputs={ti.outputs}
+                    color={ti.color}
+                    onNavigate={() => setActiveView("workforce")}
+                  />
+                ))}
+                {quietTeams.length > 0 && (
+                  <p className="text-[11px] text-text-ghost pt-1 pl-1">
+                    {quietTeams.map(ti => ti.team.name).join(", ")} — no new activity.
+                  </p>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* 2. Attention — max 3 items, Review-only, no inline decisions */}
-            {attnItems.length > 0 && (
-              <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/[0.04] flex items-center gap-2">
-                  <AlertCircle className="w-3.5 h-3.5 text-accent-amber" />
-                  <span className="text-[13px] font-semibold text-text-primary">Attention</span>
-                  {totalPending > 0 && (
-                    <span className="px-1.5 py-0.5 rounded bg-accent-amber/15 text-accent-amber text-[10px] font-bold">
-                      {totalPending}
-                    </span>
+            {/* Opportunities discovered */}
+            {opportunities.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-white/[0.04]">
+                <p className="text-[13px] text-text-secondary leading-relaxed">
+                  <span className="text-text-primary font-medium">
+                    {opportunities.length} {opportunities.length === 1 ? "opportunity" : "opportunities"}
+                  </span>{" "}
+                  {opportunities.length === 1 ? "was" : "were"} discovered or updated.
+                  {opportunities[0] && (
+                    <> Most recent: <span className="text-text-primary">&ldquo;{opportunities[0].title}&rdquo;</span>.</>
+                  )}
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* ── 2. Revenue ─────────────────────────────────────────── */}
+          {loaded && (
+            <section>
+              <SectionLabel text="Revenue" />
+              {!hasRevenue ? (
+                <p className="text-[14px] text-text-secondary">
+                  No revenue tracked yet. Add entries to see your position.
+                </p>
+              ) : (
+                <>
+                  <p className="text-[14px] text-text-secondary leading-relaxed mb-5">
+                    {liveRevenue > 0 && pipeline > 0
+                      ? `${fmtEuro(liveRevenue)} running monthly with ${fmtEuro(pipeline)} in qualified pipeline.`
+                      : liveRevenue > 0
+                      ? `${fmtEuro(liveRevenue)} in active monthly revenue. No pipeline staged.`
+                      : `${fmtEuro(pipeline)} in pipeline — no live revenue yet. Close one to start compounding.`}
+                  </p>
+                  <div className="flex items-end gap-8">
+                    <RevenueMetric
+                      label="Monthly Revenue"
+                      value={liveRevenue > 0 ? fmtEuro(liveRevenue) : "—"}
+                      color="#22C55E"
+                    />
+                    <div className="w-px h-10 bg-white/[0.05] mb-0.5" />
+                    <RevenueMetric
+                      label="Pipeline"
+                      value={pipeline > 0 ? fmtEuro(pipeline) : "—"}
+                      color="rgba(255,255,255,0.45)"
+                    />
+                    <button
+                      onClick={() => setActiveView("revenue" as any)}
+                      className="ml-auto mb-0.5 text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
+                    >
+                      Full breakdown <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {/* ── 3. Approvals Required ──────────────────────────────── */}
+          {loaded && (
+            <section>
+              <SectionLabel
+                text="Approvals Required"
+                count={totalApprovals > 0 ? totalApprovals : undefined}
+                countColor="#EF4444"
+              />
+              {totalApprovals === 0 ? (
+                <p className="text-[14px] text-text-secondary">
+                  No decisions are waiting for your review.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-[14px] text-text-secondary leading-relaxed">
+                    {topApproval ? (
+                      <>
+                        The most urgent decision is{" "}
+                        <span className="text-text-primary">&ldquo;{topApproval.title}&rdquo;</span>
+                        {(topApproval as any).sourceTeam?.name && (
+                          <> from {(topApproval as any).sourceTeam.name}</>
+                        )}.
+                        {totalApprovals > 1 && ` Plus ${totalApprovals - 1} more.`}
+                      </>
+                    ) : (
+                      `${totalApprovals} ${totalApprovals === 1 ? "decision" : "decisions"} waiting for your review.`
+                    )}
+                  </p>
+                  <button
+                    onClick={() => setActiveView("decide")}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] text-[12px] font-medium hover:bg-[#EF4444]/15 transition-all"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    Open Decide ({totalApprovals})
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ── 4. Blocked ──────────────────────────────────────────── */}
+          {blockedProjects.length > 0 && (
+            <section>
+              <SectionLabel text="Blocked" countColor="#EF4444" />
+              <div>
+                {blockedProjects.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "flex items-start gap-3 py-3",
+                      i < blockedProjects.length - 1 && "border-b border-white/[0.03]"
+                    )}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-[#EF4444] flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-text-primary font-medium">{p.name}</p>
+                      {p.blocker && (
+                        <p className="text-[12px] text-text-ghost mt-0.5 leading-snug">{p.blocker}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── 5. Where to Focus ───────────────────────────────────── */}
+          {loaded && (
+            <section className="pb-4">
+              <SectionLabel text="Where to Focus" />
+              <div className="flex gap-4">
+                <div
+                  className="w-[3px] rounded-full flex-shrink-0 self-stretch"
+                  style={{ backgroundColor: "#F59E0B", opacity: 0.5 }}
+                />
+                <div>
+                  <p className="text-[15px] text-text-primary leading-relaxed font-medium">
+                    {focusSentence()}
+                  </p>
+                  {totalApprovals > 0 && (
+                    <button
+                      onClick={() => setActiveView("decide")}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-[#F59E0B] hover:opacity-75 transition-opacity"
+                    >
+                      Go to Decide <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
-                <div className="divide-y divide-white/[0.03]">
-                  {attnItems.map(item => (
-                    <div key={item.id} className="flex items-center gap-4 px-6 py-4">
-                      <div className={cn(
-                        "w-[3px] h-8 rounded-full flex-shrink-0",
-                        item.type === "blocker" ? "bg-accent-red" : "bg-accent-amber"
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-text-primary font-medium leading-snug truncate">{item.title}</p>
-                        <p className="text-[11px] text-text-ghost mt-0.5">{item.sub}</p>
-                      </div>
-                      <button
-                        onClick={() => setActiveView("drafts")}
-                        className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-text-secondary text-[11px] font-medium hover:bg-white/[0.07] hover:text-text-primary transition-all"
-                      >
-                        Review <ChevronRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {totalPending > 3 && (
-                  <div className="px-6 py-3 border-t border-white/[0.04]">
-                    <button
-                      onClick={() => setActiveView("drafts")}
-                      className="text-[12px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
-                    >
-                      View all {totalPending} pending items <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
               </div>
-            )}
+            </section>
+          )}
 
-            {/* 3. Personal Agenda */}
-            <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
-              <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-accent-cyan" />
-                  <span className="text-[13px] font-semibold text-text-primary">Personal Agenda</span>
-                </div>
-                <button
-                  onClick={() => setActiveView("calendar")}
-                  className="text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
-                >
-                  Open Calendar <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-
-              <div className="p-5">
-                {calConnected === false && agendaItems.length === 0 ? (
-                  <button
-                    onClick={() => setActiveView("settings")}
-                    className="flex items-center gap-1.5 text-[12px] text-text-ghost hover:text-text-muted transition-colors py-1"
-                  >
-                    Connect your calendar <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                ) : agendaItems.length === 0 ? (
-                  <p className="text-[13px] text-text-muted py-2">No events or tasks due today.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {agendaItems.slice(0, 6).map(item => (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border",
-                          item.source === "calendar"
-                            ? "border-[#00D4FF]/[0.08] bg-[#00D4FF]/[0.02]"
-                            : "border-white/[0.04]"
-                        )}
-                      >
-                        <div className="w-9 flex-shrink-0 text-center">
-                          {item.source === "task" ? (
-                            <CheckSquare className="w-3.5 h-3.5 text-text-ghost mx-auto" />
-                          ) : item.allDay ? (
-                            <span className="text-[9px] text-text-ghost">All day</span>
-                          ) : (
-                            <span className="text-[11px] font-mono text-[#00D4FF]/70">{fmtTime(item.start)}</span>
-                          )}
-                        </div>
-                        <div className={cn("w-px h-5 flex-shrink-0", item.source === "calendar" ? "bg-[#00D4FF]/20" : "bg-white/[0.06]")} />
-                        <p className={cn(
-                          "text-[13px] flex-1 leading-snug truncate",
-                          item.source === "calendar" ? "text-text-primary" : "text-text-secondary"
-                        )}>
-                          {item.title}
-                        </p>
-                        {item.source === "task" && (
-                          <span className="text-[9px] text-text-ghost uppercase tracking-wide flex-shrink-0">task</span>
-                        )}
-                      </div>
-                    ))}
-                    {agendaItems.length > 6 && (
-                      <button
-                        onClick={() => setActiveView("calendar")}
-                        className="text-[11px] text-text-ghost hover:text-text-muted transition-colors pl-1 flex items-center gap-1"
-                      >
-                        +{agendaItems.length - 6} more <ChevronRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-
-          </div>
-
-          {/* ── RIGHT COLUMN ─────────────────────────────────────── */}
-          <div className="space-y-5">
-
-            {/* 5. Team Activity — shown when teams have recent outputs */}
-            {teamOutputs.length > 0 && (
-              <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users2 className="w-3.5 h-3.5 text-accent-cyan" />
-                    <span className="text-[13px] font-semibold text-text-primary">Team Activity</span>
-                  </div>
-                  <button
-                    onClick={() => setActiveView("teams")}
-                    className="text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
-                  >
-                    All teams <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-                <div className="divide-y divide-white/[0.03]">
-                  {teamOutputs.map(o => {
-                    const statusCls =
-                      o.status === "completed" || o.status === "approved" ? "bg-accent-green" :
-                      o.status === "in_review" ? "bg-accent-amber" : "bg-text-ghost";
-                    return (
-                      <div key={o.id} className="flex items-center gap-4 px-6 py-3.5">
-                        <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", statusCls)} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-text-ghost mb-0.5">
-                            {o.team?.name ?? "AI Team"} · {o.outputType.replace(/_/g, " ")}
-                          </p>
-                          <p className="text-[13px] text-text-secondary font-medium leading-snug truncate">{o.title}</p>
-                        </div>
-                        <span className="text-[10px] text-text-ghost flex-shrink-0 tabular-nums">
-                          {timeAgo(o.createdAt)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 6. Revenue Insight — only shown when there is data */}
-            {revEntries.length > 0 && (
-              <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-3.5 h-3.5 text-accent-green" />
-                    <span className="text-[13px] font-semibold text-text-primary">Revenue Insight</span>
-                  </div>
-                  <button
-                    onClick={() => setActiveView("revenue")}
-                    className="text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
-                  >
-                    Details <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-
-                {/* Direction narrative */}
-                <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
-                  {liveMRR > 0 && pipeline > 0
-                    ? `${fmtEuro(liveMRR)} running monthly with ${fmtEuro(pipeline)} in qualified pipeline. ${latestClose ? `Most recent close: ${latestClose.title}.` : ""}`
-                    : liveMRR > 0
-                    ? `${fmtEuro(liveMRR)} in active monthly revenue across ${liveEntries.length} contract${liveEntries.length !== 1 ? "s" : ""}. No pipeline staged yet.`
-                    : pipeline > 0
-                    ? `${fmtEuro(pipeline)} in pipeline — no live revenue yet. Close one to start compounding.`
-                    : "Revenue tracked but no active contracts or pipeline. Add entries to see your position."}
-                </p>
-
-                {/* Numbers */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04]">
-                  <div>
-                    <p className="text-[10px] text-text-ghost uppercase tracking-[0.08em] mb-1">Monthly Revenue</p>
-                    <p className="text-[22px] font-bold font-mono text-accent-green leading-none">
-                      {liveMRR > 0 ? fmtEuro(liveMRR) : "€0"}
-                    </p>
-                    {liveEntries.length > 0 && (
-                      <p className="text-[11px] text-text-ghost mt-0.5">{liveEntries.length} active</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-text-ghost uppercase tracking-[0.08em] mb-1">Pipeline</p>
-                    <p className="text-[22px] font-semibold font-mono text-text-primary leading-none">
-                      {pipeline > 0 ? fmtEuro(pipeline) : "—"}
-                    </p>
-                    {pipelineEntries.length > 0 && (
-                      <p className="text-[11px] text-text-ghost mt-0.5">{pipelineEntries.length} open</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 7. Ready for Review — only shown when team work is waiting */}
-            {aiOutputs.length > 0 && (
-              <div className="rounded-2xl bg-[#0d1220] border border-white/[0.05] overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users2 className="w-3.5 h-3.5 text-accent-cyan" />
-                    <span className="text-[13px] font-semibold text-text-primary">Ready for Review</span>
-                    <span className="px-1.5 py-0.5 rounded bg-accent-cyan/10 text-accent-cyan text-[10px] font-bold">
-                      {aiOutputs.length}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setActiveView("drafts")}
-                    className="text-[11px] text-text-ghost hover:text-text-muted transition-colors flex items-center gap-1"
-                  >
-                    Review all <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-                <div className="divide-y divide-white/[0.03]">
-                  {aiOutputs.map(item => (
-                    <div key={item.id} className="flex items-start gap-3 px-6 py-3.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan flex-shrink-0 mt-[5px]" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12px] text-text-ghost mb-0.5">
-                          {item.team} · {item.type.replace(/_/g, " ")}
-                        </p>
-                        <p className="text-[13px] text-text-secondary leading-snug truncate">{item.title}</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-                        <button
-                          onClick={() => setActiveView("drafts")}
-                          className="px-2.5 py-1 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan text-[11px] font-medium hover:bg-accent-cyan/15 transition-all"
-                        >
-                          Review
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          </div>
         </div>
       </div>
 
-      {/* Quick Dispatch Modal */}
       {dispatchOpen && (
         <QuickDispatchModal
           teams={teams}
-          projects={projects}
           onClose={() => setDispatchOpen(false)}
           onDispatched={() => {
             setDispatchOpen(false);
@@ -724,41 +552,31 @@ export function TodayView() {
   );
 }
 
-// ── QuickDispatchModal ───────────────────────────────────────────────
+// ── QuickDispatchModal ─────────────────────────────────────────────────
 
 function QuickDispatchModal({
-  teams, projects, onClose, onDispatched,
+  teams, onClose, onDispatched,
 }: {
   teams: WorkforceTeam[];
-  projects: MioProject[];
   onClose: () => void;
   onDispatched: () => void;
 }) {
-  const [prompt,    setPrompt]    = useState("");
-  const [teamId,    setTeamId]    = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [loading,   setLoading]   = useState(false);
+  const [prompt,  setPrompt]  = useState("");
+  const [teamId,  setTeamId]  = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function dispatch() {
     if (!prompt.trim()) return;
     setLoading(true);
     try {
       const body: Record<string, string> = { title: prompt.trim() };
-      if (teamId)    body.teamId    = teamId;
-      if (projectId) body.projectId = projectId;
-
+      if (teamId) body.teamId = teamId;
       const r = await fetch("/api/assignments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, priority: "medium", senderType: "operator" }),
       });
-
-      if (r.ok) {
-        onDispatched();
-      } else {
-        const err = await r.json().catch(() => ({}));
-        console.error("[dispatch]", err);
-      }
+      if (r.ok) onDispatched();
     } finally {
       setLoading(false);
     }
@@ -768,7 +586,6 @@ function QuickDispatchModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg bg-[#0d1220] border border-white/[0.08] rounded-2xl shadow-2xl p-6">
-
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#00D4FF]" />
@@ -793,41 +610,19 @@ function QuickDispatchModal({
               autoFocus
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] text-text-ghost uppercase tracking-[0.08em] mb-2">
-                Team (optional)
-              </label>
-              <select
-                value={teamId}
-                onChange={e => setTeamId(e.target.value)}
-                className="w-full bg-[#080d1a] border border-white/[0.08] rounded-xl px-3 py-2.5 text-[13px] text-text-secondary focus:outline-none focus:border-[#00D4FF]/30 transition-colors"
-              >
-                <option value="">Auto-route</option>
-                {teams.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] text-text-ghost uppercase tracking-[0.08em] mb-2">
-                Project (optional)
-              </label>
-              <select
-                value={projectId}
-                onChange={e => setProjectId(e.target.value)}
-                className="w-full bg-[#080d1a] border border-white/[0.08] rounded-xl px-3 py-2.5 text-[13px] text-text-secondary focus:outline-none focus:border-[#00D4FF]/30 transition-colors"
-              >
-                <option value="">None</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-[11px] text-text-ghost uppercase tracking-[0.08em] mb-2">
+              Team (optional)
+            </label>
+            <select
+              value={teamId}
+              onChange={e => setTeamId(e.target.value)}
+              className="w-full bg-[#080d1a] border border-white/[0.08] rounded-xl px-3 py-2.5 text-[13px] text-text-secondary focus:outline-none focus:border-[#00D4FF]/30 transition-colors"
+            >
+              <option value="">Auto-route</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
           </div>
-
           <div className="flex items-center gap-3 pt-1">
             <button
               onClick={dispatch}
@@ -845,7 +640,6 @@ function QuickDispatchModal({
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,394 +1,319 @@
-# MioOS — Core Vision
+# MioOS — Final Architecture (North Star)
 
-MioOS is not a dashboard.
+## Core Identity
 
-MioOS is an Autonomous Company Operating System.
+MioOS is a **Personal AI Command Center**.
 
-The purpose of MioOS is not merely managing work.
+MioOS is NOT:
+- Founder OS
+- ERP / CRM
+- Developer platform
+- Agent playground
+- Monitoring dashboard
+- Infrastructure management tool
 
-The purpose of MioOS is to discover opportunities, coordinate autonomous agents, supervise execution, learn from outcomes, and continuously improve business performance.
+MioOS IS:
+- Personal AI Command Center
+- Autonomous Opportunity Engine
+- Revenue Generation System
+- Workforce Management System
+- Decision & Approval Center
+- Personal + Business Operating Layer
 
-MioOS acts as:
+**The purpose of MioOS:**
 
-1. The Brain
-2. The Command Center
-3. The Governance Layer
-4. The Opportunity Engine
-5. The Multi-Agent Coordination Layer
+Generate opportunities.
+Generate revenue.
+Prepare execution.
+Escalate decisions when required.
 
-MioOS is the head of the company.
-
-Agents are specialized team members.
-
-The dashboard is the control room.
-
-AION is the execution and inference infrastructure.
-
-Relationship:
-
-MioOS
-↓
-Strategy
-↓
-Coordination
-↓
-Governance
-↓
-Execution Requests
-↓
-AION
-
-AION never controls MioOS.
-
-MioOS controls AION.
+When the founder opens MioOS they should see:
+- What opportunities were found
+- What revenue opportunities exist
+- What work was completed
+- What decisions require approval
+- What the AI workforce recommends next
 
 ---
 
-# System Architecture
+## AION Separation
 
-## Layer 1 — Business OS
+AION and MioOS are completely separate systems.
 
-Responsible for:
+AION is: AI Gateway, Control Plane, Runtime Platform, Worker Infrastructure, Routing Engine, Multi-tenant SaaS.
 
-* Tasks
-* Goals
-* Projects
-* Leads
-* CRM
-* Sales Pipeline
-* Deployments
-* Support
-* Documentation
+**Inside MioOS, AION appears only as a Venture/Project.**
 
-## Layer 2 — Agent OS
+Never expose in MioOS:
+- Worker metrics
+- Token metrics
+- Runtime health
+- Queue depth
+- Infrastructure internals
 
-Responsible for:
-
-* Agent Registry
-* Agent Memory
-* Agent Tools
-* Agent Workflows
-* Agent Scheduling
-* Agent Approvals
-* Agent Execution
-* Agent Intelligence
-
-## Layer 3 — Founder Cockpit
-
-Responsible for:
-
-* Executive Briefings
-* Risks
-* Opportunities
-* Agent Activity
-* Business Health
-* Strategic Oversight
-* Decision Support
-
-Every dashboard component must answer:
-
-1. What needs attention?
-2. What blocks progress?
-3. What creates value?
-4. What are agents doing?
-5. What should happen next?
-
-Avoid dashboards that only display data.
-
-Prefer dashboards that support decisions.
-
-## Layer 4 — Opportunity Engine
-
-Responsible for:
-
-* Opportunity Discovery
-* Opportunity Validation
-* Opportunity Scoring
-* Opportunity Tracking
-* Opportunity Learning
-
-The system optimizes for:
-
-"Where is value?"
-
-not:
-
-"What should we build?"
-
-Valid opportunities include:
-
-* Products
-* Services
-* SaaS
-* Affiliate opportunities
-* Reseller opportunities
-* White-label opportunities
-* Partnerships
-* Acquisitions
-* Investments
-* Automation opportunities
-* Market signals
-
-Every opportunity must include:
-
-* Evidence
-* Confidence
-* Risks
-* Assumptions
-* Validation Plan
-* Execution Strategy
-* Next Action
-
-No score may exist without explanation.
-
-## Layer 5 — Autonomy Governance
-
-Responsible for:
-
-* Policies
-* Risk Controls
-* Approval Rules
-* Budget Controls
-* Safety Boundaries
-* Audit Trails
-* Compliance Rules
-
-Every autonomous action must pass through governance.
-
-## Layer 6 — Multi-Agent Coordination
-
-Responsible for:
-
-* Delegation
-* Agent Communication
-* Shared Context
-* Review Chains
-* Validation Chains
-* Collaborative Work
-
-Preferred workflow:
-
-Hunter
-↓
-Researcher
-↓
-Validator
-↓
-Planner
-↓
-Reviewer
-↓
-Execution Agent
-↓
-Governance
-↓
-Execution
-
-No single agent should make high-impact decisions alone.
+Those belong to AION, not MioOS.
 
 ---
 
-# Long-Term Objective
+## Navigation Architecture (Critical)
 
-The long-term objective is to build a supervised autonomous company.
+**Only 6 destinations. No exceptions.**
 
-The system should:
+1. Today
+2. Decide
+3. Workforce
+4. Projects
+5. Life
+6. Settings
 
-* Discover opportunities
-* Evaluate opportunities
-* Coordinate specialists
-* Generate recommendations
-* Execute approved actions
-* Learn from outcomes
-* Improve future decisions
+Revenue is NOT a destination.
+Opportunities are NOT a destination.
+Those are outcomes surfaced through Today and Workforce.
 
-The system should continuously create value while remaining governed by policies, reviews and controls.
-
----
-
-# Autonomy Roadmap
-
-Current State
-
-Level 0:
-Recommendations
-
-Level 1:
-Draft Creation
-
-Level 2:
-Internal Execution
-
-Current MioOS Target:
-Level 2
-
-Future State
-
-Level 3:
-External Actions Prepared Automatically
-
-Level 4:
-External Actions Executed Automatically Within Policies
-
-Level 5:
-Fully Autonomous Operation Within Governance Boundaries
-
-Examples
-
-Level 2:
-
-* Create tasks
-* Create notes
-* Create memories
-* Create reminders
-* Create recommendations
-
-Level 3:
-
-* Prepare outreach
-* Prepare campaigns
-* Prepare content
-* Prepare product launches
-
-Level 4:
-
-* Send approved outreach
-* Launch approved campaigns
-* Publish approved content
-* Execute approved workflows
-
-Level 5:
-
-* Operate continuously under governance policies
-
-The goal is not maximum autonomy.
-
-The goal is safe autonomy.
-
----
-
-# Governance Rule (Critical)
-
-Autonomy without governance is forbidden.
-
-Before any external execution capability is added, MioOS must support:
-
-* Policy Engine
-* Budget Controls
-* Risk Scoring
-* Multi-Agent Review
-* Audit Logging
-* Emergency Stop
-
-Every external action must be:
-
-1. Explainable
-2. Traceable
-3. Reviewable
-4. Governed by policy
-
-The system should never behave as an unchecked autonomous agent.
-
-The system should behave as a supervised autonomous company.
-
----
-
-# The Five AI Agent Products
-
-1. Follow-Up & Action Watchdog
-2. Deadline & Document Guardian
-3. Lost Revenue Detector
-4. Meeting-to-Execution Agent
-5. Evidence & Case Builder
-
-Lead Flow:
-
-Lead
-→ Product Match
-→ Outreach
-→ Demo
-→ Proposal
-→ Pilot
-→ Onboarding
-→ Deployment
-→ Support
-→ Upsell
-
----
-
-# Development Principles
-
-* Do not restart or rebuild from scratch
-* Do not break working functionality
-* Prioritize stability over new features
-* Prefer additive changes over rewrites
-* Preserve backwards compatibility
-* Maintain database-backed persistence
-* Use idempotent seeds
-* Never wipe user data without explicit reset
-* Follow existing project patterns
-* Keep the UI premium, dark, clean and command-center focused
-
----
-
-# Navigation Architecture (Critical)
-
-Every new view requires updating ALL FOUR files:
-
-1. store/appStore.ts
-2. app/page.tsx
-3. components/layout/Sidebar.tsx
-4. components/layout/MobileNav.tsx
-
-Treat these four files as a single atomic operation.
+Every new view requires updating ALL FOUR files atomically:
+1. `store/appStore.ts`
+2. `app/page.tsx`
+3. `components/layout/Sidebar.tsx`
+4. `components/layout/MobileNav.tsx`
 
 Missing one breaks navigation.
 
 ---
 
-# Sidebar Accent Color System
+## Today
 
-Personal OS:
-accent-purple
+Today is the most important page.
 
-Business OS:
-accent-violet
+It must answer:
+1. What opportunities were discovered?
+2. What revenue changed?
+3. What progress happened?
+4. What requires approval?
+5. What is blocked?
+6. What should I focus on?
 
-Opportunity Engine:
-accent-green
+Today should feel like a **briefing from the workforce** — not a dashboard, not a monitoring screen.
 
-Agent OS:
-accent-cyan
+Language must be outcome-based.
 
-Warnings / Approvals:
-accent-amber
-
-Errors / Destructive:
-accent-red
-
-Maintain consistency across all future views.
+**Good:** "E-commerce Team validated 2 products."
+**Bad:** "Agent completed assignment."
 
 ---
 
-# SQLite / Prisma Rules
+## Decide
 
-Never use:
+Decide is the approval boundary. Everything requiring judgment appears here.
 
-skipDuplicates with createMany on SQLite.
+Categories:
+- Financial
+- External Contact
+- High Risk
+- Strategic
+- Content
 
-Use:
+Every decision must explain:
+- What is being requested
+- Why it matters
+- Impact if approved
+- Impact if rejected
 
-count === 0 guard before createMany.
+No analytics. No monitoring. No dashboards. Only decisions.
 
-PowerShell syntax:
+---
 
-$env:DATABASE_URL = "..."
-npx prisma db push
+## Workforce
 
-Do not use bash-style environment variable syntax.
+MioOS manages autonomous business units. Each unit behaves like a real company department.
 
+Each team has:
+- Mission
+- Objectives
+- Autonomous routines
+- Revenue responsibility
+- Opportunity generation
+- Outputs
+- Approval triggers
 
-### Development Rules
+Teams operate independently. The founder supervises outcomes. The founder does not micromanage tasks.
+
+### Team 1 — E-Commerce Team
+
+**Mission:** Find and launch profitable direct-to-customer opportunities.
+
+Operating model: Supplier / POD / Fulfillment Partner → Customer
+- No warehousing by default
+- No inventory ownership by default
+- No logistics operations by default
+
+Autonomous work: product research, competitor research, supplier discovery, supplier reliability scoring, margin calculations, demand validation, product page creation, landing page creation, creative generation, ad concept generation, campaign planning, customer service drafts, order risk monitoring.
+
+Outputs: product opportunities, supplier reports, store concepts, product pages, ad creatives, launch plans.
+
+**Approval required:** spending ad budget, supplier commitments, store launches, inventory purchases, paid testing. Inventory is treated as high-risk.
+
+### Team 2 — Automation Sales Team
+
+**Mission:** Generate customers for automation services and AI products.
+
+This team does not only find leads. This team **designs sellable automation systems**.
+
+Autonomous work: company discovery, lead generation, process analysis, pain-point identification, opportunity scoring, automation design, solution architecture, proposal creation, demo preparation, outreach drafting, follow-up drafting, pilot planning.
+
+Every qualified lead should result in: opportunity analysis, proposed automation solution, estimated value, demo concept, proposal draft.
+
+Outputs: leads, opportunities, automation blueprints, outreach sequences, proposal packages.
+
+**Approval required:** customer outreach, proposals, contracts, pricing commitments.
+
+### Team 3 — YouTube Automation Team
+
+**Mission:** Grow YouTube channels autonomously.
+
+Autonomous work: niche research, trend research, competitor analysis, content planning, script writing, hook generation, title generation, thumbnail concepts, SEO research, upload planning.
+
+Content formats: Shorts, Reels, faceless videos, long-form story videos, educational content.
+
+Team prepares: voiceover scripts, captions, scene timelines, edit plans, thumbnail concepts, upload schedules.
+
+**Approval required:** publishing, paid assets, brand deals, copyright-sensitive material.
+
+### Team 4 — Crypto / Stock Trader Team
+
+**Mission:** Grow capital responsibly.
+
+Modes: 1. Research → 2. Paper Trading → 3. Approval Trading → 4. Autonomous Trading (future, locked).
+
+Default mode: **Research.**
+
+Autonomous work: market research, news monitoring, watchlist management, opportunity detection, risk scoring, portfolio analysis, trade thesis creation.
+
+Outputs: trade theses, market reports, risk assessments, watchlists.
+
+**Approval required:** any real trade, capital allocation, position sizing changes. Autonomous trading remains locked until explicitly enabled.
+
+---
+
+## Approval Philosophy
+
+**Autonomous (no approval needed):**
+Research, analysis, validation, planning, content preparation, opportunity discovery, lead generation, risk scoring.
+
+**Approval required:**
+Spending money, customer communication, publishing, supplier commitments, trading, contracts, legal obligations.
+
+**No external impact without approval.**
+
+---
+
+## Projects
+
+Projects are containers. Types: **Venture** or **Initiative**.
+
+Projects exist to organise work — not as task managers, not as kanban boards.
+
+Projects contain: revenue, outputs, opportunities, goals, decisions.
+
+---
+
+## Life
+
+Life is personal. Contains: Calendar, Goals, Habits, Notes.
+
+Life remains separate from business.
+
+---
+
+## Workforce Evolution — North Star (v2)
+
+**Stop thinking:** Agent / Task / Output
+**Start thinking:** Business Unit / Opportunity / Revenue / Growth / Execution
+
+The workforce is NOT a workforce of AI agents. It is a portfolio of autonomous businesses.
+
+### Workforce Model
+
+Every business unit operates with:
+- **Mission** — Why does this unit exist?
+- **Business Model** — How does it generate revenue?
+- **Revenue Engine** — How does value become revenue? (shown as a flow in the UI)
+- **Objectives** — What is the unit currently trying to achieve?
+- **KPIs** — How is success measured?
+- **Opportunity Pipeline** — What opportunities are active by lifecycle stage?
+- **Memory** — What has already been attempted? (prevents repetition)
+- **Approval Boundaries** — What requires founder approval?
+- **Growth Loop** — How does the unit improve over time?
+
+### Autonomous Loop (V2)
+
+```
+Idle → Generate Opportunities
+Opportunities exist → Validate them
+Validated → Prepare execution
+Execution ready → Create Decide items
+Approved → Create Projects
+Projects succeed → Attribute Revenue
+Projects fail → Update Memory
+```
+
+This loop runs continuously. The autonomous engine (V2) is lifecycle-aware:
+it checks the team's opportunity pipeline state and routes work to the
+appropriate lifecycle stage (`discovery` / `validation` / `execution`).
+
+### Workforce UI North Star
+
+The Workforce view should feel like a CEO reviewing 4 division leaders.
+For each business unit display:
+- Mission + Business Model + Revenue Engine (as a flow)
+- Current Objective
+- Opportunity Pipeline (funnel: Discovered → Validating → Approved)
+- Active Work
+- Revenue Impact + Pipeline Value
+- Recent Wins (approved opportunities)
+- Recent Failures (rejected — stored in memory, never re-proposed)
+- Growth Recommendations (derived from portfolio state)
+- Pending Decisions
+
+**Never show:** agent names, queue depth, tokens, prompts, execution logs.
+**Only show:** business outcomes.
+
+### Today North Star
+
+Today should answer:
+1. What value did the workforce create?
+2. What opportunities were discovered?
+3. What revenue opportunities emerged?
+4. What decisions require me?
+5. What is blocked?
+6. What should I focus on?
+
+---
+
+## Success Criteria
+
+If MioOS runs for 30 days unattended (with approvals still required for external actions), the workforce should continuously:
+- Discover opportunities
+- Prepare execution
+- Improve memory
+- Build pipelines
+- Generate approvals
+- Track revenue impact
+- Recommend next actions
+
+The system should evolve from an AI assistant into an autonomous portfolio of business units.
+
+When the founder returns, MioOS should brief on:
+- Opportunities found and their pipeline status
+- Revenue opportunities identified and pipeline value
+- Work completed and quality track record
+- Decisions required
+- Growth recommendations per business unit
+
+**That is the standard every future feature must support.**
+
+---
+
+## Development Rules
 
 - Do not restart or rebuild from scratch
 - Do not break existing working features
@@ -397,201 +322,23 @@ Do not use bash-style environment variable syntax.
 - Follow existing code patterns: client components, local state + fetch, Prisma API routes
 - Keep UI dark, clean, premium, command-center style
 
-## Navigation Architecture (Critical)
+## SQLite / Prisma Rules
 
-Every new view requires updating ALL FOUR files:
+Never use `skipDuplicates` with `createMany` on SQLite. Use `count === 0` guard before `createMany`.
 
-1. store/appStore.ts
-2. app/page.tsx
-3. components/layout/Sidebar.tsx
-4. components/layout/MobileNav.tsx
-
-Treat these four files as a single atomic operation.
-
-Missing one breaks navigation.
-
----
-
-## Founder Cockpit Philosophy
-
-MioOS is not an admin dashboard.
-
-MioOS is a Founder Operating System.
-
-Every dashboard component should answer:
-
-1. What needs attention?
-2. What blocks progress?
-3. What creates value?
-4. What are agents doing?
-5. What should happen next?
-
-Avoid dashboard widgets that only display data.
-
-Prefer widgets that support decisions.
-
----
-
-## Approval First Architecture
-
-Agents may:
-
-* discover
-* analyze
-* validate
-* score
-* recommend
-* draft
-* prepare
-
-Agents may NOT:
-
-* launch products
-* send outreach
-* run ads
-* spend money
-* publish content
-* create live listings
-* process payments
-* contact prospects
-
-without Approval Queue approval.
-
-All external actions must remain approval-driven.
-
----
-
-## Agent Design Pattern
-
-Avoid single-agent decision making.
-
-Preferred architecture:
-
-Hunter
-↓
-Validator
-↓
-Planner
-↓
-Approval Queue
-
-Agents generate recommendations.
-
-Humans make decisions.
-
----
-
-## Opportunity Engine Vision
-
-Commerce Autopilot is evolving into Opportunity Engine.
-
-The system should optimize for:
-
-"Where is value?"
-
-not:
-
-"What should we build?"
-
-Valid opportunities include:
-
-* products
-* services
-* SaaS
-* affiliate opportunities
-* reseller opportunities
-* white-label opportunities
-* partnerships
-* acquisitions
-* investments
-* automation opportunities
-* market signals
-
-Every opportunity must include:
-
-* Evidence
-* Confidence
-* Risks
-* Assumptions
-* Validation Plan
-* Execution Strategy
-* Next Action
-
-No score may exist without explanation.
-
----
-
-## Opportunity Engine Roadmap
-
-Current State:
-
-Business OS
-✓
-
-Agent OS
-✓
-
-Founder Cockpit
-✓
-
-Next:
-
-1. Strategic Briefing Viewer
-2. Workflow Visualization
-3. Mobile Pass
-4. Deployment Hardening
-5. VPS Deployment
-6. Opportunity Engine
-
-Future:
-
-Opportunity Memory
-Opportunity Outcomes
-Opportunity Portfolio
-Opportunity Validator
-Learning Loop
-Execution Planning
-
----
+PowerShell syntax for env vars:
+```powershell
+$env:DATABASE_URL = "..."
+npx prisma db push
+```
 
 ## Sidebar Accent Color System
 
-Personal OS:
-accent-purple
-
-Business OS:
-accent-violet
-
-Commerce / Opportunity Engine:
-accent-green
-
-Agent OS:
-accent-cyan
-
-Warnings / Approvals:
-accent-amber
-
-Errors / Destructive:
-accent-red
-
-Maintain consistency across all future views.
-
----
-
-## SQLite / Prisma Rules
-
-Never use:
-
-skipDuplicates with createMany on SQLite.
-
-Use:
-
-count === 0 guard before createMany.
-
-PowerShell syntax:
-
-$env:DATABASE_URL = "..."
-npx prisma db push
-
-Do not use bash-style environment variable syntax.
-
+| Section | Color |
+|---|---|
+| Personal OS | accent-purple |
+| Business OS | accent-violet |
+| Opportunity / Commerce | accent-green |
+| Agent OS | accent-cyan |
+| Warnings / Approvals | accent-amber |
+| Errors / Destructive | accent-red |

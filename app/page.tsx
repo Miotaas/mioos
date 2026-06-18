@@ -61,20 +61,20 @@ export default function Home() {
         {/* Extra bottom padding on mobile for the tab bar */}
         <div className="relative z-10 flex-1 overflow-hidden pb-[60px] md:pb-0">
 
-          {/* ── V4 Primary Navigation ──────────────────────────── */}
+          {/* ── Primary Navigation (6 destinations) ───────────── */}
+          {activeView === "today"     && <ErrorBoundary label="Today"><TodayView /></ErrorBoundary>}
+          {activeView === "decide"    && <ErrorBoundary label="Decide"><DecisionsView /></ErrorBoundary>}
+          {activeView === "projects"  && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
+          {activeView === "workforce" && <ErrorBoundary label="Workforce"><WorkforceView /></ErrorBoundary>}
+          {activeView === "life"      && <ErrorBoundary label="Life"><LifeView /></ErrorBoundary>}
+          {activeView === "settings"  && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
+
+          {/* ── V4 legacy — still routable ─────────────────────── */}
           {activeView === "command"       && <ErrorBoundary label="Command"><CommandView /></ErrorBoundary>}
           {activeView === "revenue"       && <ErrorBoundary label="Revenue"><RevenueView /></ErrorBoundary>}
           {activeView === "opportunities" && <ErrorBoundary label="Opportunities"><OpportunitiesView /></ErrorBoundary>}
-          {activeView === "workforce"     && <ErrorBoundary label="Workforce"><WorkforceView /></ErrorBoundary>}
           {activeView === "decisions"     && <ErrorBoundary label="Decisions"><DecisionsView /></ErrorBoundary>}
-          {activeView === "life"          && <ErrorBoundary label="Life"><LifeView /></ErrorBoundary>}
-          {activeView === "settings"      && <ErrorBoundary label="Settings"><SettingsView /></ErrorBoundary>}
-
-          {/* ── V3 Legacy — still routable ─────────────────────── */}
-          {activeView === "today"    && <ErrorBoundary label="Today"><TodayView /></ErrorBoundary>}
-          {activeView === "decide"   && <ErrorBoundary label="Decide"><DecideView /></ErrorBoundary>}
-          {activeView === "projects" && <ErrorBoundary label="Projects"><ProjectsView /></ErrorBoundary>}
-          {activeView === "teams"    && <ErrorBoundary label="Teams"><TeamsView /></ErrorBoundary>}
+          {activeView === "teams"         && <ErrorBoundary label="Teams"><TeamsView /></ErrorBoundary>}
 
           {/* ── Deep legacy ────────────────────────────────────── */}
           {activeView === "dashboard"      && <ErrorBoundary label="Dashboard"><DashboardHome /></ErrorBoundary>}

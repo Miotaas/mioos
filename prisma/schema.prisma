@@ -1306,6 +1306,25 @@ model RuntimeState {
 }
 
 // ============================================================
+// INTEGRATIONS CENTER
+// ============================================================
+
+model ConnectorConfig {
+  id           String    @id @default(cuid())
+  slug         String    @unique  // e.g., "shopify", "stripe", "gmail"
+  status       String    @default("not_connected") // not_connected | connected | error
+  mode         String    @default("disabled")       // disabled | draft_only | approval_required | autonomous_limited
+  maskedHint   String?   // last 4 chars of key — computed server-side, safe to show
+  lastTestedAt DateTime?
+  lastSyncAt   DateTime?
+  lastError    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("connector_configs")
+}
+
+// ============================================================
 // PHASE 9 — ARTIFACT ENGINE
 // ============================================================
 

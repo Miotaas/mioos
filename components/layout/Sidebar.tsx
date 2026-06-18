@@ -3,10 +3,8 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  Zap, DollarSign, Target,
-  Users2, CheckSquare, Calendar,
-  Settings, ChevronLeft, ChevronRight,
-  Brain, LogOut, Sparkles,
+  Sun, Scale, Users2, Briefcase, Calendar, Settings,
+  ChevronLeft, ChevronRight, Brain, LogOut, Sparkles,
 } from "lucide-react";
 
 async function logout() {
@@ -18,32 +16,32 @@ type ViewId = ReturnType<typeof useAppStore.getState>["activeView"];
 
 const navGroups: {
   label: string;
-  accentClass: string;
-  items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
+  items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }>; accentColor: string }[];
 }[] = [
   {
-    label: "Command Center",
-    accentClass: "text-[#00D4FF]",
+    label: "",
     items: [
-      { id: "command",       label: "Command",       icon: Zap },
-      { id: "revenue",       label: "Revenue",       icon: DollarSign },
-      { id: "opportunities", label: "Opportunities", icon: Target },
+      { id: "today",  label: "Today",  icon: Sun,   accentColor: "#F59E0B" },
+      { id: "decide", label: "Decide", icon: Scale, accentColor: "#EF4444" },
     ],
   },
   {
-    label: "Operations",
-    accentClass: "text-[#6366f1]",
+    label: "Workforce",
     items: [
-      { id: "workforce",  label: "Workforce",  icon: Users2 },
-      { id: "decisions",  label: "Decisions",  icon: CheckSquare },
-      { id: "life",       label: "Life",       icon: Calendar },
+      { id: "workforce", label: "Workforce", icon: Users2,    accentColor: "#00D4FF" },
+      { id: "projects",  label: "Projects",  icon: Briefcase, accentColor: "#6366f1" },
+    ],
+  },
+  {
+    label: "Personal",
+    items: [
+      { id: "life", label: "Life", icon: Calendar, accentColor: "#8B5CF6" },
     ],
   },
   {
     label: "System",
-    accentClass: "text-text-ghost",
     items: [
-      { id: "settings", label: "Settings", icon: Settings },
+      { id: "settings", label: "Settings", icon: Settings, accentColor: "#6b7280" },
     ],
   },
 ];
@@ -79,37 +77,47 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-6">
         {navGroups.map((group) => (
-          <div key={group.label}>
-            {!sidebarCollapsed && group.items.length > 1 && (
-              <p className={cn("text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2", group.accentClass)}>
+          <div key={group.label || "__top__"}>
+            {!sidebarCollapsed && group.label && (
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2 text-text-ghost">
                 {group.label}
               </p>
             )}
             <div className="space-y-0.5">
-              {group.items.map(({ id, label, icon: Icon }) => {
+              {group.items.map(({ id, label, icon: Icon, accentColor }) => {
                 const active = activeView === id;
                 return (
                   <button
                     key={id}
                     onClick={() => setActiveView(id)}
                     title={sidebarCollapsed ? label : undefined}
+                    style={active ? {
+                      color: accentColor,
+                      backgroundColor: `${accentColor}1A`,
+                      borderColor: `${accentColor}26`,
+                    } : undefined}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-100 group",
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-100 group border",
                       sidebarCollapsed && "justify-center px-0",
                       active
-                        ? "bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/15"
-                        : "text-text-muted hover:text-text-secondary hover:bg-white/[0.03] border border-transparent"
+                        ? "border-transparent"
+                        : "text-text-muted hover:text-text-secondary hover:bg-white/[0.03] border-transparent"
                     )}
                   >
-                    <Icon className={cn(
-                      "w-[15px] h-[15px] flex-shrink-0 transition-colors",
-                      active ? "text-[#00D4FF]" : "group-hover:text-text-secondary"
-                    )} />
+                    <Icon
+                      className={cn(
+                        "w-[15px] h-[15px] flex-shrink-0 transition-colors",
+                        !active && "group-hover:text-text-secondary"
+                      )}
+                    />
                     {!sidebarCollapsed && (
-                      <span className={cn("font-medium", active ? "text-[#00D4FF]" : "")}>{label}</span>
+                      <span className="font-medium">{label}</span>
                     )}
                     {active && !sidebarCollapsed && (
-                      <div className="ml-auto w-1 h-1 rounded-full bg-[#00D4FF] opacity-70" />
+                      <div
+                        className="ml-auto w-1 h-1 rounded-full opacity-70"
+                        style={{ backgroundColor: accentColor }}
+                      />
                     )}
                   </button>
                 );

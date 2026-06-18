@@ -1,0 +1,171 @@
+<h2>Command Center — Layout Approach</h2>
+<p class="subtitle">Three ways to give it a morning brief feel. Which direction resonates?</p>
+
+<div class="options" style="flex-direction: column; gap: 28px;">
+
+  <!-- OPTION A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)" style="align-items: flex-start; padding: 20px;">
+    <div class="letter">A</div>
+    <div class="content" style="width: 100%;">
+      <h3>The Briefing Board</h3>
+      <p>A top banner says "Good morning — here's what happened while you were away." Below it, a horizontal strip of 4–5 critical KPI pills (MRR, open approvals, active departments, top opportunity score). Then a 3-column grid: left = Revenue + Goals, center = Opportunities pipeline + Recent discoveries, right = Approvals needed + Blockers + Executive intelligence. The morning brief header auto-summarizes the last N hours of activity in 2–3 bullet points.</p>
+      <div style="margin-top: 14px; background: #070b14; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; font-family: monospace;">
+        <!-- Mockup -->
+        <div style="background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(99,102,241,0.06)); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 12px 16px;">
+          <div style="font-size: 10px; color: #4a5568; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em;">Monday, Jun 15 · 09:14</div>
+          <div style="font-size: 13px; color: #e2e8f0; font-weight: 600; margin-bottom: 6px;">Good morning — while you were away <span style="color: #718096; font-weight: 400; font-size: 11px;">(8h 23m)</span></div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 10px; color: #a0aec0;">↗ Research team discovered 3 new opportunities</div>
+            <div style="font-size: 10px; color: #f59e0b;">⚠ 2 approvals are waiting for your decision</div>
+            <div style="font-size: 10px; color: #10b981;">✓ Sales team completed outreach assignment</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+          <div style="flex: 1; padding: 6px 10px; background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.12); border-radius: 6px; text-align: center;">
+            <div style="font-size: 9px; color: #4a5568; text-transform: uppercase;">MRR</div>
+            <div style="font-size: 13px; color: #00D4FF; font-weight: 700;">€0</div>
+          </div>
+          <div style="flex: 1; padding: 6px 10px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.12); border-radius: 6px; text-align: center;">
+            <div style="font-size: 9px; color: #4a5568; text-transform: uppercase;">Approvals</div>
+            <div style="font-size: 13px; color: #f59e0b; font-weight: 700;">2</div>
+          </div>
+          <div style="flex: 1; padding: 6px 10px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12); border-radius: 6px; text-align: center;">
+            <div style="font-size: 9px; color: #4a5568; text-transform: uppercase;">Opportunities</div>
+            <div style="font-size: 13px; color: #10b981; font-weight: 700;">7</div>
+          </div>
+          <div style="flex: 1; padding: 6px 10px; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.12); border-radius: 6px; text-align: center;">
+            <div style="font-size: 9px; color: #4a5568; text-transform: uppercase;">Departments</div>
+            <div style="font-size: 13px; color: #6366f1; font-weight: 700;">6</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0; padding: 8px; gap: 6px;">
+          <div style="flex: 1; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 4px;">Revenue</div>
+            <div style="font-size: 9px; color: #718096;">MRR / Pipeline / Forecast...</div>
+          </div>
+          <div style="flex: 1; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 4px;">Opportunities</div>
+            <div style="font-size: 9px; color: #718096;">Pipeline funnel...</div>
+          </div>
+          <div style="flex: 1; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 4px;">Needs Decision</div>
+            <div style="font-size: 9px; color: #f59e0b;">2 pending approvals...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)" style="align-items: flex-start; padding: 20px;">
+    <div class="letter">B</div>
+    <div class="content" style="width: 100%;">
+      <h3>The Intelligence Feed</h3>
+      <p>Left column = a chronological "while you were away" feed — ranked by importance, with timestamps. Research discoveries, approvals generated, assignments completed, revenue movements, risks flagged. Right column = live company vitals (2 narrower cards stacked: Revenue status, Workforce status). The feed feels like opening a Slack channel about your company. Newest event at top, color-coded by department. Scroll to go further back.</p>
+      <div style="margin-top: 14px; background: #070b14; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; font-family: monospace;">
+        <div style="display: flex; gap: 0; height: 180px;">
+          <div style="flex: 2; padding: 12px; border-right: 1px solid rgba(255,255,255,0.04); overflow: hidden;">
+            <div style="font-size: 9px; color: #4a5568; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.08em;">Company Activity · Last 8 hours</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <div style="width: 3px; background: #6366f1; border-radius: 2px; flex-shrink: 0; height: 32px;"></div>
+                <div>
+                  <div style="font-size: 10px; color: #a0aec0;">Research found: <span style="color: #e2e8f0;">Logistics automation opportunity</span></div>
+                  <div style="font-size: 9px; color: #4a5568;">Research Dept · score 8.2/10 · 2h ago</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <div style="width: 3px; background: #f59e0b; border-radius: 2px; flex-shrink: 0; height: 32px;"></div>
+                <div>
+                  <div style="font-size: 10px; color: #a0aec0;">Approval queued: <span style="color: #f59e0b;">Outreach draft for 50 prospects</span></div>
+                  <div style="font-size: 9px; color: #4a5568;">Sales Dept · needs your decision · 3h ago</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <div style="width: 3px; background: #10b981; border-radius: 2px; flex-shrink: 0; height: 32px;"></div>
+                <div>
+                  <div style="font-size: 10px; color: #a0aec0;">Completed: <span style="color: #e2e8f0;">Market analysis — pet products</span></div>
+                  <div style="font-size: 9px; color: #4a5568;">Research Dept · 22 pages · 5h ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+              <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 4px;">Revenue</div>
+              <div style="font-size: 12px; color: #00D4FF; font-weight: 700;">€0 MRR</div>
+              <div style="font-size: 9px; color: #718096;">€2.4k pipeline</div>
+            </div>
+            <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+              <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 4px;">Departments</div>
+              <div style="font-size: 9px; color: #a0aec0;">6 active · 2 working now</div>
+            </div>
+            <div style="padding: 8px; background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.15); border-radius: 6px;">
+              <div style="font-size: 8px; color: #f59e0b; text-transform: uppercase; margin-bottom: 4px;">Needs Decision</div>
+              <div style="font-size: 12px; color: #f59e0b; font-weight: 700;">2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)" style="align-items: flex-start; padding: 20px;">
+    <div class="letter">C</div>
+    <div class="content" style="width: 100%;">
+      <h3>Hybrid: Brief Header + Live Grid</h3>
+      <p>Best of both. A slim, premium "morning brief" header (date, time away, 2–3 auto-generated intelligence bullets in a dark gradient card — feels like an executive briefing). Then immediately below: the live company grid from the existing Command Center (Revenue, Opportunities, Projects, Approvals) but enhanced with Workforce section and Executive Intelligence panel. No column for a feed — the header carries the "what changed" story, the grid carries the live state.</p>
+      <div style="margin-top: 14px; background: #070b14; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; font-family: monospace;">
+        <!-- Slim brief header -->
+        <div style="background: linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(99,102,241,0.04) 50%, rgba(16,185,129,0.04) 100%); border-bottom: 1px solid rgba(0,212,255,0.1); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 11px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px;">Monday · June 15 · 09:14 AM</div>
+            <div style="display: flex; gap: 16px;">
+              <span style="font-size: 10px; color: #6366f1;">↗ 3 new opportunities discovered</span>
+              <span style="font-size: 10px; color: #f59e0b;">⊙ 2 approvals waiting</span>
+              <span style="font-size: 10px; color: #10b981;">✓ Sales completed outreach</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 9px; color: #4a5568;">Away for</div>
+            <div style="font-size: 13px; color: #718096; font-weight: 600;">8h 23m</div>
+          </div>
+        </div>
+        <!-- Grid preview -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 10px;">
+          <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 3px;">Revenue</div>
+            <div style="font-size: 11px; color: #00D4FF; font-weight: 700;">€0 MRR</div>
+            <div style="font-size: 9px; color: #718096; margin-top: 2px;">Sources · Forecast · At Risk</div>
+          </div>
+          <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 3px;">Opportunities</div>
+            <div style="font-size: 9px; color: #a0aec0;">Pipeline · Recent · Funnel</div>
+          </div>
+          <div style="padding: 8px; background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.15); border-radius: 6px;">
+            <div style="font-size: 8px; color: #f59e0b; text-transform: uppercase; margin-bottom: 3px;">Needs Decision</div>
+            <div style="font-size: 11px; color: #f59e0b; font-weight: 700;">2 Approvals</div>
+          </div>
+          <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 3px;">Workforce</div>
+            <div style="font-size: 9px; color: #a0aec0;">Dept status · Active work</div>
+          </div>
+          <div style="padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+            <div style="font-size: 8px; color: #4a5568; text-transform: uppercase; margin-bottom: 3px;">Projects</div>
+            <div style="font-size: 9px; color: #a0aec0;">Active · Blocked · Next</div>
+          </div>
+          <div style="padding: 8px; background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.12); border-radius: 6px;">
+            <div style="font-size: 8px; color: #10b981; text-transform: uppercase; margin-bottom: 3px;">Intelligence</div>
+            <div style="font-size: 9px; color: #a0aec0;">Top opp · Risk · Next action</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 16px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+  <p style="font-size: 11px; color: #718096; margin: 0;">My recommendation: <strong style="color: #e2e8f0;">C — Hybrid</strong>. Slim brief header gives the morning feel without sacrificing screen real estate. The live grid below it already exists in the Command Center component and just needs enhancements. Lowest effort, highest impact.</p>
+</div>

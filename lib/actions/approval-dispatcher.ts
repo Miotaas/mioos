@@ -1,5 +1,31 @@
 import { prisma } from "@/lib/db";
 
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48);
+}
+
+async function maybeCreateProject({ approval, output }: Ctx): Promise<string | null> {
+  if (!output) return null;
+  if (output.projectId) return output.projectId;
+  const baseName = approval.title.replace(/^Review:\s*/i, "");
+  const slug = slugify(baseName) + "-" + Date.now().toString(36).slice(-4);
+  const project = await prisma.project.create({
+    data: {
+      name:        baseName,
+      slug,
+      description: output.description ?? null,
+      status:      "active",
+      priority:    approval.priority,
+      nextAction:  `Follow through on approved decision: ${approval.decisionType.replace(/_/g, " ")}.`,
+    },
+  });
+  await prisma.workforceOutput.update({
+    where: { id: output.id },
+    data:  { projectId: project.id },
+  });
+  return project.id;
+}
+
 export interface ActionResultPayload {
   id: string;
   approvalId: string;
@@ -59,7 +85,9 @@ type Ctx = {
   opportunity: Awaited<ReturnType<typeof prisma.opportunity.findUnique>>;
 };
 
-async function handleOutreach({ approval, output, opportunity }: Ctx): Promise<ActionResultPayload> {
+async function handleOutreach(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval, output, opportunity } = ctx;
+  const projectId = await maybeCreateProject(ctx);
   const draft = await prisma.emailDraft.create({
     data: {
       title: approval.title,
@@ -68,7 +96,7 @@ async function handleOutreach({ approval, output, opportunity }: Ctx): Promise<A
       status: "draft",
       sourceApprovalId: approval.id,
       sourceOutputId: output?.id ?? null,
-      projectId: approval.projectId ?? output?.projectId ?? null,
+      projectId: projectId ?? approval.projectId ?? output?.projectId ?? null,
       opportunityId: opportunity?.id ?? null,
     },
   });
@@ -78,15 +106,17 @@ async function handleOutreach({ approval, output, opportunity }: Ctx): Promise<A
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Email draft created",
-      description: `Draft: "${draft.title}"`,
+      title: "Outreach approved — email draft created",
+      description: `Draft: "${draft.title}"${projectId ? " · Initiative created" : ""}`,
       targetType: "email_draft",
       targetId: draft.id,
     },
   });
 }
 
-async function handleCampaign({ approval, output, opportunity }: Ctx): Promise<ActionResultPayload> {
+async function handleCampaign(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval, output, opportunity } = ctx;
+  const projectId = await maybeCreateProject(ctx);
   const draft = await prisma.campaignDraft.create({
     data: {
       name: approval.title,
@@ -96,7 +126,7 @@ async function handleCampaign({ approval, output, opportunity }: Ctx): Promise<A
       status: "draft",
       sourceApprovalId: approval.id,
       sourceOutputId: output?.id ?? null,
-      projectId: approval.projectId ?? output?.projectId ?? null,
+      projectId: projectId ?? approval.projectId ?? output?.projectId ?? null,
       opportunityId: opportunity?.id ?? null,
     },
   });
@@ -106,15 +136,17 @@ async function handleCampaign({ approval, output, opportunity }: Ctx): Promise<A
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Campaign draft created",
-      description: `Draft: "${draft.name}"`,
+      title: "Campaign approved — draft created",
+      description: `Draft: "${draft.name}"${projectId ? " · Initiative created" : ""}`,
       targetType: "campaign_draft",
       targetId: draft.id,
     },
   });
 }
 
-async function handleContent({ approval, output, opportunity }: Ctx): Promise<ActionResultPayload> {
+async function handleContent(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval, output, opportunity } = ctx;
+  const projectId = await maybeCreateProject(ctx);
   const draft = await prisma.contentDraft.create({
     data: {
       title: approval.title,
@@ -123,7 +155,7 @@ async function handleContent({ approval, output, opportunity }: Ctx): Promise<Ac
       status: "draft",
       sourceApprovalId: approval.id,
       sourceOutputId: output?.id ?? null,
-      projectId: approval.projectId ?? output?.projectId ?? null,
+      projectId: projectId ?? approval.projectId ?? output?.projectId ?? null,
       opportunityId: opportunity?.id ?? null,
     },
   });
@@ -133,15 +165,17 @@ async function handleContent({ approval, output, opportunity }: Ctx): Promise<Ac
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Content draft created",
-      description: `Draft: "${draft.title}"`,
+      title: "Content approved — draft created",
+      description: `Draft: "${draft.title}"${projectId ? " · Initiative created" : ""}`,
       targetType: "content_draft",
       targetId: draft.id,
     },
   });
 }
 
-async function handleProduct({ approval, output, opportunity }: Ctx): Promise<ActionResultPayload> {
+async function handleProduct(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval, output, opportunity } = ctx;
+  const projectId = await maybeCreateProject(ctx);
   const draft = await prisma.productDraft.create({
     data: {
       title: approval.title,
@@ -150,7 +184,7 @@ async function handleProduct({ approval, output, opportunity }: Ctx): Promise<Ac
       status: "draft",
       sourceApprovalId: approval.id,
       sourceOutputId: output?.id ?? null,
-      projectId: approval.projectId ?? output?.projectId ?? null,
+      projectId: projectId ?? approval.projectId ?? output?.projectId ?? null,
       opportunityId: opportunity?.id ?? null,
       priceSuggestion: opportunity?.estimatedRevenue
         ? Math.round(opportunity.estimatedRevenue * 0.1)
@@ -163,8 +197,8 @@ async function handleProduct({ approval, output, opportunity }: Ctx): Promise<Ac
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Product draft created",
-      description: `Draft: "${draft.title}"`,
+      title: "Product approved — draft created",
+      description: `Draft: "${draft.title}"${projectId ? " · Initiative created" : ""}`,
       targetType: "product_draft",
       targetId: draft.id,
     },
@@ -227,37 +261,46 @@ async function handleProposal({ approval, output, opportunity }: Ctx): Promise<A
   });
 }
 
-async function handleResearch({ approval, output }: Ctx): Promise<ActionResultPayload> {
+async function handleResearch(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval, output } = ctx;
   if (output) {
     await prisma.workforceOutput.update({
       where: { id: output.id },
       data: { status: "approved", approvedAt: new Date() },
     });
   }
+  const projectId = await maybeCreateProject(ctx);
 
   return prisma.actionResult.create({
     data: {
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Research approved",
-      description: output ? `Output "${output.title}" marked approved` : null,
-      targetType: output ? "workforce_output" : null,
-      targetId: output?.id ?? null,
+      title: "Research approved — initiative created",
+      description: output
+        ? `Output "${output.title}" approved${projectId ? " · Initiative created to act on findings" : ""}`
+        : "Research decision recorded",
+      targetType: projectId ? "project" : (output ? "workforce_output" : null),
+      targetId:   projectId ?? output?.id ?? null,
     },
   });
 }
 
-async function handleFounderDecision({ approval }: Ctx): Promise<ActionResultPayload> {
+async function handleFounderDecision(ctx: Ctx): Promise<ActionResultPayload> {
+  const { approval } = ctx;
+  const projectId = await maybeCreateProject(ctx);
+
   return prisma.actionResult.create({
     data: {
       approvalId: approval.id,
       actionType: approval.decisionType,
       status: "dispatched",
-      title: "Decision recorded",
-      description: `Approval "${approval.title}" marked approved by founder`,
-      targetType: null,
-      targetId: null,
+      title: projectId ? "Decision approved — initiative created" : "Decision recorded",
+      description: projectId
+        ? `Initiative created from "${approval.title}"`
+        : `Approval "${approval.title}" marked approved by founder`,
+      targetType: projectId ? "project" : null,
+      targetId:   projectId ?? null,
     },
   });
 }

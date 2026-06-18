@@ -36,16 +36,15 @@ interface AppState {
   setSidebarCollapsed: (v: boolean) => void;
 
   activeView:
-    // V4 primary navigation (7 destinations)
-    | "command"
-    | "revenue"
-    | "opportunities"
+    // Primary navigation (6 destinations)
+    | "today"
+    | "decide"
+    | "projects"
     | "workforce"
-    | "decisions"
     | "life"
     | "settings"
-    // V3 legacy — still routable
-    | "today" | "decide" | "projects" | "teams"
+    // V4 legacy — still routable
+    | "command" | "revenue" | "opportunities" | "decisions" | "teams"
     // Deep legacy
     | "dashboard" | "briefing" | "inbox" | "tasks" | "goals" | "calendar"
     | "requests" | "company" | "drafts"
@@ -101,7 +100,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
-  activeView: "command",
+  activeView: "today",
   setActiveView: (view) => set({ activeView: view }),
 
   captures: [],

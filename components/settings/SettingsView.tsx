@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Info, Shield, Activity, Bot, Server, CheckCircle2, XCircle,
   Loader2, LogOut, AlertTriangle, Power, Database, Clock, Plug,
-  Calendar, ExternalLink, Gauge,
+  Calendar, ExternalLink, Gauge, Play, Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { IntegrationsView } from "@/components/integrations/IntegrationsView";
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
@@ -72,7 +73,10 @@ interface ConnectorInfo {
   note: string;
 }
 
+type SettingsTab = "overview" | "integrations" | "runtime";
+
 export function SettingsView() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("overview");
   const [health, setHealth] = useState<HealthData | null>(null);
   const [healthError, setHealthError] = useState(false);
   const [healthLoading, setHealthLoading] = useState(true);
@@ -81,6 +85,23 @@ export function SettingsView() {
   const [aiConfig, setAiConfig]     = useState<{ provider: string; model: string; enabled: boolean; hasApiKey: boolean } | null>(null);
   const [aiTesting, setAiTesting]   = useState(false);
   const [aiTestResult, setAiTestResult] = useState<{ ok: boolean; latency?: number; message?: string; response?: string } | null>(null);
+
+  type AutonLevel = "off" | "conservative" | "normal" | "aggressive";
+  interface TeamStat {
+    slug: string;
+    name: string;
+    todayRuns: number;
+    dailyLimit: number;
+    activeAssignments: number;
+    status: "off" | "at_limit" | "busy" | "ready";
+  }
+  interface WorkforceAutonomyStatus {
+    level: AutonLevel;
+    dailyLimit: number;
+    teams: TeamStat[];
+  }
+  const [workforceAutonomy, setWorkforceAutonomy]       = useState<WorkforceAutonomyStatus | null>(null);
+  const [workforceSaving,   setWorkforceSaving]         = useState(false);
 
   type FocusMode = "conservative" | "normal" | "aggressive";
   interface ThrottleStatus {
@@ -152,9 +173,58 @@ export function SettingsView() {
     }
   }
 
+  const [runtimeTriggerLoading, setRuntimeTriggerLoading] = useState(false);
+  const [runtimeTriggerResult,  setRuntimeTriggerResult]  = useState<string | null>(null);
+  const [heartbeat, setHeartbeat] = useState<string | null>(null);
+
+  const loadHeartbeat = useCallback(async () => {
+    try {
+      const h = await fetch("/api/health").then(r => r.json()).catch(() => null);
+      if (h?.timestamp) setHeartbeat(h.timestamp);
+    } catch { /* non-fatal */ }
+  }, []);
+
+  async function triggerRuntime() {
+    setRuntimeTriggerLoading(true);
+    setRuntimeTriggerResult(null);
+    try {
+      const res  = await fetch("/api/runtime/trigger", { method: "POST" });
+      const body = await res.json() as { ok: boolean; elapsed?: number; teamWork?: { queued: number } };
+      setRuntimeTriggerResult(
+        body.ok
+          ? `Triggered — ${body.elapsed}ms · ${body.teamWork?.queued ?? 0} team item(s) queued`
+          : "Trigger failed"
+      );
+      loadHeartbeat();
+    } catch {
+      setRuntimeTriggerResult("Request failed");
+    } finally {
+      setRuntimeTriggerLoading(false);
+    }
+  }
+
+  async function setWorkforceLevel(level: AutonLevel) {
+    setWorkforceSaving(true);
+    try {
+      const res = await fetch("/api/settings/workforce-autonomy", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ level }),
+      });
+      if (res.ok) {
+        const fresh = await fetch("/api/settings/workforce-autonomy").then(r => r.json()).catch(() => null);
+        if (fresh) setWorkforceAutonomy(fresh);
+      }
+    } finally {
+      setWorkforceSaving(false);
+    }
+  }
+
   useEffect(() => {
     fetch("/api/autonomy/focus-mode").then(r => r.json()).then(setThrottle).catch(() => {});
     fetch("/api/ai/config").then(r => r.json()).then(setAiConfig).catch(() => {});
+    fetch("/api/settings/workforce-autonomy").then(r => r.json()).then(setWorkforceAutonomy).catch(() => {});
+    loadHeartbeat();
     loadHealth();
     Promise.all([
       fetch("/api/connectors/web-search").then(r => r.json()).catch(() => null),
@@ -186,165 +256,236 @@ export function SettingsView() {
       ];
       setConnectors(items);
     }).catch(() => {});
-  }, []);
+  }, [loadHeartbeat]);
 
   const isPaused = health?.autonomy.paused ?? false;
+
+  const TABS: { id: SettingsTab; label: string }[] = [
+    { id: "overview",     label: "Overview" },
+    { id: "integrations", label: "Integrations" },
+    { id: "runtime",      label: "Runtime" },
+  ];
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-2xl mx-auto px-4 sm:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-xl font-bold text-text-primary">Settings</h1>
           <p className="text-xs text-text-muted mt-1">System configuration and status</p>
         </div>
 
-        <div className="space-y-4">
+        {/* ── Tab bar ── */}
+        <div className="flex gap-1 mb-6 p-1 bg-surface-2 border border-white/[0.06] rounded-xl">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={cn(
+                "flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all",
+                activeTab === t.id
+                  ? "bg-surface-3 text-text-primary"
+                  : "text-text-ghost hover:text-text-muted"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-          {/* ── Emergency Stop ─────────────────────────────────────── */}
-          <Card className={cn(
-            "border transition-colors",
-            isPaused ? "border-accent-amber/40 bg-accent-amber/[0.04]" : "border-white/[0.06]"
-          )}>
-            <SectionHeader icon={Power} title="Autonomy Control" />
+        {/* ── Integrations tab ── */}
+        {activeTab === "integrations" && (
+          <IntegrationsView />
+        )}
 
-            {isPaused && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-amber/10 border border-accent-amber/20 mb-4">
-                <AlertTriangle className="w-3.5 h-3.5 text-accent-amber flex-shrink-0" />
-                <p className="text-xs text-accent-amber font-medium">
-                  Autonomy is paused — all scheduled agents, workflows, and delegations are halted.
-                </p>
+        {/* ── Runtime tab ── */}
+        {activeTab === "runtime" && (
+          <div className="space-y-4">
+
+            {/* Emergency Stop */}
+            <Card className={cn(
+              "border transition-colors",
+              isPaused ? "border-accent-amber/40 bg-accent-amber/[0.04]" : "border-white/[0.06]"
+            )}>
+              <SectionHeader icon={Power} title="Emergency Stop" />
+              {isPaused && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-amber/10 border border-accent-amber/20 mb-4">
+                  <AlertTriangle className="w-3.5 h-3.5 text-accent-amber flex-shrink-0" />
+                  <p className="text-xs text-accent-amber font-medium">
+                    Autonomy is paused — all scheduled agents, workflows, and delegations are halted.
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-text-muted mb-4 leading-relaxed">
+                Immediately halts all autonomous execution. Data is preserved.
+                Resume restores normal operation.
+              </p>
+              <Row label="Schedules"   value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
+              <Row label="Workflows"   value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
+              <Row label="Delegations" value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
+              <Row label="Executions"  value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
+              <div className="pt-4">
+                <button
+                  onClick={toggleAutonomy}
+                  disabled={autonomyLoading || healthLoading}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
+                    isPaused
+                      ? "bg-accent-green/10 border-accent-green/30 text-accent-green hover:bg-accent-green/15"
+                      : "bg-accent-red/10 border-accent-red/30 text-accent-red hover:bg-accent-red/15",
+                    (autonomyLoading || healthLoading) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {autonomyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
+                  {isPaused ? "Resume Autonomy" : "Emergency Stop"}
+                </button>
               </div>
-            )}
+            </Card>
 
-            <p className="text-xs text-text-muted mb-4 leading-relaxed">
-              Emergency stop halts all autonomous execution: schedules, workflows, delegations,
-              and execution pipelines. Agent data is preserved. Resume restores normal operation.
-            </p>
-
-            <Row label="Schedules" value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
-            <Row label="Workflows" value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
-            <Row label="Delegations" value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
-            <Row label="Executions" value={isPaused ? <span className="text-accent-amber">Paused</span> : <span className="text-accent-green">Running</span>} />
-
-            <div className="pt-4">
-              <button
-                onClick={toggleAutonomy}
-                disabled={autonomyLoading || healthLoading}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
-                  isPaused
-                    ? "bg-accent-green/10 border-accent-green/30 text-accent-green hover:bg-accent-green/15"
-                    : "bg-accent-red/10 border-accent-red/30 text-accent-red hover:bg-accent-red/15",
-                  (autonomyLoading || healthLoading) && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                {autonomyLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Power className="w-4 h-4" />
-                )}
-                {isPaused ? "Resume Autonomy" : "Emergency Stop"}
-              </button>
-            </div>
-          </Card>
-
-          {/* ── Founder Focus Mode ───────────────────────────────── */}
-          <Card>
-            <SectionHeader icon={Gauge} title="Founder Focus Mode" />
-            <p className="text-xs text-text-muted mb-4 leading-relaxed">
-              Controls how aggressively the autonomous workforce discovers and executes. Conservative
-              protects your attention by limiting daily output. Aggressive maximizes throughput.
-              When limits are reached, agents continue internal analysis only.
-            </p>
-
-            {throttle ? (
-              <>
-                {/* Mode selector */}
-                <div className="flex gap-2 mb-5">
-                  {(["conservative", "normal", "aggressive"] as FocusMode[]).map(m => (
-                    <button
-                      key={m}
-                      disabled={throttleSaving}
-                      onClick={() => setFocusMode(m)}
-                      className={cn(
-                        "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all capitalize",
-                        throttle.mode === m
-                          ? m === "conservative"
-                            ? "bg-accent-amber/10 border-accent-amber/40 text-accent-amber"
-                            : m === "normal"
-                              ? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
-                              : "bg-accent-green/10 border-accent-green/40 text-accent-green"
-                          : "bg-transparent border-white/[0.06] text-text-ghost hover:border-white/[0.12] hover:text-text-muted",
-                        throttleSaving && "opacity-50 cursor-not-allowed",
-                      )}
-                    >
-                      {throttleSaving && throttle.mode === m ? (
-                        <span className="flex items-center justify-center gap-1.5">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          {m}
-                        </span>
-                      ) : m}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Breach alert */}
-                {throttle.breaches.length > 0 && (
-                  <div className="mb-4 px-3 py-2.5 rounded-lg bg-accent-amber/[0.08] border border-accent-amber/20">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-accent-amber flex-shrink-0" />
-                      <span className="text-xs font-semibold text-accent-amber">Autonomy paused — limits reached</span>
-                    </div>
-                    {throttle.breaches.map((b, i) => (
-                      <p key={i} className="text-[11px] text-accent-amber/80 pl-5">{b}</p>
+            {/* Workforce Autonomy */}
+            <Card>
+              <SectionHeader icon={Cpu} title="Workforce Autonomy" />
+              <p className="text-xs text-text-muted mb-4 leading-relaxed">
+                Controls how often each autonomous team runs per day without manual dispatch.
+                Conservative = 1 output/team/day. Emergency Stop always overrides.
+              </p>
+              {workforceAutonomy ? (
+                <>
+                  <div className="flex gap-2 mb-5">
+                    {(["off", "conservative", "normal", "aggressive"] as AutonLevel[]).map(lvl => (
+                      <button
+                        key={lvl}
+                        disabled={workforceSaving || isPaused}
+                        onClick={() => setWorkforceLevel(lvl)}
+                        className={cn(
+                          "flex-1 py-2 px-2 rounded-lg text-xs font-semibold border transition-all capitalize",
+                          workforceAutonomy.level === lvl
+                            ? lvl === "off"
+                              ? "bg-white/[0.08] border-white/20 text-text-primary"
+                              : lvl === "conservative"
+                                ? "bg-accent-amber/10 border-accent-amber/40 text-accent-amber"
+                                : lvl === "normal"
+                                  ? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
+                                  : "bg-accent-green/10 border-accent-green/40 text-accent-green"
+                            : "bg-transparent border-white/[0.06] text-text-ghost hover:border-white/[0.12] hover:text-text-muted",
+                          (workforceSaving || isPaused) && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        {workforceSaving && workforceAutonomy.level === lvl
+                          ? <span className="flex items-center justify-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />{lvl}</span>
+                          : lvl}
+                      </button>
                     ))}
-                    {throttle.lastPauseReason && (
-                      <p className="text-[10px] text-text-ghost mt-1.5 pl-5 leading-snug">{throttle.lastPauseReason}</p>
-                    )}
                   </div>
-                )}
+                  {workforceAutonomy.teams.map(team => (
+                    <div key={team.slug} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0">
+                      <span className="text-xs text-text-muted">{team.name}</span>
+                      <span className={cn(
+                        "text-xs font-medium",
+                        team.status === "ready"    ? "text-accent-green"
+                        : team.status === "off"    ? "text-text-ghost"
+                        : team.status === "busy"   ? "text-accent-cyan"
+                        : "text-accent-amber"
+                      )}>
+                        {team.status === "off"       ? "off"
+                        : team.status === "at_limit" ? `${team.todayRuns}/${team.dailyLimit} today`
+                        : team.status === "busy"     ? `${team.activeAssignments} active`
+                        : `${team.todayRuns}/${team.dailyLimit} · ready`}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <p className="text-xs text-text-ghost">Loading…</p>
+              )}
+            </Card>
 
-                {/* Current limits */}
-                <div className="space-y-0">
-                  <Row
-                    label="Daily opportunities"
-                    value={`${throttle.current.dailyOpportunitiesCreated} / ${throttle.limits.maxDailyOpportunitiesTotal}`}
-                    valueClass={throttle.current.dailyOpportunitiesCreated >= throttle.limits.maxDailyOpportunitiesTotal ? "text-accent-amber" : "text-text-secondary"}
-                  />
-                  <Row
-                    label="Active opportunities"
-                    value={`${throttle.current.activeOpportunities} / ${throttle.limits.maxActiveOpportunities}`}
-                    valueClass={throttle.current.activeOpportunities >= throttle.limits.maxActiveOpportunities ? "text-accent-amber" : "text-text-secondary"}
-                  />
-                  <Row
-                    label="Daily workflows routed"
-                    value={`${throttle.current.dailyWorkflowsRouted} / ${throttle.limits.maxDailyWorkflowsRouted}`}
-                    valueClass={throttle.current.dailyWorkflowsRouted >= throttle.limits.maxDailyWorkflowsRouted ? "text-accent-amber" : "text-text-secondary"}
-                  />
-                  <Row
-                    label="Pending approvals"
-                    value={`${throttle.current.pendingApprovals} / ${throttle.limits.maxPendingApprovals}`}
-                    valueClass={throttle.current.pendingApprovals >= throttle.limits.maxPendingApprovals ? "text-accent-amber" : "text-text-secondary"}
-                  />
-                  <Row
-                    label="Pipeline projects"
-                    value={`${throttle.current.activePipelineProjects} / ${throttle.limits.maxActivePipelineProjects}`}
-                    valueClass={throttle.current.activePipelineProjects >= throttle.limits.maxActivePipelineProjects ? "text-accent-amber" : "text-text-secondary"}
-                  />
-                  <Row
-                    label="automation_service / day"
-                    value={`max ${throttle.limits.maxDailyOpportunitiesByType["automation_service"] ?? "—"}`}
-                  />
-                  <Row
-                    label="ecommerce_product / day"
-                    value={`max ${throttle.limits.maxDailyOpportunitiesByType["ecommerce_product"] ?? "—"}`}
-                  />
-                </div>
-              </>
-            ) : (
-              <p className="text-xs text-text-ghost">Loading throttle status…</p>
-            )}
-          </Card>
+            {/* Founder Focus Mode */}
+            <Card>
+              <SectionHeader icon={Gauge} title="Founder Focus Mode" />
+              <p className="text-xs text-text-muted mb-4 leading-relaxed">
+                Controls how aggressively the opportunity engine discovers and routes.
+              </p>
+              {throttle ? (
+                <>
+                  <div className="flex gap-2 mb-4">
+                    {(["conservative", "normal", "aggressive"] as FocusMode[]).map(m => (
+                      <button
+                        key={m}
+                        disabled={throttleSaving}
+                        onClick={() => setFocusMode(m)}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all capitalize",
+                          throttle.mode === m
+                            ? m === "conservative"
+                              ? "bg-accent-amber/10 border-accent-amber/40 text-accent-amber"
+                              : m === "normal"
+                                ? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
+                                : "bg-accent-green/10 border-accent-green/40 text-accent-green"
+                            : "bg-transparent border-white/[0.06] text-text-ghost hover:border-white/[0.12] hover:text-text-muted",
+                          throttleSaving && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  <Row label="Daily opportunities" value={`${throttle.current.dailyOpportunitiesCreated} / ${throttle.limits.maxDailyOpportunitiesTotal}`} />
+                  <Row label="Pending approvals"   value={`${throttle.current.pendingApprovals} / ${throttle.limits.maxPendingApprovals}`} />
+                </>
+              ) : (
+                <p className="text-xs text-text-ghost">Loading…</p>
+              )}
+            </Card>
+
+            {/* Cron / Runtime Trigger */}
+            <Card>
+              <SectionHeader icon={Clock} title="Runtime Trigger" />
+              <p className="text-xs text-text-muted mb-4 leading-relaxed">
+                The runtime trigger runs all background tasks: team work queue, handoffs,
+                objectives, and signal processing. Trigger manually for immediate execution.
+              </p>
+              <Row
+                label="Scheduler"
+                value={
+                  healthLoading ? <span className="text-text-ghost">checking…</span>
+                    : health?.scheduler.enabled
+                      ? <span className="flex items-center gap-1.5 text-accent-green"><CheckCircle2 className="w-3.5 h-3.5" /> Cron active</span>
+                      : <span className="text-text-ghost">Not configured (dev mode)</span>
+                }
+              />
+              <Row
+                label="Last run"
+                value={
+                  heartbeat
+                    ? new Date(heartbeat).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                    : "—"
+                }
+              />
+              {runtimeTriggerResult && (
+                <p className="text-xs text-accent-green mt-2">{runtimeTriggerResult}</p>
+              )}
+              <div className="pt-4">
+                <button
+                  onClick={triggerRuntime}
+                  disabled={runtimeTriggerLoading || isPaused}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
+                    "bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/15",
+                    (runtimeTriggerLoading || isPaused) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {runtimeTriggerLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  Trigger now
+                </button>
+              </div>
+            </Card>
+
+          </div>
+        )}
+
+        {/* ── Overview tab ── */}
+        {activeTab === "overview" && (
+        <div className="space-y-4">
 
           {/* ── App Info ──────────────────────────────────────────── */}
           <Card>
@@ -622,6 +763,8 @@ export function SettingsView() {
           </Card>
 
         </div>
+        )}
+
       </div>
     </div>
   );

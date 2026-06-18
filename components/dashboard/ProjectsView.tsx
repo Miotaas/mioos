@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { MioProject, ProjectStatus, WorkforceOutput, Assignment, WorkforceApproval, RevenueEntry, MioGoal } from "@/types";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
 import {
-  FolderOpen, Plus, AlertTriangle, TrendingUp, ArrowRight, Zap, FileOutput,
+  FolderOpen, AlertTriangle, TrendingUp, ArrowRight, Zap, FileOutput,
   ChevronRight, ClipboardList, MessageSquare,
 } from "lucide-react";
 
@@ -46,6 +45,26 @@ const STAGE_BADGE: Record<string, { label: string; text: string }> = {
   paused:     { label: "Paused",     text: "text-text-muted" },
   killed:     { label: "Killed",     text: "text-accent-red" },
 };
+
+function teamColor(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("commerce") || n.includes("ecommerce") || n.includes("fulfillment")) return "#22C55E";
+  if (n.includes("sales") || n.includes("outreach") || n.includes("automation") || n.includes("lead")) return "#8B5CF6";
+  if (n.includes("youtube") || n.includes("content") || n.includes("video") || n.includes("media")) return "#F97316";
+  if (n.includes("crypto") || n.includes("trading") || n.includes("finance") || n.includes("research") || n.includes("stock")) return "#00D4FF";
+  return "#6366f1";
+}
+
+function inferOwningTeam(projectId: string, allAssignments: Assignment[]): string | null {
+  const counts = new Map<string, number>();
+  for (const a of allAssignments) {
+    if (a.projectId === projectId && a.team?.name) {
+      counts.set(a.team.name, (counts.get(a.team.name) ?? 0) + 1);
+    }
+  }
+  if (counts.size === 0) return null;
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
 
 export function ProjectsView() {
   const [projects, setProjects]       = useState<MioProject[]>([]);
@@ -113,16 +132,14 @@ export function ProjectsView() {
             Projects
           </h1>
           <p className="text-xs text-text-muted mt-0.5">
+            Ventures & Initiatives
+            <span className="text-text-ghost mx-1.5">·</span>
             {activeCount} active
             {blockedCount > 0 && (
-              <span className="text-accent-red ml-1">· {blockedCount} blocked</span>
+              <span className="text-accent-red ml-1.5">· {blockedCount} blocked</span>
             )}
           </p>
         </div>
-        <Button variant="ghost" size="sm" disabled className="opacity-40 cursor-not-allowed">
-          <Plus className="w-3.5 h-3.5" />
-          New Project
-        </Button>
       </div>
 
       {/* Status filter */}
@@ -190,6 +207,7 @@ export function ProjectsView() {
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             const latestOutput = projectOutputs[0] ?? null;
             const projectAssignments = assignments.filter(a => a.projectId === project.id && a.status !== "archived");
+            const owningTeam = inferOwningTeam(project.id, assignments);
 
             return (
               <div
@@ -211,6 +229,14 @@ export function ProjectsView() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {owningTeam && (
+                      <span
+                        className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+                        style={{ color: teamColor(owningTeam), backgroundColor: `${teamColor(owningTeam)}18`, border: `1px solid ${teamColor(owningTeam)}30` }}
+                      >
+                        {owningTeam}
+                      </span>
+                    )}
                     <div
                       className="w-1.5 h-1.5 rounded-full"
                       style={{ background: dotColor, boxShadow: `0 0 4px ${dotColor}80` }}

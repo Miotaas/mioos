@@ -14,6 +14,7 @@ import { evaluateObjectives } from "@/lib/workforce/objective-evaluator";
 import { processPendingHandoffs } from "@/lib/workforce/handoff-executor";
 import { processUnprocessedSignals } from "@/lib/intelligence/signal-processor";
 import { executeAssignment } from "@/lib/workforce/executor";
+import { runAutonomousWorkforce } from "@/lib/workforce/autonomous-engine";
 
 const MAX_QUEUE_PER_TICK = 3;
 
@@ -70,12 +71,13 @@ export async function POST() {
   const start = Date.now();
 
   try {
-    const [schedules, queue, handoffs, objectives, signals] = await Promise.allSettled([
+    const [schedules, queue, handoffs, objectives, signals, teamWork] = await Promise.allSettled([
       runDueSchedules(),
       processQueueItems(),
       processPendingHandoffs(),
       evaluateObjectives(),
       processUnprocessedSignals(),
+      runAutonomousWorkforce(),
     ]);
 
     // Update heartbeat via RuntimeState
@@ -95,6 +97,7 @@ export async function POST() {
       handoffs:  handoffs.status  === "fulfilled" ? handoffs.value  : { error: String((handoffs as PromiseRejectedResult).reason) },
       objectives:objectives.status=== "fulfilled" ? objectives.value: { error: String((objectives as PromiseRejectedResult).reason) },
       signals:   signals.status   === "fulfilled" ? signals.value   : { error: String((signals as PromiseRejectedResult).reason) },
+      teamWork:  teamWork.status  === "fulfilled" ? teamWork.value  : { error: String((teamWork as PromiseRejectedResult).reason) },
     });
   } catch (err) {
     return NextResponse.json(

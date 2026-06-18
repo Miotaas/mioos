@@ -4,9 +4,9 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import {
-  Menu, X, Brain, Sparkles, LogOut, Settings,
-  Zap, DollarSign, Target, Users2, CheckSquare,
-  Calendar, MoreHorizontal,
+  Menu, X, Brain, Sparkles, LogOut,
+  Sun, Scale, Users2, Briefcase, Calendar, Settings,
+  MoreHorizontal,
 } from "lucide-react";
 
 async function logout() {
@@ -18,40 +18,40 @@ type ViewId = ReturnType<typeof useAppStore.getState>["activeView"];
 
 const navGroups: {
   label: string;
-  accentClass: string;
-  items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[];
+  items: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }>; accentColor: string }[];
 }[] = [
   {
-    label: "Command Center",
-    accentClass: "text-[#00D4FF]",
+    label: "",
     items: [
-      { id: "command",       label: "Command",       icon: Zap },
-      { id: "revenue",       label: "Revenue",       icon: DollarSign },
-      { id: "opportunities", label: "Opportunities", icon: Target },
+      { id: "today",  label: "Today",  icon: Sun,   accentColor: "#F59E0B" },
+      { id: "decide", label: "Decide", icon: Scale, accentColor: "#EF4444" },
     ],
   },
   {
-    label: "Operations",
-    accentClass: "text-[#6366f1]",
+    label: "Workforce",
     items: [
-      { id: "workforce",  label: "Workforce",  icon: Users2 },
-      { id: "decisions",  label: "Decisions",  icon: CheckSquare },
-      { id: "life",       label: "Life",       icon: Calendar },
+      { id: "workforce", label: "Workforce", icon: Users2,    accentColor: "#00D4FF" },
+      { id: "projects",  label: "Projects",  icon: Briefcase, accentColor: "#6366f1" },
+    ],
+  },
+  {
+    label: "Personal",
+    items: [
+      { id: "life", label: "Life", icon: Calendar, accentColor: "#8B5CF6" },
     ],
   },
   {
     label: "System",
-    accentClass: "text-text-ghost",
     items: [
-      { id: "settings", label: "Settings", icon: Settings },
+      { id: "settings", label: "Settings", icon: Settings, accentColor: "#6b7280" },
     ],
   },
 ];
 
-const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "command",   label: "Command",   icon: Zap },
-  { id: "workforce", label: "Teams",     icon: Users2 },
-  { id: "decisions", label: "Decisions", icon: CheckSquare },
+const bottomTabs: { id: ViewId; label: string; icon: React.ComponentType<{ className?: string }>; accentColor: string }[] = [
+  { id: "today",     label: "Today",     icon: Sun,    accentColor: "#F59E0B" },
+  { id: "workforce", label: "Workforce", icon: Users2, accentColor: "#00D4FF" },
+  { id: "decide",    label: "Decide",    icon: Scale,  accentColor: "#EF4444" },
 ];
 
 export function MobileNav() {
@@ -123,28 +123,38 @@ export function MobileNav() {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
           {navGroups.map((group) => (
-            <div key={group.label}>
-              <p className={cn("text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2", group.accentClass)}>
-                {group.label}
-              </p>
+            <div key={group.label || "__top__"}>
+              {group.label && (
+                <p className="text-[9px] uppercase tracking-[0.12em] font-medium px-3 mb-2 text-text-ghost">
+                  {group.label}
+                </p>
+              )}
               <div className="space-y-0.5">
-                {group.items.map(({ id, label, icon: Icon }) => {
+                {group.items.map(({ id, label, icon: Icon, accentColor }) => {
                   const active = activeView === id;
                   return (
                     <button
                       key={id}
                       onClick={() => navigate(id)}
+                      style={active ? {
+                        color: accentColor,
+                        backgroundColor: `${accentColor}1A`,
+                        borderColor: `${accentColor}26`,
+                      } : undefined}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all border",
                         active
-                          ? "bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/15"
+                          ? "border-transparent"
                           : "text-text-muted hover:text-text-secondary hover:bg-white/[0.03] border-transparent"
                       )}
                     >
                       <Icon className="w-[15px] h-[15px] flex-shrink-0" />
                       <span className="font-medium">{label}</span>
                       {active && (
-                        <div className="ml-auto w-1 h-1 rounded-full bg-[#00D4FF] opacity-70" />
+                        <div
+                          className="ml-auto w-1 h-1 rounded-full opacity-70"
+                          style={{ backgroundColor: accentColor }}
+                        />
                       )}
                     </button>
                   );
@@ -180,7 +190,7 @@ export function MobileNav() {
 
       {/* Bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0a0f1e]/95 backdrop-blur-xl border-t border-white/[0.05] flex items-center safe-area-bottom">
-        {bottomTabs.map(({ id, label, icon: Icon }) => {
+        {bottomTabs.map(({ id, label, icon: Icon, accentColor }) => {
           const active = activeView === id;
           return (
             <button
@@ -188,14 +198,13 @@ export function MobileNav() {
               onClick={() => setActiveView(id)}
               className="flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors"
             >
-              <Icon className={cn(
-                "w-5 h-5 transition-colors",
-                active ? "text-[#00D4FF]" : "text-text-ghost"
-              )} />
-              <span className={cn(
-                "text-[10px] font-medium transition-colors",
-                active ? "text-[#00D4FF]" : "text-text-ghost"
-              )}>
+              <span style={{ color: active ? accentColor : undefined }}>
+                <Icon className={cn("w-5 h-5 transition-colors", !active && "text-text-ghost")} />
+              </span>
+              <span
+                className={cn("text-[10px] font-medium transition-colors", !active && "text-text-ghost")}
+                style={{ color: active ? accentColor : undefined }}
+              >
                 {label}
               </span>
             </button>
