@@ -1029,6 +1029,7 @@ model WorkforceOutput {
   goalId         String?
   revenueEntryId String?
   opportunityId  String?   // Phase 8 — linked Opportunity
+  businessUnitId String?   // Phase 1 — owning business unit (BusinessUnit.id)
   reviewedAt     DateTime?
   approvedAt     DateTime?
   completedAt    DateTime?
@@ -1101,6 +1102,7 @@ model Approval {
   status          String    @default("pending") // pending | approved | rejected | auto_approved
   sourceTeamId    String?
   relatedOutputId String?
+  businessUnitId  String?   // Phase 1 — owning business unit (BusinessUnit.id)
   projectId       String?
   priority        String    @default("medium")  // low | medium | high | urgent
   decisionType    String    @default("founder_decision") // approve_outreach | approve_campaign | approve_content | approve_product | approve_deployment | approve_budget | approve_proposal | review_research | founder_decision
@@ -1140,6 +1142,7 @@ model RevenueEntry {
   projectId         String?
   sourceTeamId      String?
   opportunityId     String?   // Phase 9 — linked Opportunity
+  businessUnitId    String?   // Phase 1 — owning business unit (BusinessUnit.id)
   probability       Float?
   expectedCloseDate DateTime?
   createdAt         DateTime  @default(now())
@@ -1178,6 +1181,7 @@ model Assignment {
   goalId         String?
   revenueEntryId String?
   opportunityId  String?   // Phase 8 — linked Opportunity
+  businessUnitId String?   // Phase 1 — owning business unit (BusinessUnit.id)
   priority       String    @default("medium")  // low | medium | high | urgent
   createdAt      DateTime  @default(now())
   startedAt      DateTime?
@@ -1378,6 +1382,7 @@ model Opportunity {
   goalId                   String?
   revenueEntryId           String?
   sourceOutputId           String?   // WorkforceOutput that triggered this
+  businessUnitId           String?   // Phase 1 — owning business unit (BusinessUnit.id)
   workflowRoutedAt         DateTime? // set when workflow chain was created
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -1497,4 +1502,28 @@ model DevelopmentDraft {
   updatedAt               DateTime @updatedAt
 
   @@map("development_drafts")
+}
+
+// ── Phase 1 — Business Units ─────────────────────────────────────────
+// Canonical, founder-facing strategic & revenue boundaries.
+// These are the 4 businesses the founder owns. They are NOT implementation
+// boundaries — all real work runs on the shared platform; transactional
+// rows (Opportunity, Output, Approval, RevenueEntry, Assignment) carry an
+// optional businessUnitId so each unit can roll up its own P&L.
+// Kept additive and non-breaking: WorkforceTeam is unchanged.
+model BusinessUnit {
+  id            String   @id @default(cuid())
+  slug          String   @unique // ecommerce | automation-sales | content | capital
+  name          String
+  kind          String            // commerce | services | media | capital
+  status        String   @default("active")       // active | paused | inactive
+  autonomyLevel String   @default("conservative")  // off | conservative | normal | aggressive
+  budgetCents   Int      @default(0)               // spend governor (enforced later by Action engine)
+  objective     String?
+  currentFocus  String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("business_units")
 }

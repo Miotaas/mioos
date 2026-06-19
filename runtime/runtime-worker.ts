@@ -18,6 +18,7 @@ loadEnv(); // fallback to .env if .env.local doesn't cover everything
 import { prisma } from "./db";
 import { recordStartTime, recordHeartbeat } from "./runtime-health";
 import { runRuntimeLoop } from "./runtime-loop";
+import { installGlobalErrorGuards, safeTick } from "./error-guards";
 
 const INTERVAL_MS = Number(process.env.RUNTIME_INTERVAL_MS ?? "60000");
 const RUN_ONCE    = process.argv.includes("--once");
@@ -317,6 +318,8 @@ async function main(): Promise<void> {
   console.log(`AI:       ${process.env.ANTHROPIC_API_KEY ? "Claude (configured)" : process.env.OPENAI_API_KEY ? "OpenAI (configured)" : "Template mode (no key)"}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
+  installGlobalErrorGuards();
+
   await recordStartTime();
   await recordHeartbeat();
   await recoverStuckQueue();
@@ -325,7 +328,7 @@ async function main(): Promise<void> {
 
   if (RUN_ONCE) {
     console.log("[worker] Running single loop iteration…");
-    await runRuntimeLoop();
+    await safeTick("single", runRuntimeLoop);
     console.log("[worker] Done.");
     await prisma.$disconnect();
     process.exit(0);
@@ -333,11 +336,11 @@ async function main(): Promise<void> {
   }
 
   // First tick immediately
-  await runRuntimeLoop();
+  await safeTick("startup", runRuntimeLoop);
 
-  // Then on interval
-  const interval = setInterval(async () => {
-    await runRuntimeLoop();
+  // Then on interval — a failed tick is recorded but never stops the loop
+  const interval = setInterval(() => {
+    void safeTick("interval", runRuntimeLoop);
   }, INTERVAL_MS);
 
   // Graceful shutdown
