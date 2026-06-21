@@ -83,7 +83,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     replyTo: input.replyTo?.trim() || undefined,
   });
 
-  const accepted = Array.isArray(info.accepted) ? info.accepted.map((a) => String(a)) : [];
+  const accepted: string[] = Array.isArray(info.accepted)
+  ? info.accepted.map((a: unknown) => String(a))
+  : [];
   if (accepted.length === 0) {
     throw new Error(`SMTP server did not accept recipient ${to}`);
   }
