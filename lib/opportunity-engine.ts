@@ -50,8 +50,18 @@ Max 3 opportunities.
 RESEARCH OUTPUT:
 `;
 
+let _aiDisabledWarned = false;
 async function extractWithAI(content: string): Promise<RawOpportunity[]> {
-  if (!isAIEnabled()) return [];
+  if (!isAIEnabled()) {
+    if (!_aiDisabledWarned) {
+      _aiDisabledWarned = true;
+      console.warn(
+        "[opportunity-engine] AI provider disabled: opportunity extraction will not run. " +
+        "Set ANTHROPIC_API_KEY (or OPENAI_API_KEY / OPENROUTER_API_KEY, or AI_PROVIDER=ollama) to enable.",
+      );
+    }
+    return [];
+  }
 
   const ai = getAIProvider();
   const truncated = content.slice(0, 5000);

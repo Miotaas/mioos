@@ -286,12 +286,11 @@ async function initializeAutonomyConfigs(): Promise<void> {
       console.log(`[init] Created autonomy config for: ${team.name}`);
     }
 
-    // Create default objective if none exist
+    // Create default objective if none exist.
+    // Fire on the first evaluator tick so a fresh install is autonomous from
+    // boot — evaluateObjectives() skips objectives whose nextRunAt is still in
+    // the future, so a "tomorrow" default would idle the system for ~24h.
     if (team.objectives.length === 0) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-
       await prisma.teamObjective.create({
         data: {
           teamId:      team.id,
@@ -299,7 +298,7 @@ async function initializeAutonomyConfigs(): Promise<void> {
           description: defaults.objective,
           frequency:   defaults.frequency,
           active:      true,
-          nextRunAt:   tomorrow,
+          nextRunAt:   new Date(),
         },
       });
       console.log(`[init] Created objective for: ${team.name}`);

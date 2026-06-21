@@ -365,6 +365,20 @@ async function maybeRunAutonomousConditions(): Promise<void> {
   }
 }
 
+// ── Outbound Actions (Phase A) ────────────────────────────────────────
+
+async function runOutboundEmail(): Promise<void> {
+  try {
+    const { processOutboundEmail } = await import("../lib/actions/executor");
+    const r = await processOutboundEmail();
+    if (r.sent > 0 || r.failed > 0) {
+      console.log(`[loop] Outbound email: sent=${r.sent} failed=${r.failed} skipped=${r.skipped} (scanned ${r.scanned})`);
+    }
+  } catch (e) {
+    console.error("[loop] Outbound email failed:", e);
+  }
+}
+
 // ── Main Loop ─────────────────────────────────────────────────────────
 
 export async function runRuntimeLoop(): Promise<void> {
@@ -415,6 +429,9 @@ export async function runRuntimeLoop(): Promise<void> {
 
     // 14. Executive orchestrator — daily portfolio review, auto-reject weak opps, promote strong ones
     await maybeRunExecutiveOrchestrator();
+
+    // 15. Send approved outreach emails (Phase A — real action execution)
+    await runOutboundEmail();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`[loop] Tick complete in ${elapsed}s | queue: +${queueResult.processed} done, ${queueResult.failed} failed`);
