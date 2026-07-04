@@ -21,31 +21,21 @@ export const KEY_LAST_RESEARCH_RUN   = "runtime:lastAutonomousResearch";
 export const RESEARCH_INTERVAL_H     = Number(process.env.RESEARCH_INTERVAL_H ?? "6");
 
 const DISCOVERY_TOPICS: Record<string, string[]> = {
+  // Founder-aligned only. All discovery must serve Mio's real ventures (Founder Context).
   automation_service: [
-    "Automation services for logistics and dispatch companies",
-    "CRM automation tools for independent service businesses",
-    "Invoice and quote automation for tradespeople and contractors",
-    "Email follow-up automation for sales teams and agencies",
-    "Scheduling and booking automation for professional services",
+    "Local businesses with outdated websites needing an AI Website Refresh (website / webshop / maintenance)",
+    "Small businesses with manual inbox/quoting/invoicing work suited to Mail Co-Pilot or Custom AI Automation",
+    "Transport/logistics or warehouse SMBs with operational bottlenecks (AI Dispatch / Warehouse Assistant)",
   ],
   ecommerce_product: [
-    "Trending niche products with high margins and low competition",
-    "Digital products with zero fulfillment cost and recurring revenue",
-    "Print-on-demand opportunities in underserved niches",
-    "High-demand dropshipping products for European markets",
-    "Subscription box opportunities in specialty markets",
+    "Products for Mio's own supplier-fulfilled e-commerce store with clear margin and demand",
   ],
   saas_product: [
-    "SaaS tools missing from the small business automation market",
-    "AI-powered tools for solo founders and freelancers",
-    "B2B software opportunities in niche professional industries",
-    "Integration tools for popular platforms with missing connections",
-    "Micro-SaaS opportunities with low development cost and clear ROI",
+    "Customer segments and go-to-market wedges for AION (AI gateway / control plane)",
+    "Ideal-customer profiles and pricing wedges for Mail Co-Pilot (email AI subscription)",
   ],
   content_business: [
-    "High-monetization content niches with low competition",
-    "Newsletter opportunities in professional B2B markets",
-    "Educational content gaps in emerging technology fields",
+    "Content and audience-growth angles for Luxora and the YouTube automation channel",
   ],
 };
 

@@ -716,7 +716,7 @@ This agent produces recommendations only. No proposed actions.`,
   await prisma.agentSchedule.create({
     data: {
       agentId: dailyStrategyAgent.id,
-      enabled: true,
+      enabled: false,
       frequency: "daily",
       timeOfDay: "08:00",
       nextRunAt: tomorrow8am,

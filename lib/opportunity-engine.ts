@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { isAIEnabled, getAIProvider } from "@/lib/ai/provider";
+import { buildFounderContextPack } from "@/lib/founder-context";
 import { classifyOpportunityType } from "@/lib/workflow-router";
 import { auditLog } from "@/lib/auditLog";
 import { checkOpportunityCreationAllowed, checkWorkflowRoutingAllowed } from "@/lib/autonomy-throttle";
@@ -21,6 +22,7 @@ interface RawOpportunity {
 const EXTRACTION_PROMPT = `Analyze the research output below and extract any concrete, actionable business opportunities.
 
 Only extract opportunities that have clear evidence in the text — do not invent hypothetical ones.
+Only extract opportunities that serve the founder's real ventures in the Founder Context above. Discard anything matching a prohibited demo category.
 
 For each opportunity found, return a JSON array with objects:
 {
@@ -67,7 +69,8 @@ async function extractWithAI(content: string): Promise<RawOpportunity[]> {
   const truncated = content.slice(0, 5000);
 
   try {
-    const result = await ai.generate(EXTRACTION_PROMPT + truncated);
+    const fc = await buildFounderContextPack().catch(() => "");
+    const result = await ai.generate((fc ? fc + "\n\n" : "") + EXTRACTION_PROMPT + truncated);
     const jsonMatch = result.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return [];
 

@@ -9,9 +9,9 @@ function createPrismaClient() {
   // SQLite concurrency settings for the two-process architecture (Next.js + runtime worker).
   // WAL mode persists in the DB file — safe to run on every startup.
   if (process.env.DATABASE_URL?.startsWith("file:")) {
-    client.$executeRawUnsafe("PRAGMA journal_mode=WAL").catch(() => {});
-    client.$executeRawUnsafe("PRAGMA synchronous=NORMAL").catch(() => {});
-    client.$executeRawUnsafe("PRAGMA busy_timeout=5000").catch(() => {});
+    client.$queryRaw`PRAGMA journal_mode=WAL`.catch(() => {});
+    client.$queryRaw`PRAGMA synchronous=NORMAL`.catch(() => {});
+    client.$queryRaw`PRAGMA busy_timeout=5000`.catch(() => {});
   }
   return client;
 }

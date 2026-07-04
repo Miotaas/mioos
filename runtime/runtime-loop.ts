@@ -90,15 +90,11 @@ async function maybeRunExecutiveMonitor(): Promise<void> {
 // ── Schedule Runner (existing agent schedules) ────────────────────────
 
 async function runAgentSchedules(): Promise<void> {
-  try {
-    const { runDueSchedules } = await import("../lib/scheduleRunner");
-    const result = await runDueSchedules();
-    if (result.triggered > 0) {
-      console.log(`[schedules] Triggered ${result.triggered}, skipped ${result.skipped}, failed ${result.failed}`);
-    }
-  } catch (err) {
-    console.error("[schedules] Failed:", err);
-  }
+  // Legacy agent schedules are DISABLED. Autonomous work must originate only from
+  // Founder Context, Business Units and Project/Team objectives — not the legacy
+  // agentEngine (generic PLR/affiliate prompts). The agent system stays in place
+  // but no longer runs autonomously.
+  return;
 }
 
 // ── Handoff Executor ──────────────────────────────────────────────────

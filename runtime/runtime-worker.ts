@@ -40,7 +40,7 @@ const DEPT_DEFAULTS: Record<string, {
     approvalTriggers: [],
     maxDailyRuns:     3,
     objectiveTitle:   "Opportunity Discovery & Market Research",
-    objective:        "Discover and research concrete business opportunities: automation services for small businesses, e-commerce products, SaaS ideas, or content niches. For each opportunity found, provide: niche/industry, specific pain point, solution approach, revenue potential, target customer, competitive landscape, and a GO/NO-GO recommendation. Focus on opportunities with clear revenue potential within 90 days.",
+    objective:        "Discover concrete, revenue-bearing opportunities ONLY for the founder's real ventures (see Founder Context: AI Ventures — AION, Mail Co-Pilot, AI Website Agency; Content — Luxora, YouTube; E-commerce store; Capital research). For each: target customer, specific pain, solution, revenue potential, GO/NO-GO. Never generic SaaS, dropshipping, affiliate, restaurant, or market-discovery ideas.",
     frequency:        "daily",
   },
   sales: {
@@ -112,7 +112,7 @@ const DEPT_DEFAULTS: Record<string, {
     approvalTriggers: ["outreach", "campaign"],
     maxDailyRuns:     2,
     objectiveTitle:   "Revenue Opportunity Discovery",
-    objective:        "Identify and evaluate digital revenue opportunities including products, services, affiliate programs, and partnerships. Outreach requires founder approval.",
+    objective:        "Identify revenue opportunities strictly for the founder's real ventures per Founder Context. Outreach requires founder approval. No generic affiliate or partnership demos.",
     frequency:        "daily",
   },
 };
