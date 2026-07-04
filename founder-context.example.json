@@ -1,0 +1,132 @@
+{
+  "founder": {
+    "name": "Mio",
+    "role": "Solo founder & operator",
+    "location": "Netherlands / EU",
+    "workingStyle": "Ships fast, automation-first; external actions are approval-gated"
+  },
+  "founderPrinciple": {
+    "statement": "MioOS exists to maximize long-term equity value, not short-term activity.",
+    "prefer": [
+      "Recurring revenue",
+      "Software products",
+      "Scalable systems",
+      "Intellectual property",
+      "Automation",
+      "Assets that compound over time"
+    ],
+    "avoid": [
+      "Busywork",
+      "Low-margin service work",
+      "One-off projects that do not contribute to a larger strategic goal"
+    ],
+    "conflictRule": "The AI Website Agency exists primarily to generate cash flow and customer relationships that accelerate AION and Mail Co-Pilot. If short-term agency revenue conflicts with long-term software value creation, prioritize long-term software value creation unless immediate cash flow is required for business survival."
+  },
+  "revenueGoals": {
+    "currency": "EUR",
+    "currentMRR": 0,
+    "target90d": 1000,
+    "target12m": 10000
+  },
+  "priorityOrder": [
+    "AION",
+    "Mail Co-Pilot",
+    "AI Website Agency",
+    "Luxora / YouTube",
+    "E-commerce",
+    "Capital / Investing"
+  ],
+  "units": [
+    {
+      "slug": "ai-ventures",
+      "name": "AI Ventures",
+      "focus": "Build & sell AI software/services. Primary software focus: AION, then Mail Co-Pilot. AI Website Agency funds them."
+    },
+    {
+      "slug": "content",
+      "name": "Content / YouTube",
+      "focus": "Grow Luxora and YouTube automation channels into audience and revenue"
+    },
+    {
+      "slug": "ecommerce",
+      "name": "E-commerce",
+      "focus": "Current and future supplier-fulfilled stores"
+    },
+    {
+      "slug": "capital",
+      "name": "Capital / Investing",
+      "focus": "Research only: investing, crypto, public-markets research. No trading."
+    }
+  ],
+  "products": [
+    {
+      "name": "AION",
+      "unit": "ai-ventures",
+      "stage": null,
+      "model": "AI gateway / control plane (venture, never infrastructure)",
+      "note": "Primary software focus — priority #1."
+    },
+    {
+      "name": "Mail Co-Pilot",
+      "unit": "ai-ventures",
+      "stage": null,
+      "model": "Email AI assistant — subscription",
+      "note": "Primary software focus — priority #2."
+    },
+    {
+      "name": "AI Website Agency",
+      "unit": "ai-ventures",
+      "stage": null,
+      "model": "Done-for-you AI websites — service/project revenue",
+      "note": "Cash-generation vehicle (priority #3): funds AION & Mail Co-Pilot development. Do NOT prioritize above AION or Mail Co-Pilot."
+    },
+    {
+      "name": "Luxora",
+      "unit": "content",
+      "stage": null,
+      "model": "Content brand / channel"
+    }
+  ],
+  "projects": [
+    "AION go-to-market",
+    "Mail Co-Pilot launch",
+    "AI Website Agency pipeline",
+    "Luxora",
+    "YouTube channel growth",
+    "E-commerce store",
+    "Investing portfolio",
+    "Crypto research",
+    "Public markets research"
+  ],
+  "bottlenecks": [
+    "No paying customers yet",
+    "Distribution / reaching real buyers",
+    "Founder approval bandwidth",
+    "Execution focus split across multiple ventures"
+  ],
+  "capitalPolicy": {
+    "mode": "research-only",
+    "may": [
+      "Perform market research",
+      "Build watchlists",
+      "Develop investment theses",
+      "Perform risk analysis",
+      "Identify sectors and trends"
+    ],
+    "mustNot": [
+      "Place trades",
+      "Allocate capital",
+      "Recommend buy/sell actions",
+      "Generate trading instructions"
+    ]
+  },
+  "doNotGenerate": [
+    "Toast POS opportunities",
+    "Restaurant scheduling SaaS",
+    "Labor compliance SaaS",
+    "Generic affiliate marketing opportunities",
+    "Generic 'top 10 SaaS ideas'",
+    "Generic market discovery exercises",
+    "Generic automation opportunities not tied to a real venture"
+  ]
+}

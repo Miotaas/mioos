@@ -1,5 +1,6 @@
 import { getAIProvider, isAIEnabled } from "@/lib/ai/provider";
 import { getDepartmentPrompt, STRUCTURED_OUTPUT_INSTRUCTIONS, ARTIFACT_PROMPT_ADDITIONS } from "@/lib/ai/prompts";
+import { buildFounderContextPack } from "@/lib/founder-context";
 
 export type TeamDepartmentType =
   | "research" | "sales" | "marketing" | "content" | "operations"
@@ -79,12 +80,17 @@ export async function generateOutputContent(opts: GenerateOptions): Promise<stri
       systemPrompt = INTERNAL_ANALYSIS_SYSTEM_PROMPT;
       userPrompt = buildInternalAnalysisPrompt(title, description, internalContext);
     } else {
-      // External request: standard department prompt + artifact-type additions
+      // External request: standard department prompt + artifact-type additions,
+      // grounded in the Founder Context so every output targets Mio's real
+      // priorities (AI Ventures: AION / Mail Co-Pilot / AI Website Agency,
+      // Content/YouTube, E-commerce, Capital) instead of generic markets.
       systemPrompt = getDepartmentPrompt(departmentType);
+      const founderNote = await buildFounderContextPack();
       const basePrompt = buildAIPrompt(title, description, outputType, priority);
       const memoryNote = memoryContext ? `\n\n## Context from Previous Work\n${memoryContext}` : "";
       const artifactNote = ARTIFACT_PROMPT_ADDITIONS[departmentType.toLowerCase()] ?? "";
-      userPrompt = basePrompt + memoryNote + artifactNote + STRUCTURED_OUTPUT_INSTRUCTIONS;
+      const founderBlock = founderNote ? founderNote + "\n\n---\n\n" : "";
+      userPrompt = founderBlock + basePrompt + memoryNote + artifactNote + STRUCTURED_OUTPUT_INSTRUCTIONS;
     }
 
     try {

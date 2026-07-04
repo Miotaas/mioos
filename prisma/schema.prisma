@@ -535,6 +535,26 @@ model Prospect {
   createdByAgentId    String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  // --- AI Ventures Revenue Engine (Sprint 1) ---
+  location              String?
+  websiteScore          Int?
+  trustScore            Int?
+  conversionScore       Int?
+  mobileScore           Int?
+  speedEstimate         String?
+  ctaQuality            String?
+  painPoints            String?   // JSON array of strings
+  opportunities         String?   // JSON array of strings
+  recommendedOffer      String?
+  estimatedSetupValue   Float?
+  estimatedMonthlyValue Float?
+  auditSummary          String?   // mini-audit markdown
+  outreachDraft         String?
+  linkedinDraft         String?
+  followupDraft         String?
+  priorityScore         Int?
+  businessUnitId        String?   // ties prospect to the AI Ventures unit
+  revenueTrack          String?   // "website" | "automation" — separates the two revenue lanes
 
   @@map("prospects")
 }

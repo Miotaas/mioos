@@ -1,18 +1,13 @@
 /**
- * Phase 1 — canonical Business Unit definitions.
+ * Canonical Business Unit definitions — reality-aligned (4 units).
  *
- * These are the 4 businesses the founder owns. They are strategic / revenue /
- * UI boundaries — NOT implementation boundaries. All real work runs on the
- * shared platform; transactional rows carry an optional businessUnitId so each
- * unit rolls up its own P&L.
- *
- * NOTE: the legacy WorkforceTeam table uses functional slugs (executive,
- * research, commerce, sales, marketing, content, ...) AND the team-behaviors
- * config uses business-unit slugs (ecommerce, automation-sales, youtube,
- * crypto-stock). The maps below reconcile both onto the 4 canonical units.
+ * AI Ventures is the home for AION, Mail Co-Pilot, AI Website Agency and future
+ * AI products (these are PROJECTS/ventures under the unit, not separate units).
+ * Business units are strategic / revenue / UI boundaries — not implementation
+ * boundaries. Transactional rows carry businessUnitId for per-unit P&L rollups.
  */
 
-export type BusinessUnitKind = "commerce" | "services" | "media" | "capital";
+export type BusinessUnitKind = "services" | "media" | "commerce" | "capital";
 
 export interface BusinessUnitDef {
   slug: string;
@@ -24,29 +19,29 @@ export interface BusinessUnitDef {
 
 export const BUSINESS_UNITS: BusinessUnitDef[] = [
   {
-    slug: "ecommerce",
-    name: "E-Commerce",
-    kind: "commerce",
-    objective: "Find and launch profitable supplier-fulfilled product opportunities.",
+    slug: "ai-ventures",
+    name: "AI Ventures",
+    kind: "services",
+    objective: "Build and sell AI software/services: AION, Mail Co-Pilot, AI Website Agency, and future AI products.",
     sortOrder: 1,
   },
   {
-    slug: "automation-sales",
-    name: "Automation Sales",
-    kind: "services",
-    objective: "Discover business pain, design sellable automations, win service customers.",
+    slug: "content",
+    name: "Content / YouTube",
+    kind: "media",
+    objective: "Grow YouTube and automation content channels into audience and revenue.",
     sortOrder: 2,
   },
   {
-    slug: "content",
-    name: "Content / Media",
-    kind: "media",
-    objective: "Build content channels and media assets that grow audience and revenue.",
+    slug: "ecommerce",
+    name: "E-commerce",
+    kind: "commerce",
+    objective: "Find, validate and launch profitable supplier-fulfilled product stores.",
     sortOrder: 3,
   },
   {
     slug: "capital",
-    name: "Capital / Trading",
+    name: "Capital / Investing",
     kind: "capital",
     objective: "Grow capital responsibly. Research / paper mode by default.",
     sortOrder: 4,
@@ -55,30 +50,42 @@ export const BUSINESS_UNITS: BusinessUnitDef[] = [
 
 export const BUSINESS_UNIT_SLUGS = BUSINESS_UNITS.map((b) => b.slug);
 
-/** Legacy WorkforceTeam.slug (or departmentType) → canonical BU slug. Unmapped → not attributed. */
+/**
+ * Legacy slugs that must be renamed to the canonical slug on migration.
+ * Preserves the existing BusinessUnit row id so attribution survives.
+ */
+export const BUSINESS_UNIT_RENAMES: Record<string, string> = {
+  "automation-sales": "ai-ventures",
+};
+
+/** Functional WorkforceTeam.slug (or departmentType) → canonical BU slug. */
 export const TEAM_SLUG_TO_BU: Record<string, string> = {
-  // direct business-unit slugs (team-behaviors style)
-  "ecommerce": "ecommerce",
-  "automation-sales": "automation-sales",
-  "youtube": "content",
-  "crypto-stock": "capital",
-  // functional department slugs (seed style)
-  "commerce": "ecommerce",
-  "sales": "automation-sales",
+  // AI Ventures — the AI software/services business
+  "ai-ventures": "ai-ventures",
+  "website-revenue": "ai-ventures", "automation-revenue": "ai-ventures",
+  "automation-sales": "ai-ventures",
+  "sales": "ai-ventures",
+  "marketing": "ai-ventures",
+  "development": "ai-ventures",
+  // Content / YouTube
   "content": "content",
-  "marketing": "content",
+  "youtube": "content",
+  // E-commerce
+  "ecommerce": "ecommerce",
+  "commerce": "ecommerce",
+  // Capital / Investing
   "capital": "capital",
-  // executive / research / operations / support / development → intentionally unmapped
+  "crypto-stock": "capital",
+  // research / executive / operations / support → cross-cutting, intentionally unmapped
 };
 
 /** Opportunity.opportunityType (or assignedWorkflowTemplate) → canonical BU slug. */
 export const OPPORTUNITY_TYPE_TO_BU: Record<string, string> = {
+  "automation_service": "ai-ventures",
+  "saas_product": "ai-ventures",
+  "internal_tool": "ai-ventures",
   "ecommerce_product": "ecommerce",
   "ecommerce": "ecommerce",
-  "automation_service": "automation-sales",
-  "saas_product": "automation-sales",
-  "internal_tool": "automation-sales",
-  "automation_service_template": "automation-sales",
   "content_business": "content",
   "content": "content",
 };
