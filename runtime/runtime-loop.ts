@@ -363,6 +363,38 @@ async function maybeRunAutonomousConditions(): Promise<void> {
 
 // ── Outbound Actions (Phase A) ────────────────────────────────────────
 
+async function runFollowups(): Promise<void> {
+  try {
+    const { scheduleFollowups } = await import("../lib/actions/followup-scheduler");
+    const r = await scheduleFollowups();
+    if (r.queued > 0 || r.closed > 0) console.log(`[loop] Follow-ups: queued=${r.queued} closed=${r.closed} (scanned ${r.scanned})`);
+  } catch (e) {
+    console.error("[loop] Follow-up scheduling failed:", e);
+  }
+}
+
+async function runDiscovery(): Promise<void> {
+  try {
+    const { discoverProspects, processNewProspects } = await import("../lib/ai-ventures/discovery");
+    const d = await discoverProspects();
+    if (d.created > 0) console.log(`[loop] Discovery: created ${d.created} prospect(s)`);
+    const a = await processNewProspects();
+    if (a.analyzed > 0) console.log(`[loop] Discovery: analyzed ${a.analyzed} new prospect(s) → audit + outreach draft + approval`);
+  } catch (e) {
+    console.error("[loop] Discovery failed:", e);
+  }
+}
+
+async function runReplyDetection(): Promise<void> {
+  try {
+    const { detectReplies } = await import("../lib/actions/reply-matcher");
+    const r = await detectReplies();
+    if (r.replies > 0) console.log(`[loop] Replies detected: ${r.replies} (scanned ${r.scanned}) → prospects advanced to "interested"`);
+  } catch (e) {
+    console.error("[loop] Reply detection failed:", e);
+  }
+}
+
 async function runOutboundEmail(): Promise<void> {
   try {
     const { processOutboundEmail } = await import("../lib/actions/executor");
@@ -372,6 +404,22 @@ async function runOutboundEmail(): Promise<void> {
     }
   } catch (e) {
     console.error("[loop] Outbound email failed:", e);
+  }
+}
+
+async function runOutboundInvoices(): Promise<void> {
+  try {
+    const { processApprovedInvoices } = await import("../lib/actions/invoice-executor");
+    const inv = await processApprovedInvoices();
+    if (inv.invoiced > 0 || inv.failed > 0) console.log(`[loop] Invoices: created=${inv.invoiced} failed=${inv.failed} skipped=${inv.skipped}`);
+
+    const { processApprovedSubscriptions, processApprovedCancellations } = await import("../lib/actions/subscription-executor");
+    const sub = await processApprovedSubscriptions();
+    if (sub.started > 0 || sub.failed > 0) console.log(`[loop] Subscriptions: started=${sub.started} failed=${sub.failed} skipped=${sub.skipped}`);
+    const can = await processApprovedCancellations();
+    if (can.canceled > 0 || can.failed > 0) console.log(`[loop] Cancellations: canceled=${can.canceled} failed=${can.failed}`);
+  } catch (e) {
+    console.error("[loop] Revenue action processing failed:", e);
   }
 }
 
@@ -402,6 +450,15 @@ export async function runRuntimeLoop(): Promise<void> {
     // 6. Collect and process intelligence signals (internal + external)
     await runSignalCollection();
 
+    // 6b. Detect replies to sent outreach → advance prospects (hottest revenue signal)
+    await runReplyDetection();
+
+    // 6c. Schedule follow-ups for no-reply outreach (draft + queue approval)
+    await runFollowups();
+
+    // 6d. Autonomous lead discovery → analyze new prospects (top of the Acquire loop)
+    await runDiscovery();
+
     // 7. Approval triage — score risk, auto-approve safe internal approvals
     await runApprovalTriage();
 
@@ -428,6 +485,9 @@ export async function runRuntimeLoop(): Promise<void> {
 
     // 15. Send approved outreach emails (Phase A — real action execution)
     await runOutboundEmail();
+
+    // 16. Create approved invoices (Phase B — real revenue action)
+    await runOutboundInvoices();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`[loop] Tick complete in ${elapsed}s | queue: +${queueResult.processed} done, ${queueResult.failed} failed`);

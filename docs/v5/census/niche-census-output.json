@@ -1,0 +1,159 @@
+{
+  "generated": "2026-09-05T20:00:46.368Z",
+  "quotaUnitsUsed": 1306,
+  "koreanBaseline": {
+    "channels": 160,
+    "newUnder90d": 22,
+    "newUnder90d_publishingHard": 12,
+    "newUnder90d_medianSubs": 9,
+    "newUnder90d_medianViews": 73,
+    "newUnder90d_above1000subs": 2,
+    "pctUnder1yr": 34
+  },
+  "niches": {
+    "ambient_sleep": {
+      "channels": 65,
+      "newUnder90d": 24,
+      "newUnder90d_publishingHard": 2,
+      "newUnder90d_medianSubs": 0,
+      "newUnder90d_medianViews": 8,
+      "newUnder90d_above1000subs": 0,
+      "pctUnder1yr": 49,
+      "established5k": 18,
+      "established5k_medianVps": 0.06,
+      "topChannels": [
+        {
+          "t": "Soothing Relaxation",
+          "subs": 12100000,
+          "med": 167250,
+          "vps": 0.014,
+          "age": 4298
+        },
+        {
+          "t": "Relaxing White Noise",
+          "subs": 4500000,
+          "med": 19998,
+          "vps": 0.004,
+          "age": 5266
+        },
+        {
+          "t": "Best Baby Lullabies",
+          "subs": 2260000,
+          "med": 91930,
+          "vps": 0.041,
+          "age": 4553
+        },
+        {
+          "t": "The Relaxed Guy",
+          "subs": 1630000,
+          "med": 12823,
+          "vps": 0.008,
+          "age": 4344
+        },
+        {
+          "t": "Calm",
+          "subs": 1310000,
+          "med": 6523,
+          "vps": 0.005,
+          "age": 5367
+        }
+      ]
+    },
+    "consumer_cost": {
+      "channels": 72,
+      "newUnder90d": 12,
+      "newUnder90d_publishingHard": 2,
+      "newUnder90d_medianSubs": 1,
+      "newUnder90d_medianViews": 17,
+      "newUnder90d_above1000subs": 1,
+      "pctUnder1yr": 19,
+      "established5k": 50,
+      "established5k_medianVps": 0.049,
+      "topChannels": [
+        {
+          "t": "Nick DiGiovanni",
+          "subs": 45700000,
+          "med": 23420174,
+          "vps": 0.512,
+          "age": 3875
+        },
+        {
+          "t": "Kurzgesagt – In a Nutshell",
+          "subs": 25500000,
+          "med": 1391888,
+          "vps": 0.055,
+          "age": 4806
+        },
+        {
+          "t": "Veritasium",
+          "subs": 21200000,
+          "med": 3137310,
+          "vps": 0.148,
+          "age": 5891
+        },
+        {
+          "t": "Business Insider",
+          "subs": 10600000,
+          "med": 27205,
+          "vps": 0.003,
+          "age": 6182
+        },
+        {
+          "t": "Mark Tilbury",
+          "subs": 8920000,
+          "med": 1301965,
+          "vps": 0.146,
+          "age": 4557
+        }
+      ]
+    },
+    "automotive": {
+      "channels": 63,
+      "newUnder90d": 7,
+      "newUnder90d_publishingHard": 2,
+      "newUnder90d_medianSubs": 3,
+      "newUnder90d_medianViews": 13,
+      "newUnder90d_above1000subs": 0,
+      "pctUnder1yr": 33,
+      "established5k": 31,
+      "established5k_medianVps": 0.099,
+      "topChannels": [
+        {
+          "t": "Scotty Kilmer",
+          "subs": 6660000,
+          "med": 88578,
+          "vps": 0.013,
+          "age": 6957
+        },
+        {
+          "t": "The Ramsey Show Highlights",
+          "subs": 4590000,
+          "med": 77767,
+          "vps": 0.017,
+          "age": 4873
+        },
+        {
+          "t": "Humphrey Yang",
+          "subs": 2080000,
+          "med": 83820,
+          "vps": 0.04,
+          "age": 5756
+        },
+        {
+          "t": "The Car Care Nut",
+          "subs": 1820000,
+          "med": 157210,
+          "vps": 0.086,
+          "age": 2280
+        },
+        {
+          "t": "LegitStreetCars",
+          "subs": 1550000,
+          "med": 686924,
+          "vps": 0.443,
+          "age": 3791
+        }
+      ]
+    }
+  }
+}

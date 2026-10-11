@@ -15,7 +15,8 @@
  *   - SMTP misconfiguration fails loudly and is recorded — never a silent success.
  */
 import { prisma } from "@/lib/db";
-import { sendEmail, isSmtpConfigured, isValidEmail } from "@/lib/actions/email-send";
+import { isValidEmail } from "@/lib/actions/email-send";
+import { getEmailProvider } from "@/lib/providers";
 
 const BATCH_SIZE = Math.max(1, Number(process.env.OUTBOUND_EMAIL_BATCH ?? "10"));
 
@@ -92,11 +93,12 @@ export async function processOutboundEmail(): Promise<OutboundSummary> {
     });
 
     try {
-      if (!isSmtpConfigured()) {
-        throw new Error("SMTP not configured — cannot send approved outreach");
+      const emailProvider = getEmailProvider();
+      if (!emailProvider.isConfigured()) {
+        throw new Error("Email provider not configured — cannot send approved outreach");
       }
 
-      const { messageId } = await sendEmail({
+      const { messageId } = await emailProvider.send({
         to: draft.recipientEmail as string,
         subject: (draft.subject?.trim() || draft.title),
         text: bodyToText(draft.body),

@@ -12,6 +12,7 @@
 import { prisma } from "@/lib/db";
 import { isAIEnabled, getAIProvider } from "@/lib/ai/provider";
 import { matchOffer, estimateDealValue, getOffer, trackForOffer } from "@/lib/ai-ventures/offers";
+import { analyzeWebsite } from "@/lib/ai-ventures/website-analyzer";
 
 interface Analysis {
   websiteScore: number; trustScore: number; conversionScore: number; mobileScore: number;
@@ -116,7 +117,18 @@ export async function analyzeProspect(prospectId: string): Promise<AnalyzeResult
   const p = await prisma.prospect.findUnique({ where: { id: prospectId } });
   if (!p) throw new Error(`Prospect ${prospectId} not found`);
 
-  const a = isAIEnabled() ? await aiAnalysis(p) : heuristicAnalysis(p);
+  // Prefer REAL measured signals from the live site; fall back to AI estimate, then heuristic.
+  let a: Analysis;
+  const measured = p.website ? await analyzeWebsite(p.website).catch(() => null) : null;
+  if (measured) {
+    a = measured;
+  } else if (isAIEnabled()) {
+    a = await aiAnalysis(p);
+  } else {
+    a = heuristicAnalysis(p);
+  }
+  // Autonomous contact: if we have no email but the site listed one, use it.
+  const resolvedEmail = p.email ?? measured?.contactEmail ?? null;
   const offerId = matchOffer({ industry: p.industry, painPoints: a.painPoints, websiteScore: a.websiteScore });
   const offer = getOffer(offerId)!;
   const track = trackForOffer(offerId); // "website" | "automation"
@@ -138,6 +150,7 @@ export async function analyzeProspect(prospectId: string): Promise<AnalyzeResult
       estimatedSetupValue: value.setup, estimatedMonthlyValue: value.monthly,
       auditSummary: audit, outreachDraft: drafts.email, linkedinDraft: drafts.linkedin, followupDraft: drafts.followup,
       priorityScore: priority, businessUnitId: bu?.id ?? null, revenueTrack: track, status: "awaiting_approval",
+      ...(resolvedEmail && !p.email ? { email: resolvedEmail } : {}),
     },
   });
 
@@ -166,6 +179,22 @@ export async function analyzeProspect(prospectId: string): Promise<AnalyzeResult
       businessUnitId: bu?.id ?? null, relatedOutputId: outputId,
     },
   });
+
+  // Create the sendable draft NOW, with a recipient, so approval -> runtime send actually works.
+  // Without a recipient email the outbound executor skips it (that was the send blocker).
+  if (resolvedEmail) {
+    await prisma.emailDraft.create({
+      data: {
+        title: `Outreach: ${p.companyName}`,
+        subject: `A quick idea for ${p.companyName}`,
+        body: drafts.email.replace(/^Subject:.*\n+/, ""),
+        recipientName: p.companyName,
+        recipientEmail: resolvedEmail,
+        status: "draft",
+        sourceApprovalId: approval.id,
+      },
+    });
+  }
 
   return { prospectId, revenueTrack: track, recommendedOffer: offer.name, setup: value.setup, monthly: value.monthly, approvalId: approval.id };
 }

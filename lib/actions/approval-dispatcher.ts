@@ -88,6 +88,24 @@ type Ctx = {
 async function handleOutreach(ctx: Ctx): Promise<ActionResultPayload> {
   const { approval, output, opportunity } = ctx;
   const projectId = await maybeCreateProject(ctx);
+
+  // If a recipient-bearing draft already exists (AI Ventures prospect engine),
+  // reuse it so the runtime can send it — do not create a second, recipient-less draft.
+  const existingDraft = await prisma.emailDraft.findFirst({ where: { sourceApprovalId: approval.id } });
+  if (existingDraft) {
+    return prisma.actionResult.create({
+      data: {
+        approvalId: approval.id,
+        actionType: approval.decisionType,
+        status: "dispatched",
+        title: "Outreach approved — draft ready to send",
+        description: `Draft: "${existingDraft.title}"${existingDraft.recipientEmail ? ` → ${existingDraft.recipientEmail}` : " (no recipient — add one to send)"}`,
+        targetType: "email_draft",
+        targetId: existingDraft.id,
+      },
+    });
+  }
+
   const draft = await prisma.emailDraft.create({
     data: {
       title: approval.title,

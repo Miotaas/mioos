@@ -1165,6 +1165,13 @@ model RevenueEntry {
   businessUnitId    String?   // Phase 1 — owning business unit (BusinessUnit.id)
   probability       Float?
   expectedCloseDate DateTime?
+  externalRef       String?   // Phase B — Stripe invoice/payment id
+  paidAt            DateTime? // Phase B — set by the payment webhook on payment
+  billingType          String?   // Phase B — "one_off" | "subscription"
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String?   // active | past_due | canceled | incomplete
+  mrrCents             Int?      // monthly recurring amount in cents (subscription rows)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
