@@ -474,7 +474,7 @@ export async function runRuntimeLoop(): Promise<void> {
     // 11. Route newly discovered opportunities to sequential pipeline chains
     await runOpportunityRouter();
 
-    // 12. Check autonomous conditions (revenue gap, ecommerce goals, stalled projects)
+    // 12. Check autonomous conditions (revenue gap, stalled projects, pipeline gap)
     await maybeRunAutonomousConditions();
 
     // 13. Capital allocator — score ROI, update team focus, recommend effort distribution

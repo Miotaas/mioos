@@ -3,7 +3,8 @@
  *
  * Stored in SystemConfig (key "founder_context") and injected into every
  * autonomous output. Encodes Mio's founder principle, ventures, effort priority,
- * revenue goals, the capital research-only policy, and prohibited demo categories.
+ * revenue goals, the dormant-unit policy (Mio Capital Lab: no autonomous work), and
+ * prohibited categories. Subordinate to docs/MIOOS_CONSTITUTION.md.
  */
 import { prisma } from "@/lib/db";
 import { buildInternalContextPack } from "@/lib/intelligence/internal-context";
@@ -76,7 +77,7 @@ export async function buildFounderContextPack(): Promise<string> {
     if (ctx.bottlenecks?.length) lines.push("", `Current bottlenecks: ${ctx.bottlenecks.join("; ")}`);
 
     if (ctx.capitalPolicy) {
-      lines.push("", "## Capital / Investing policy — RESEARCH ONLY");
+      lines.push("", "## Mio Capital Lab — DORMANT: no autonomous work");
       if (ctx.capitalPolicy.mustNot?.length) { lines.push("The workforce MUST NOT:"); for (const m of ctx.capitalPolicy.mustNot) lines.push(`- ${m}`); }
       if (ctx.capitalPolicy.may?.length) { lines.push("The workforce MAY:"); for (const m of ctx.capitalPolicy.may) lines.push(`- ${m}`); }
     }
