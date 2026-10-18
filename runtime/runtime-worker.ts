@@ -40,7 +40,7 @@ const DEPT_DEFAULTS: Record<string, {
     approvalTriggers: [],
     maxDailyRuns:     3,
     objectiveTitle:   "Opportunity Discovery & Market Research",
-    objective:        "Discover concrete, revenue-bearing opportunities ONLY for the founder's real ventures (see Founder Context: AI Ventures — AION, Mail Co-Pilot, AI Website Agency; Content — Luxora, YouTube; E-commerce store; Capital research). For each: target customer, specific pain, solution, revenue potential, GO/NO-GO. Never generic SaaS, dropshipping, affiliate, restaurant, or market-discovery ideas.",
+    objective:        "Discover concrete, revenue-bearing Mio Solutions opportunities. Priority portfolio first: AION, Mail Co-Pilot, AI Website Agency. New AI, software or automation opportunities are allowed only with external evidence (source URLs) and a credible monetization path, classified as software venture, SaaS product, AI product, automation service, productized service, or internal tool with commercialization potential. Never generic ideation, affiliate, media/content businesses, e-commerce products or capital/trading. No work for Mio Media, Mio Commerce or Mio Capital Lab (dormant units). For each: target customer, specific pain, solution, evidence, monetization path, revenue estimate labelled as an estimate, GO/NO-GO.",
     frequency:        "daily",
   },
   sales: {

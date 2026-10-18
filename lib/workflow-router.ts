@@ -1,9 +1,14 @@
 export type OpportunityType =
-  | "automation_service"
-  | "ecommerce_product"
+  // Mio Solutions types (Constitution v1)
+  | "software_venture"
   | "saas_product"
-  | "content_business"
-  | "internal_tool";
+  | "ai_product"
+  | "automation_service"
+  | "productized_service"
+  | "internal_tool"
+  // Legacy types — never created or routed for Mio Solutions; kept so old rows type-check
+  | "ecommerce_product"
+  | "content_business";
 
 export interface WorkflowStep {
   departmentType: string;
@@ -48,6 +53,9 @@ export function classifyOpportunityType(title: string, description?: string | nu
     saas_product:       countKeywords(text, SAAS_KEYWORDS),
     content_business:   countKeywords(text, CONTENT_KEYWORDS),
     internal_tool:      0,
+    software_venture:   0,
+    ai_product:         0,
+    productized_service: 0,
   };
 
   const best = (Object.entries(scores) as [OpportunityType, number][])
@@ -64,6 +72,7 @@ export function getWorkflowChain(
   const d = opportunity.description ?? "";
 
   switch (type) {
+    case "productized_service":
     case "automation_service":
       return [
         {
@@ -224,6 +233,8 @@ export function getWorkflowChain(
         },
       ];
 
+    case "software_venture":
+    case "ai_product":
     case "saas_product":
       return [
         {
@@ -346,16 +357,21 @@ export function getWorkflowChain(
           requiresApprovalNote: "Significant builds require founder approval if external cost is involved.",
         },
       ];
+    default:
+      return [];
   }
 }
 
 export function workflowTypeLabel(type: OpportunityType): string {
   const labels: Record<OpportunityType, string> = {
-    automation_service: "Automation Service",
-    ecommerce_product:  "E-commerce Product",
-    saas_product:       "SaaS Product",
-    content_business:   "Content Business",
-    internal_tool:      "Internal Tool",
+    software_venture:    "Software Venture",
+    saas_product:        "SaaS Product",
+    ai_product:          "AI Product",
+    automation_service:  "Automation Service",
+    productized_service: "Productized Service",
+    internal_tool:       "Internal Tool",
+    ecommerce_product:   "E-commerce Product (legacy)",
+    content_business:    "Content Business (legacy)",
   };
   return labels[type] ?? type;
 }

@@ -33,7 +33,7 @@ const TEAM_SLUG_TO_BU: Record<string, string> = {
 };
 
 const OPP_TYPE_TO_BU: Record<string, string> = {
-  "automation_service": "ai-ventures", "saas_product": "ai-ventures", "internal_tool": "ai-ventures",
+  "automation_service": "ai-ventures", "saas_product": "ai-ventures", "internal_tool": "ai-ventures", "software_venture": "ai-ventures", "ai_product": "ai-ventures", "productized_service": "ai-ventures",
   "ecommerce_product": "ecommerce", "ecommerce": "ecommerce",
   "content_business": "content", "content": "content",
 };
