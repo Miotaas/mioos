@@ -1,61 +1,171 @@
-# MioOS — Final Architecture (North Star)
+# MioOS — Working Rules for Claude
+
+**`docs/MIOOS_CONSTITUTION.md` is binding and outranks this file.** Read it before any architecture, schema, runtime or product work. If anything here conflicts with it, the Constitution wins. Do not reinterpret or modify the Constitution without explicit founder instruction.
+
+`docs/ARCHITECTURE_REALITY_AUDIT.md` (2026-10-11) describes what the code actually does today. The code does **not** yet comply with the Constitution. Do not assume a rule below is enforced because it is written here.
+
+---
 
 ## Core Identity
 
-MioOS is a **Personal AI Command Center**.
+MioOS is an **autonomous digital holding operating system**: it builds, operates, supervises and improves revenue-generating digital business units from one central system.
 
-MioOS is NOT:
-- Founder OS
-- ERP / CRM
-- Developer platform
-- Agent playground
-- Monitoring dashboard
-- Infrastructure management tool
+MioOS is NOT primarily:
+- A task manager
+- A generic agent playground
+- A CRM / ERP
+- A developer dashboard
+- A collection of disconnected automations
+- A simulation pretending to operate businesses
 
-MioOS IS:
-- Personal AI Command Center
-- Autonomous Opportunity Engine
-- Revenue Generation System
-- Workforce Management System
-- Decision & Approval Center
-- Personal + Business Operating Layer
+The founder supervises through outcomes and decisions, not individual agent tasks.
 
-**The purpose of MioOS:**
+---
 
-Generate opportunities.
-Generate revenue.
-Prepare execution.
-Escalate decisions when required.
+## Canonical Business Units
 
-When the founder opens MioOS they should see:
-- What opportunities were found
-- What revenue opportunities exist
-- What work was completed
-- What decisions require approval
-- What the AI workforce recommends next
+Exactly four. These are the only business identities.
+
+| Unit | Slug | Status |
+|---|---|---|
+| Mio Solutions | `mio-solutions` | **operational** — the only unit allowed autonomous runtime and budget |
+| Mio Media | `mio-media` | **dormant** — 0 autonomous runtime, 0 budget |
+| Mio Commerce | `mio-commerce` | **dormant** — 0 autonomous runtime, 0 budget |
+| Mio Capital Lab | `mio-capital` | **dormant** — 0 autonomous runtime, 0 budget |
+
+- Do not build features, schedulers, prompts, connectors or seed data that generate autonomous work for a dormant unit. Activation needs a founder amendment to the Constitution (§2.0).
+- Media and Capital are deliberately re-included as identities; this overrules older decisions that cut them (Constitution §2.0.1). They remain dormant.
+- AION, Mail Co-Pilot and the AI Website Agency are ventures/offers **inside Mio Solutions**. They are not Business Units.
+- Mio Capital Lab, when activated: research + backtesting + paper trading only. Real-money trading is prohibited.
+
+### Mio Solutions opportunity scope
+
+AION, Mail Co-Pilot and the AI Website Agency are the **current priority portfolio, not the scope boundary**. Mio Solutions continuously discovers, validates and develops new AI, software and automation opportunities that fit its mission. Priority ventures route first.
+
+A new Mio Solutions opportunity must be classified as exactly one of: `software_venture`, `saas_product`, `ai_product`, `automation_service`, `productized_service`, `internal_tool` (only with a commercialization path). It needs a credible monetization path and real external evidence: source URLs that MioOS actually retrieved through its web-search connector (`lib/solutions-scope.ts`). Opportunities in the priority portfolio without verified evidence are admitted with confidence capped at 3.
+
+MioOS may autonomously discover, research, validate and recommend new ventures. It may **not** autonomously promote a venture into the priority portfolio, demote a priority venture, or materially reallocate resources between portfolio ventures or toward a new one. Those are founder decisions; MioOS raises them as a Decide item with evidence and expected impact (Constitution §2.1.1). Do not build code that changes portfolio membership or priority without a founder approval.
+
+Never admitted into Mio Solutions: generic ideation, affiliate ideas, media/content businesses, e-commerce products, capital/trading opportunities. Automation or software *for* such companies is allowed; running such a business is not. Legacy types `ecommerce_product` and `content_business` are never created or routed.
+
+### Business Unit vs capability
+
+A Business Unit is an economic business. A capability/team is work a business performs. Never interchange them.
+
+`research`, `sales`, `content`, `development`, `marketing`, `operations`, `support`, `executive` are **capabilities**, not units.
+
+Every operational object must carry both: the owning Business Unit and the performing capability. Never route on a generic capability alone (e.g. `departmentType = research`).
+
+### Deprecated identities
+
+Do not introduce or extend these as business identities:
+
+```text
+ai-ventures  automation-sales  automation-revenue  website-revenue
+youtube  crypto-stock  ecommerce  content  commerce  capital
+sales  research  development  marketing  operations  support  executive
+```
+
+Mapping for historical unit-level names: `ai-ventures / automation-sales / automation-revenue / website-revenue → mio-solutions`; `content / youtube → mio-media`; `ecommerce / commerce → mio-commerce`; `capital / crypto-stock → mio-capital`. A record with only a capability and no derivable unit stays unattributed and is flagged. Never guess.
+
+They still exist in code, the database and the UI. Treat them as migration identifiers only.
+
+---
+
+## Canonical Objects — use the existing models
+
+No new parallel models. Extend these:
+
+| Concept | Model |
+|---|---|
+| Business Unit | `BusinessUnit` |
+| Opportunity (forecast and pipeline value live here) | `Opportunity` |
+| Assignment | `Assignment` |
+| Artifact | `Artifact` (+ `WorkforceOutput`) |
+| Approval | `Approval` |
+| Action | `ExecutionHistory` (one row per attempt) + `ActionResult` (one per approval, idempotency anchor) |
+| Revenue (real money only) | `RevenueEntry` |
+
+Deprecated, never the basis for new work: `ApprovalQueue`, `CommerceOpportunity`, `Lead`, `ConnectorRegistry`, and the legacy `Agent*` world.
+
+Rules:
+- Write `businessUnitId` at creation. Do not rely on backfill.
+- AI revenue estimates stay on `Opportunity`. They are never written to `RevenueEntry`.
+- An approval authorizes one action against one payload, bound by a payload hash. A changed payload invalidates the approval.
+- Approval states: only `pending → approved | rejected`. Never create an approval already decided. Never auto-approve an action type that has an executor.
+- When an approval is decided, close the assignment that was waiting on it.
+
+---
+
+## Autonomy and Governance
+
+Three separate autonomies. Never merge them into one switch.
+
+| Type | Examples | Default |
+|---|---|---|
+| Internal | research, analysis, drafts, scoring, backtesting, paper trading | Allowed for an operational unit within budget |
+| External | email, publishing, proposals, invoices, supplier/customer contact | **Approval required** |
+| Financial | payments, refunds, ad budgets, inventory, subscriptions, trades | **Locked** — explicit approval; real-money trading prohibited |
+
+Every action passes, in order: Global Safety → Business Unit Policy (incl. unit status) → Connector Policy → Budget Policy → Action Policy → Approval → Execution. Failure at any layer blocks. An approval never overrides emergency stop, a dormant/disabled unit, a disabled connector, a hard budget limit or a prohibited action.
+
+**Emergency Stop** is absolute. Check it at the runtime-loop boundary and immediately before every external side effect. UI state is not enforcement.
+
+**Connector modes** — `disabled`, `read_only`, `draft_only`, `approval_required`, `autonomous_limited` — are enforced in execution code. List a connector as implemented only if code uses it.
+
+**Budgets** — hard caps per unit (LLM, search/API, ads, tools, financial exposure, daily and monthly activity) and cost accounting are mandatory **before any production credential**. Dormant units have 0. No unbounded retry-on-a-timer.
+
+**Fail closed.** If approval, emergency stop, unit status, connector config or budget cannot be verified: do not execute. Ambiguous payment state: do not retry blindly. Malformed AI output: reject it.
+
+**Evidence.** Distinguish fact, external evidence, AI inference, estimate, assumption and simulation result. An LLM statement is not evidence. Template fallback output must never advance a pipeline.
+
+**Outreach.** Suppression list checked before every send, opt-out in every message, follow-ups stop on reply/opt-out/bounce/lost and when reply detection is unavailable, daily send cap.
+
+---
+
+## Before Production Credentials (Constitution §19, in this order)
+
+1. Test harness (fake providers, controllable clock) and tests for every external action — **first**
+2. Emergency Stop enforced at loop and executor boundaries
+3. Single-flight runtime, fail-fast on uncaught exceptions, external liveness check with alerting
+4. Production session-secret enforcement
+5. Strict approval state machine
+6. Approvals bound to immutable payloads
+7. Connector modes enforced
+8. Duplicate scheduling paths removed
+9. Idempotent external execution
+10. Budgets, hard spend caps, cost accounting per unit
+11. Outreach suppression, opt-out, send caps
+12. Canonical Business Unit ownership; unit status enforced
+13. Forecast separated from real revenue
+14. Assignments closed when their approval is decided
+15. Versioned migrations and tested off-server backups
+
+Do not enable, request or configure SMTP, Stripe, publishing, advertising or trading credentials in production until all fifteen are proven. Do not change any of items 2–15 without a test that pins the behaviour.
+
+---
+
+## Runtime
+
+- One canonical production runtime (`runtime/`). No second scheduler may execute the same work.
+- Single-flight, idempotent, observable, recoverable, budget-aware, governance-aware.
+- Deterministic idempotency keys for critical external actions.
+- Exit on uncaught exceptions; liveness is watched from outside the runtime.
+- Record every failed step where the founder can see it.
 
 ---
 
 ## AION Separation
 
-AION and MioOS are completely separate systems.
+AION and MioOS are separate systems. AION is an AI gateway / control plane / runtime platform.
 
-AION is: AI Gateway, Control Plane, Runtime Platform, Worker Infrastructure, Routing Engine, Multi-tenant SaaS.
+Inside MioOS, AION appears only as a venture/project under Mio Solutions.
 
-**Inside MioOS, AION appears only as a Venture/Project.**
-
-Never expose in MioOS:
-- Worker metrics
-- Token metrics
-- Runtime health
-- Queue depth
-- Infrastructure internals
-
-Those belong to AION, not MioOS.
+Never expose in MioOS: worker metrics, token metrics, runtime health, queue depth, infrastructure internals of AION.
 
 ---
 
-## Navigation Architecture (Critical)
+## Navigation Architecture
 
 **Only 6 destinations. No exceptions.**
 
@@ -66,9 +176,7 @@ Those belong to AION, not MioOS.
 5. Life
 6. Settings
 
-Revenue is NOT a destination.
-Opportunities are NOT a destination.
-Those are outcomes surfaced through Today and Workforce.
+Revenue and Opportunities are not destinations; they are outcomes surfaced through Today and Workforce. Raw runtime internals belong in diagnostics.
 
 Every new view requires updating ALL FOUR files atomically:
 1. `store/appStore.ts`
@@ -80,247 +188,55 @@ Missing one breaks navigation.
 
 ---
 
-## Today
+## Founder Interface
 
-Today is the most important page.
+The command center answers:
 
-It must answer:
-1. What opportunities were discovered?
-2. What revenue changed?
-3. What progress happened?
-4. What requires approval?
-5. What is blocked?
-6. What should I focus on?
+1. What value was created?
+2. What opportunities were found?
+3. What changed economically?
+4. What is currently running?
+5. What requires a decision?
+6. What is blocked?
+7. Which Business Unit is performing best?
+8. Where should resources be allocated next?
 
-Today should feel like a **briefing from the workforce** — not a dashboard, not a monitoring screen.
+**Today** is a briefing from the business units, not a monitoring screen. Outcome language only.
 
-Language must be outcome-based.
+Good: "Mio Solutions sent 3 approved outreach emails; 1 reply."
+Bad: "Agent completed assignment."
 
-**Good:** "E-commerce Team validated 2 products."
-**Bad:** "Agent completed assignment."
+**Decide** is the approval boundary. Every decision explains: what is requested, why it matters, impact if approved, impact if rejected, and the exact payload being authorized. Only surface a decision when there is something concrete to authorize. No analytics or monitoring in Decide.
 
----
+**Workforce** shows the four Business Units with their status. Dormant units are shown as dormant, with no activity. For an operational unit: mission, revenue model, current objective, opportunity pipeline, active work, real revenue vs forecast (kept visibly separate), costs, pending decisions.
 
-## Decide
+Never show: agent names, queue depth, tokens, prompts, execution logs. Those belong in diagnostics.
 
-Decide is the approval boundary. Everything requiring judgment appears here.
+**Projects** are containers (Venture or Initiative) that belong to a Business Unit. Not task managers, not kanban boards.
 
-Categories:
-- Financial
-- External Contact
-- High Risk
-- Strategic
-- Content
-
-Every decision must explain:
-- What is being requested
-- Why it matters
-- Impact if approved
-- Impact if rejected
-
-No analytics. No monitoring. No dashboards. Only decisions.
+**Life** is personal (Calendar, Goals, Habits, Notes) and stays separate from business.
 
 ---
 
-## Workforce
+## Definition of Done for a Business Unit
 
-MioOS manages autonomous business units. Each unit behaves like a real company department.
+Real input sources, real evidence collection, opportunity generation, validation logic, execution capability, governance, idempotency, audit trail, metrics, cost accounting, revenue/outcome accounting, failure recovery, tests for critical paths.
 
-Each team has:
-- Mission
-- Objectives
-- Autonomous routines
-- Revenue responsibility
-- Opportunity generation
-- Outputs
-- Approval triggers
-
-Teams operate independently. The founder supervises outcomes. The founder does not micromanage tasks.
-
-### Team 1 — E-Commerce Team
-
-**Mission:** Find and launch profitable direct-to-customer opportunities.
-
-Operating model: Supplier / POD / Fulfillment Partner → Customer
-- No warehousing by default
-- No inventory ownership by default
-- No logistics operations by default
-
-Autonomous work: product research, competitor research, supplier discovery, supplier reliability scoring, margin calculations, demand validation, product page creation, landing page creation, creative generation, ad concept generation, campaign planning, customer service drafts, order risk monitoring.
-
-Outputs: product opportunities, supplier reports, store concepts, product pages, ad creatives, launch plans.
-
-**Approval required:** spending ad budget, supplier commitments, store launches, inventory purchases, paid testing. Inventory is treated as high-risk.
-
-### Team 2 — Automation Sales Team
-
-**Mission:** Generate customers for automation services and AI products.
-
-This team does not only find leads. This team **designs sellable automation systems**.
-
-Autonomous work: company discovery, lead generation, process analysis, pain-point identification, opportunity scoring, automation design, solution architecture, proposal creation, demo preparation, outreach drafting, follow-up drafting, pilot planning.
-
-Every qualified lead should result in: opportunity analysis, proposed automation solution, estimated value, demo concept, proposal draft.
-
-Outputs: leads, opportunities, automation blueprints, outreach sequences, proposal packages.
-
-**Approval required:** customer outreach, proposals, contracts, pricing commitments.
-
-### Team 3 — YouTube Automation Team
-
-**Mission:** Grow YouTube channels autonomously.
-
-Autonomous work: niche research, trend research, competitor analysis, content planning, script writing, hook generation, title generation, thumbnail concepts, SEO research, upload planning.
-
-Content formats: Shorts, Reels, faceless videos, long-form story videos, educational content.
-
-Team prepares: voiceover scripts, captions, scene timelines, edit plans, thumbnail concepts, upload schedules.
-
-**Approval required:** publishing, paid assets, brand deals, copyright-sensitive material.
-
-### Team 4 — Crypto / Stock Trader Team
-
-**Mission:** Grow capital responsibly.
-
-Modes: 1. Research → 2. Paper Trading → 3. Approval Trading → 4. Autonomous Trading (future, locked).
-
-Default mode: **Research.**
-
-Autonomous work: market research, news monitoring, watchlist management, opportunity detection, risk scoring, portfolio analysis, trade thesis creation.
-
-Outputs: trade theses, market reports, risk assessments, watchlists.
-
-**Approval required:** any real trade, capital allocation, position sizing changes. Autonomous trading remains locked until explicitly enabled.
-
----
-
-## Approval Philosophy
-
-**Autonomous (no approval needed):**
-Research, analysis, validation, planning, content preparation, opportunity discovery, lead generation, risk scoring.
-
-**Approval required:**
-Spending money, customer communication, publishing, supplier commitments, trading, contracts, legal obligations.
-
-**No external impact without approval.**
-
----
-
-## Projects
-
-Projects are containers. Types: **Venture** or **Initiative**.
-
-Projects exist to organise work — not as task managers, not as kanban boards.
-
-Projects contain: revenue, outputs, opportunities, goals, decisions.
-
----
-
-## Life
-
-Life is personal. Contains: Calendar, Goals, Habits, Notes.
-
-Life remains separate from business.
-
----
-
-## Workforce Evolution — North Star (v2)
-
-**Stop thinking:** Agent / Task / Output
-**Start thinking:** Business Unit / Opportunity / Revenue / Growth / Execution
-
-The workforce is NOT a workforce of AI agents. It is a portfolio of autonomous businesses.
-
-### Workforce Model
-
-Every business unit operates with:
-- **Mission** — Why does this unit exist?
-- **Business Model** — How does it generate revenue?
-- **Revenue Engine** — How does value become revenue? (shown as a flow in the UI)
-- **Objectives** — What is the unit currently trying to achieve?
-- **KPIs** — How is success measured?
-- **Opportunity Pipeline** — What opportunities are active by lifecycle stage?
-- **Memory** — What has already been attempted? (prevents repetition)
-- **Approval Boundaries** — What requires founder approval?
-- **Growth Loop** — How does the unit improve over time?
-
-### Autonomous Loop (V2)
-
-```
-Idle → Generate Opportunities
-Opportunities exist → Validate them
-Validated → Prepare execution
-Execution ready → Create Decide items
-Approved → Create Projects
-Projects succeed → Attribute Revenue
-Projects fail → Update Memory
-```
-
-This loop runs continuously. The autonomous engine (V2) is lifecycle-aware:
-it checks the team's opportunity pipeline state and routes work to the
-appropriate lifecycle stage (`discovery` / `validation` / `execution`).
-
-### Workforce UI North Star
-
-The Workforce view should feel like a CEO reviewing 4 division leaders.
-For each business unit display:
-- Mission + Business Model + Revenue Engine (as a flow)
-- Current Objective
-- Opportunity Pipeline (funnel: Discovered → Validating → Approved)
-- Active Work
-- Revenue Impact + Pipeline Value
-- Recent Wins (approved opportunities)
-- Recent Failures (rejected — stored in memory, never re-proposed)
-- Growth Recommendations (derived from portfolio state)
-- Pending Decisions
-
-**Never show:** agent names, queue depth, tokens, prompts, execution logs.
-**Only show:** business outcomes.
-
-### Today North Star
-
-Today should answer:
-1. What value did the workforce create?
-2. What opportunities were discovered?
-3. What revenue opportunities emerged?
-4. What decisions require me?
-5. What is blocked?
-6. What should I focus on?
-
----
-
-## Success Criteria
-
-If MioOS runs for 30 days unattended (with approvals still required for external actions), the workforce should continuously:
-- Discover opportunities
-- Prepare execution
-- Improve memory
-- Build pipelines
-- Generate approvals
-- Track revenue impact
-- Recommend next actions
-
-The system should evolve from an AI assistant into an autonomous portfolio of business units.
-
-When the founder returns, MioOS should brief on:
-- Opportunities found and their pipeline status
-- Revenue opportunities identified and pipeline value
-- Work completed and quality track record
-- Decisions required
-- Growth recommendations per business unit
-
-**That is the standard every future feature must support.**
+Generating AI content alone does not satisfy this. `operational` status is a permission to run, not proof of done.
 
 ---
 
 ## Development Rules
 
-- Do not restart or rebuild from scratch
-- Do not break existing working features
-- Prioritize stability, clean UX, database-backed persistence
-- Use upsert/idempotent seed behavior (never wipe user data without --reset flag)
-- Follow existing code patterns: client components, local state + fetch, Prisma API routes
-- Keep UI dark, clean, premium, command-center style
+- Keep what works. Isolate what is legacy. Make identity canonical. Make execution safe. Test it. Then expand.
+- Do not restart or rebuild from scratch.
+- Do not break existing working features.
+- Do not introduce another parallel Business Unit taxonomy, approval system, opportunity model, revenue model or execution runtime.
+- Prioritize stability, clean UX, database-backed persistence.
+- Use upsert/idempotent seed behavior (never wipe user data without `--reset` flag).
+- Follow existing code patterns: client components, local state + fetch, Prisma API routes.
+- Whitelist fields in API routes; never pass a request body straight to Prisma.
+- Keep UI dark, clean, premium, command-center style.
 
 ## SQLite / Prisma Rules
 
