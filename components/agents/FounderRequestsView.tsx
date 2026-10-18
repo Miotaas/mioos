@@ -142,7 +142,7 @@ export function FounderRequestsView() {
     if (text.trim()) setDetectedDept(detectDepartment(text));
   }
 
-  function useExample(ex: string) {
+  function applyExample(ex: string) {
     setInput(ex);
     setDetectedDept(detectDepartment(ex));
     textareaRef.current?.focus();
@@ -354,7 +354,7 @@ export function FounderRequestsView() {
               {EXAMPLE_REQUESTS.map(ex => (
                 <button
                   key={ex}
-                  onClick={() => useExample(ex)}
+                  onClick={() => applyExample(ex)}
                   className="text-[12px] text-text-muted px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-white/[0.10] hover:text-text-secondary transition-all bg-white/[0.02] hover:bg-white/[0.04]"
                 >
                   {ex}

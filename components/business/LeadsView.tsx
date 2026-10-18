@@ -539,7 +539,7 @@ export function LeadsView() {
                 {!selected.demoAngle && (
                   <div className="bg-surface-2 border border-white/[0.06] rounded-xl p-4 text-center">
                     <Sparkles className="w-6 h-6 mx-auto mb-2 text-accent-purple" />
-                    <p className="text-sm text-text-secondary mb-3">No demo prep yet. Edit the lead and use "Suggest Product" to generate it from the pain point.</p>
+                    <p className="text-sm text-text-secondary mb-3">No demo prep yet. Edit the lead and use &quot;Suggest Product&quot; to generate it from the pain point.</p>
                   </div>
                 )}
                 {selected.demoAngle && <DemoSection label="Demo Angle" content={selected.demoAngle} />}

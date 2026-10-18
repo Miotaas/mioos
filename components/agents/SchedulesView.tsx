@@ -236,7 +236,7 @@ export function SchedulesView() {
           <AlertCircle className="w-3.5 h-3.5 text-text-muted flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-text-muted leading-relaxed">
             <span className="text-text-secondary font-medium">Internal scheduler.</span> No external cron service required.
-            Scheduled runs trigger automatically when you open this page, and on-demand via "Check Due Runs".
+            Scheduled runs trigger automatically when you open this page, and on-demand via &quot;Check Due Runs&quot;.
             All scheduled runs are subject to the same approval flow as manual runs.
           </p>
         </div>

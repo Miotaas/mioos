@@ -236,7 +236,7 @@ export function DecideView() {
             <div className="py-20 flex flex-col items-center gap-3 text-center px-6">
               <CheckCheck className="w-8 h-8 text-text-ghost opacity-30" />
               <p className="text-[14px] text-text-muted font-medium">No decisions waiting</p>
-              <p className="text-[12px] text-text-ghost">You're all caught up</p>
+              <p className="text-[12px] text-text-ghost">You&apos;re all caught up</p>
             </div>
           ) : items.map(item => (
             <DecideListItem

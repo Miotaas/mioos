@@ -992,7 +992,7 @@ export function WorkforceView() {
                       <p className="text-[12px] text-text-secondary flex-1 leading-snug">
                         <span className="text-text-primary font-medium">{a.team?.name ?? "AI Team"}</span>
                         {" "}{STATUS_VERB[a.status] ?? a.status}{" "}
-                        <span className="text-text-muted">"{a.title}"</span>
+                        <span className="text-text-muted">&quot;{a.title}&quot;</span>
                       </p>
                       <span className="text-[10px] text-text-ghost flex-shrink-0 tabular-nums">
                         {fmtTime(a.updatedAt ?? a.createdAt)}
