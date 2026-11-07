@@ -8,9 +8,26 @@ import { stripePaymentProvider } from "./payment";
 
 export * from "./types";
 
+// ── Test seam (Phase 0 item 1) ───────────────────────────────────────
+// Lets the Vitest harness inject a fake email provider. It is inert in
+// production: the override starts null and can only be set under Vitest.
+let emailProviderOverride: EmailProvider | null = null;
+
+function assertTestEnvironment(fn: string): void {
+  if (process.env.VITEST !== "true" || process.env.NODE_ENV === "production") {
+    throw new Error(`[providers] ${fn} is test-only and cannot be used outside the Vitest harness`);
+  }
+}
+
+/** Test-only: replace the email provider. Pass null to restore the real one. */
+export function setEmailProviderForTesting(provider: EmailProvider | null): void {
+  assertTestEnvironment("setEmailProviderForTesting");
+  emailProviderOverride = provider;
+}
+
 export function getEmailProvider(): EmailProvider {
   // Only SMTP today; future: choose by process.env.EMAIL_PROVIDER
-  return smtpEmailProvider;
+  return emailProviderOverride ?? smtpEmailProvider;
 }
 
 export function getPaymentProvider(): PaymentProvider {
