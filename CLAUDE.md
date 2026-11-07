@@ -46,6 +46,8 @@ A new Mio Solutions opportunity must be classified as exactly one of: `software_
 
 MioOS may autonomously discover, research, validate and recommend new ventures. It may **not** autonomously promote a venture into the priority portfolio, demote a priority venture, or materially reallocate resources between portfolio ventures or toward a new one. Those are founder decisions; MioOS raises them as a Decide item with evidence and expected impact (Constitution §2.1.1). Do not build code that changes portfolio membership or priority without a founder approval.
 
+**Execution-loop priority is not portfolio priority** (founder decision FD-001, `docs/FOUNDER_DECISIONS.md`). The AI Website Agency is the first commercial execution loop being made production-ready (`docs/FIRST_REVENUE_LOOP.md`). Strategic portfolio priority stays AION → Mail Co-Pilot → AI Website Agency. Never express execution-loop priority through `PRIORITY_VENTURES`, `[PRIORITY]` focus, allocator ranking or `allocationPct`, opportunity scores, or the founder context's `priorityOrder`. The capital allocator's portfolio ranking must not change because of FD-001.
+
 Never admitted into Mio Solutions: generic ideation, affiliate ideas, media/content businesses, e-commerce products, capital/trading opportunities. Automation or software *for* such companies is allowed; running such a business is not. Legacy types `ecommerce_product` and `content_business` are never created or routed.
 
 ### Business Unit vs capability
@@ -85,6 +87,7 @@ No new parallel models. Extend these:
 | Approval | `Approval` |
 | Action | `ExecutionHistory` (one row per attempt) + `ActionResult` (one per approval, idempotency anchor) |
 | Revenue (real money only) | `RevenueEntry` |
+| Cost (same economic ledger) | `CostEntry` — same Business Unit, period, provider-reference and integer-cents conventions as `RevenueEntry`; not a parallel revenue model (planned, Phase 0 item 10) |
 
 Deprecated, never the basis for new work: `ApprovalQueue`, `CommerceOpportunity`, `Lead`, `ConnectorRegistry`, and the legacy `Agent*` world.
 
@@ -109,7 +112,7 @@ Three separate autonomies. Never merge them into one switch.
 
 Every action passes, in order: Global Safety → Business Unit Policy (incl. unit status) → Connector Policy → Budget Policy → Action Policy → Approval → Execution. Failure at any layer blocks. An approval never overrides emergency stop, a dormant/disabled unit, a disabled connector, a hard budget limit or a prohibited action.
 
-**Emergency Stop** is absolute. Check it at the runtime-loop boundary and immediately before every external side effect. UI state is not enforcement.
+**Emergency Stop** is absolute. Check it at the runtime-loop boundary and immediately before every external side effect. UI state is not enforcement. It blocks all external writes and all paid third-party reads (LLM, web search, prospect website fetches). It does not block read-only IMAP reply checks, internal read-only diagnostics, or safety infrastructure (external liveness heartbeats, off-server backups, founder-owned safety alerts), and the latter only when their credentials are scoped exclusively to safety infrastructure and cannot authorize business actions. If its state cannot be verified, fail closed for every external and financial action (Constitution §8).
 
 **Connector modes** — `disabled`, `read_only`, `draft_only`, `approval_required`, `autonomous_limited` — are enforced in execution code. List a connector as implemented only if code uses it.
 
@@ -125,11 +128,14 @@ Every action passes, in order: Global Safety → Business Unit Policy (incl. uni
 
 ## Before Production Credentials (Constitution §19, in this order)
 
+Plan: `docs/PHASE_0_SAFETY_PLAN.md`. `docs/FOUNDER_LOOP_MAP.md`'s old auto-approval plan is void; never build toward auto-approving executable external or financial actions.
+
 1. Test harness (fake providers, controllable clock) and tests for every external action — **first**
 2. Emergency Stop enforced at loop and executor boundaries
 3. Single-flight runtime, fail-fast on uncaught exceptions, external liveness check with alerting
 4. Production session-secret enforcement
 5. Strict approval state machine
+5A. Database safety baseline: migration baseline, verified production backup, restore proven on a copy (before any schema change for 6–14)
 6. Approvals bound to immutable payloads
 7. Connector modes enforced
 8. Duplicate scheduling paths removed
@@ -138,10 +144,12 @@ Every action passes, in order: Global Safety → Business Unit Policy (incl. uni
 11. Outreach suppression, opt-out, send caps
 12. Canonical Business Unit ownership; unit status enforced
 13. Forecast separated from real revenue
-14. Assignments closed when their approval is decided
-15. Versioned migrations and tested off-server backups
+14. Assignment ↔ approval link; assignments closed when their approval is decided
+15. Production migration/backup hardening: automated off-server backups, retention, restore testing, runbook
 
-Do not enable, request or configure SMTP, Stripe, publishing, advertising or trading credentials in production until all fifteen are proven. Do not change any of items 2–15 without a test that pins the behaviour.
+Do not enable, request or configure SMTP, Stripe, publishing, advertising or trading credentials in production until all of them (1–15 including 5A) are proven. The only exception is safety-infrastructure credentials (off-server backups, external liveness monitoring), which must never be used for business execution, outreach, payments or customer-facing actions (Constitution §19).
+
+Approval triage never auto-approves anything (FD-G). Existing `auto_approved` rows are inert: never executed, never converted to `approved`. Do not change any of items 2–15 without a test that pins the behaviour.
 
 ---
 

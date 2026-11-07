@@ -1,6 +1,6 @@
 # MioOS Constitution v1
 
-Status: **binding** · Ratified by the founder: 2026-10-11 · Version: 1.1 (amended 2026-10-17)
+Status: **binding** · Ratified by the founder: 2026-10-11 · Version: 1.4 (amended 2026-10-18)
 
 This document is the highest-level product and architecture source for MioOS. Where any other document, prompt, code comment or UI label conflicts with it, this Constitution wins (see §21).
 
@@ -349,7 +349,7 @@ The system must distinguish forecast value, pipeline value, invoiced amount, col
 - `RevenueEntry` holds real money only: invoiced amounts, collected cash, recurring payments per period and refunds. Each row carries an explicit kind, a Business Unit and a provider reference.
 - Forecast and pipeline values are not `RevenueEntry` rows. They stay on the Opportunity.
 - AI-generated revenue estimates remain attached to Opportunities and never count as actual revenue.
-- Costs are recorded per Business Unit (§10). Cost records extend the existing ledger; they are not a second revenue model.
+- Costs are recorded per Business Unit (§10) in a `CostEntry` model. `CostEntry` belongs to the same economic ledger as `RevenueEntry` and uses the same conventions: Business Unit, period, provider reference and integer cents. It is not a parallel revenue model, and cost is never recorded as a `RevenueEntry`.
 
 ---
 
@@ -414,9 +414,21 @@ An approval may never override:
 
 Emergency Stop is absolute. When active, MioOS must not perform any new external or financial action.
 
-It must stop email sends, publishing, Stripe operations, supplier operations, advertising changes, financial execution and external POST/PUT/PATCH/DELETE actions.
+It must stop email sends, publishing, Stripe operations, supplier operations, advertising changes, financial execution and external POST/PUT/PATCH/DELETE actions, except safety infrastructure (below).
 
-Internal reads and diagnostics may continue when safe.
+Scope of the stop:
+
+| Emergency Stop blocks | Emergency Stop does not block |
+|---|---|
+| All external writes | Read-only reply checks (IMAP) |
+| All paid third-party reads, including LLM calls, web search and prospect website fetches | Founder-owned safety alerts |
+| | External liveness heartbeats |
+| | Off-server backup operations |
+| | Internal read-only diagnostics |
+
+Liveness heartbeats, off-server backups and founder-owned safety alerts are safety infrastructure, not business execution. They continue during an Emergency Stop only if their credentials are scoped exclusively to safety infrastructure and cannot authorize any business action (§19). A safety-infrastructure path whose credential could authorize business actions is treated as an external write and is stopped.
+
+If the Emergency Stop state cannot be verified, MioOS fails closed: no external or financial action is performed (§14).
 
 Emergency Stop must be checked:
 
@@ -630,11 +642,16 @@ Generating AI content alone does not satisfy this definition.
 
 All items below must be complete and proven **before any production credential is enabled**. They are done in this order.
 
+**Safety-infrastructure exception.** Credentials used exclusively for safety infrastructure — off-server backups and external liveness monitoring — may be enabled before general production credentials, so that items 3, 5A and 15 can be completed. They must not authorize business execution, outreach, payments or any customer-facing action, and no business connector may use them.
+
 1. **Tests first.** A test harness with fake providers and a controllable clock, and automated tests for every external action. No item below is changed without a test that pins its behaviour.
 2. Enforce Emergency Stop at the runtime-loop boundary and immediately before every external side effect.
 3. Make the runtime single-flight, fail-fast on uncaught exceptions, and monitored by an external liveness check with alerting.
 4. Fix production session-secret enforcement.
 5. Introduce the strict approval state machine.
+
+   5A. **Database safety baseline** (brought forward from item 15): establish a versioned migration baseline; create and verify a production backup; prove the restore procedure on a copy or test environment where possible. No schema change for items 6–14 is applied before 5A is complete.
+
 6. Bind approvals to immutable execution payloads.
 7. Enforce connector modes in execution code.
 8. Remove duplicate scheduling paths.
@@ -643,8 +660,8 @@ All items below must be complete and proven **before any production credential i
 11. Add the outreach suppression list, opt-out handling and send caps (§12.1).
 12. Canonicalize Business Unit ownership and enforce unit status, so dormant units receive no runtime.
 13. Separate forecast value from real revenue.
-14. Close assignments when their approval is decided.
-15. Introduce versioned migrations and tested, off-server backups (§13.1).
+14. Link assignments to the approvals they wait on, and close them when the approval is decided.
+15. Complete production migration and backup hardening (§13.1): automated off-server backups, retention, restore testing and an operational runbook.
 
 Only after these foundations are proven may production autonomy increase.
 
@@ -711,5 +728,8 @@ The objective is: **maximum economically useful autonomy within controlled risk.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-18 | Founder resolution of OQ-1. §8: Emergency Stop does not stop external liveness heartbeats, off-server backup operations or founder-owned safety alerts, provided their credentials are scoped exclusively to safety infrastructure and cannot authorize business actions; otherwise they are stopped as external writes. |
+| 1.3 | 2026-10-18 | Founder decisions FD-C, FD-D, FD-E. §8: Emergency Stop scope stated (blocks external writes and paid third-party reads; does not block read-only IMAP checks, founder-owned alerts or internal read-only diagnostics; unverifiable state fails closed). §5: costs are recorded in `CostEntry`, part of the same economic ledger as `RevenueEntry`, same conventions, not a parallel revenue model. §19: safety-infrastructure credentials (off-server backups, external liveness) permitted before general production credentials, never for business execution. |
+| 1.2 | 2026-10-18 | §19 order amended by the founder: new item 5A (database safety baseline — migration baseline, verified production backup, restore proof) moved forward from item 15 so schema changes from item 6 onward go through versioned migrations; item 14 now includes the assignment ↔ approval link; item 15 narrowed to completing production hardening (off-server automation, retention, restore testing, runbook). |
 | 1.1 | 2026-10-17 | §2.1.1 added: the three ventures are the priority portfolio, not the scope boundary; six opportunity classes; external evidence gate for new opportunities; exclusions; authority — MioOS may discover, validate and recommend new ventures, but only the founder promotes, demotes or materially reallocates portfolio resources. |
 | 1.0 | 2026-10-11 | First binding version. Four canonical units with `mio-` slugs; Mio Solutions operational, the other three dormant; Media and Capital deliberately re-included; canonical objects mapped to existing models; budgets mandatory before credentials; §19 reordered with tests first and four added blockers. |
